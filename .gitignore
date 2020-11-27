@@ -1,0 +1,6 @@
+*.sh
+*pycache*
+*.pyc
+venv/
+*.sqlite3
+*.csv

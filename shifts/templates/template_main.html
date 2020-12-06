@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang='en' >
+<head>
+<meta charset='UTF-8'>
+<title>Shifter - shifts planner and viewer</title>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.print.min.css' rel='stylesheet' media='print' />
+<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.min.css'>
+<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.7/semantic.min.css'>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script>
+ if (document.location.search.match(/type=embed/gi)) {
+       window.parent.postMessage('resize', '*');
+     }
+</script>
+</head>
+
+<body translate='no' >
+  <div class='ui container'>
+  <div class='ui menu'>
+    <div class='header item'>Shifter</div>
+    <div class="left menu">
+      <a class="item" href='/today'>Today's shift team</a>
+      <a class="item" href='/planning'>Global Overview</a>
+      <!-- <a class="item" href=''>Export</a> -->
+    </div>
+    <div class="right menu">
+      <a class="item" href='/admin'>Admin</a>
+    </div>
+  </div>
+</div>
+
+{% block 'body' %}
+{% endblock %}
+
+</body>
+</html>

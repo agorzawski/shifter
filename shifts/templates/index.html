@@ -1,32 +1,5 @@
-<!DOCTYPE html>
-<html lang='en' >
-<head>
-<meta charset='UTF-8'>
-<title>Shifter - shifts planner and viewer</title>
-<link href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.print.min.css' rel='stylesheet' media='print' />
-<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.min.css'>
-<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.7/semantic.min.css'>
-<script>
- if (document.location.search.match(/type=embed/gi)) {
-       window.parent.postMessage('resize', '*');
-     }
-</script>
-</head>
-
-<body translate='no' >
-  <div class='ui container'>
-  <div class='ui menu'>
-    <div class='header item'>Shifter</div>
-    <div class="left menu">
-      <a class="item" href=''>Others</a>
-      <a class="item" href=''>Export</a>
-    </div>
-    <div class="right menu">
-      <a class="item" href='/admin'>Admin</a>
-    </div>
-  </div>
-</div>
-
+{% extends 'template_main.html'%}
+{% block 'body' %}
 <br/>
 <div class='ui container'>
   <div class='ui grid'>
@@ -52,8 +25,8 @@ $(document).ready(function () {
       center: 'title',
       right: 'month,basicWeek,basicDay'
     },
-    // defaultView: 'week',
-    defaultDate: '2021-03-01',
+    defaultView: 'basicWeek',
+    defaultDate: '2021-03-23',
     navLinks: true, // can click day/week names to navigate views
     editable: false,
     eventLimit: true, // allow 'more' link when too many events
@@ -75,10 +48,10 @@ $(document).ready(function () {
 
     {% for shift in scheduled_shifts_list %}
     {
-        title: '{{shift.member.first_name}} as {{shift.slot.name}}  {{shift.member.role}}',
+        title: '{{shift.member.first_name}} as {{shift.member.role}}',
         start:'{{ shift.shift_start }}',
         end:'{{ shift.shift_end }}',
-        color:{% if 'Morning' in shift.slot.name %}'#AFAFAF'{% else %}'#3A3A3A'{% endif %}
+        color:{% if 'Morning' in shift.slot.name %}'#FFFFFF'{% else %}'#AFAFAF'{% endif %}
 
     },
     {% endfor %}
@@ -87,6 +60,4 @@ $(document).ready(function () {
 
 });
     </script>
-
-</body>
-</html>
+{% endblock %}

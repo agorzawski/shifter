@@ -1,0 +1,25 @@
+{% extends 'template_main.html'%}
+{% block 'body' %}
+
+    <div class="col-sm-8 mx-auto">
+
+      <main role="main">
+      <div class="float-none" style="padding:40px;text-align:center;" id='{{activeSlot.name}}'>
+
+        <h1>{{activeSlot}}</h1>
+
+        {% for shifter in currentTeam %}
+        <div class="float-left" style="padding:40px;text-align:center;"> <h3><strong>{{shifter.member.first_name}}</strong> {{shifter.member.last_name}}</h3>
+          <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}light{%endif%}"> {{shifter.member.role}} </span></h3>
+          <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}secondary{%endif%}"> {{shifter.member.team}} </span></h3>
+          <img src='https://clipartstation.com/wp-content/uploads/2018/10/male-face-clipart-2.png' height="150"/>
+          <h4> Tel: {{shifter.member.mobile}} </h4>
+        </div>
+        {% endfor%}
+
+      </div>
+      </main>
+
+    </div>
+
+{% endblock %}

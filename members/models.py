@@ -13,6 +13,7 @@ class Team(models.Model):
 
 class Role(models.Model):
     name = models.CharField(max_length=200)
+    priority = models.IntegerField(blank=True, default=99)
 
     def __str__(self):
         return '{}'.format(self.name)
@@ -23,14 +24,15 @@ class Member(AbstractUser):
         ordering = ['last_name']
 
     email = models.EmailField(_('New email address'), blank=True, null=True,
-                                  help_text=_('Set if the user has requested to change their email address but has not yet confirmed it.'))
+                              help_text=_('Set if the user has requested to change their email '
+                                          'address but has not yet confirmed it.'))
     mobile = models.CharField(max_length=12, blank=True, default=None, null=True)
     team = models.ForeignKey(Team, blank=True, null=True,
-                            on_delete=models.SET_NULL)
+                             on_delete=models.SET_NULL)
     role = models.ForeignKey(Role, blank=True, null=True,
-                            on_delete=models.SET_NULL)
+                             on_delete=models.SET_NULL)
     line_manager = models.ForeignKey('self', blank=True, null=True,
-                            on_delete=models.SET_NULL)
+                                     on_delete=models.SET_NULL)
     comments = models.TextField(max_length=10000, blank=True, default='')
 
     @cached_property

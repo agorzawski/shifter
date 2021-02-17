@@ -1,0 +1,20 @@
+{% extends 'template_main.html'%}
+{% block 'body' %}
+
+    <div class="col-sm-8 mx-auto">
+
+      <main role="main">
+      <div class="float-none" style="padding:40px;text-align:center;" id='{{activeSlot.name}}'>
+        <h1> <span class="badge badge-primary"> Defined campaigns and their dates </span></h1>
+
+        <hr>
+        {% for c in campaigns %}
+          <p> <span class="badge badge-primary">{{c.name}}</span> for <b>{{c.date_start}}</b> - <b>{{c.date_end}}</b> <small>(revision {{c.revision}})</small> </p>
+        {% endfor%}
+
+      </div>
+      </main>
+
+    </div>
+
+{% endblock %}

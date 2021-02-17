@@ -10,7 +10,7 @@ class Revision(models.Model):
     valid = models.BooleanField()
 
     def __str__(self):
-        return 'v{} from {}'.format(self.number, self.date_start)
+        return 'v{} from {}'.format(self.number, self.date_start.strftime("%Y-%m-%d"))
 
 
 class Campaign(models.Model):
@@ -26,11 +26,21 @@ class Campaign(models.Model):
 
 class Slot(models.Model):
     name = models.CharField(max_length=200)
+    abbreviation = models.CharField(max_length=10, default='AM')
     hour_start = models.TimeField(blank=False)
     hour_end = models.TimeField(blank=False)
 
     def __str__(self):
         return '{} ({} - {})'.format(self.name, self.hour_start, self.hour_end)
+
+
+class ShiftRole(models.Model):
+    name = models.CharField(max_length=200)
+    abbreviation = models.CharField(max_length=10, default=None)
+    priority = models.IntegerField(blank=True, default=99)
+
+    def __str__(self):
+        return '{}'.format(self.name)
 
 
 class Shift(models.Model):
@@ -41,7 +51,8 @@ class Shift(models.Model):
                              on_delete=models.SET_NULL)
     member = models.ForeignKey(Member, blank=True, null=True,
                                on_delete=models.SET_NULL)
-
+    role = models.ForeignKey(ShiftRole, blank=True, null=True,
+                               on_delete=models.SET_NULL)
     revision = models.ForeignKey(Revision, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):

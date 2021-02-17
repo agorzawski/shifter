@@ -16,7 +16,7 @@
   <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js'></script>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.min.js'></script>
 
-<script id='rendered-js' >
+<script id='rendered-js'>
 $(document).ready(function () {
 
   $('#calendar').fullCalendar({
@@ -40,7 +40,7 @@ $(document).ready(function () {
           title: '{{ campaign.name  }}',
           start:'{{ campaign.date_start }}',
           end:'{{ campaign.date_end }}',
-          color:'orange',
+          color:'#1e7dff', //blue from bootsrap primary
           //display: 'background',
       },
       {% endfor %}
@@ -48,7 +48,7 @@ $(document).ready(function () {
 
     {% for shift in scheduled_shifts_list %}
     {
-        title: '{{shift.member.first_name}} as {{shift.member.role}}',
+        title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}}{%else%}{{shift.member.role}}{%endif%}',
         start:'{{ shift.shift_start }}',
         end:'{{ shift.shift_end }}',
         color:{% if 'Morning' in shift.slot.name %}'#FFFFFF'{% else %}'#AFAFAF'{% endif %}

@@ -7,6 +7,7 @@ import datetime
 
 from shifter.settings import MAIN_PAGE_HOME_BUTTON
 
+
 def prepare_default_context(contextToAdd):
     date = datetime.datetime.now().date()
     latest_revision = Revision.objects.filter(valid=True).order_by('-number').first()
@@ -48,6 +49,7 @@ def index(request):
 def dates(request):
     context = {
         'campaigns': Campaign.objects.all(),
+        'slots': Slot.objects.all(),
     }
     return render(request, 'dates.html', prepare_default_context(context))
 

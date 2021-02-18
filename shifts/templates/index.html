@@ -48,7 +48,7 @@ $(document).ready(function () {
 
     {% for shift in scheduled_shifts_list %}
     {
-        title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}}{%else%}{{shift.member.role}}{%endif%}',
+        title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
         start:'{{ shift.shift_start }}',
         end:'{{ shift.shift_end }}',
         color:{% if 'Morning' in shift.slot.name %}'#FFFFFF'{% else %}'#AFAFAF'{% endif %}

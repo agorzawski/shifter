@@ -55,12 +55,15 @@ def dates(request):
 
 
 def todays(request):
+
+    import members.directory as directory
+    ldap = directory.LDAP()
+
     today = datetime.datetime.now()
     now = today.time()
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
 
-    print(scheduled_shifts)
     slots = Slot.objects.all()
     activeSlot = slots[0]
     currentTeam = []
@@ -70,6 +73,10 @@ def todays(request):
                 if shifter.slot == slot:
                     activeSlot = slot
                     currentTeam.append(shifter)
+                    print('Check details for {}'.format(shifter.member.last_name))
+                    personal_data = ldap.search(field='name', text=shifter.member.last_name)
+                    if len(personal_data) > 0:
+                        print(personal_data)
 
     context = {'today': today,
                'activeSlot': activeSlot,

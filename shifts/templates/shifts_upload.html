@@ -1,0 +1,67 @@
+{% extends 'template_main.html'%}
+{% block 'body' %}
+    <div class="col-sm-8 mx-auto">
+      <main role="main">
+          <h2> How to prepare an input</h2>
+          Provide a file (in the CSV format) that has lines in the following structure:
+          <br>
+          <pre><code>
+          FirstName1,NWH,NWH,-,-,-,
+          FirstName2,NWH,-,NWH,NWH,-,
+          FirstName3,PM,-,-,NWH,PM,
+          </code></pre>
+
+          <blockquote class="blockquote"><p>
+              <b>Note: </b>
+              Each shifter (name) can have a different number of columns defined</li>
+          </p></blockquote>
+          This will assign to FirstName1 normal working hours (NWH, other available AM and PM) for the consecutive days.
+
+          <br>
+        <h1> Provide an input</h1>
+        <form action="{% url "shifter:shift-upload" %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+
+        {% csrf_token %}
+        <div class="form-group row">
+                <input type="file" name="csv_file" id="csv_file" required="True" class="form-control">
+        </div>
+
+      <div class="form-group">
+            <select name='camp' id='camp' class="custom-select" required>
+              <option value="">Campaign assignment</option>
+                {% for camp in campaigns %}
+                    <option value="{{camp.id}}">{{camp.name}}</option>
+                {% endfor %}
+            </select>
+            <div class="invalid-feedback">Example invalid custom select feedback</div>
+      </div>
+
+      <div class="form-group">
+            <select name='revision' id='revision' class="custom-select" required>
+              <option value="">Revision assignment</option>
+                {% for rev in revisions %}
+                    <option value="{{rev.number}}">{{rev}} (validity: {{rev.valid}}) </option>
+                {% endfor %}
+            </select>
+            <div class="invalid-feedback">Example invalid custom select feedback</div>
+      </div>
+
+      <div class="form-group">
+            <select name='role' id='role' class="custom-select" required>
+              <option value="">Role assignment</option>
+                {% for r in roles %}
+                    <option value="{{r.id}}">{{r.name}} </option>
+                {% endfor %}
+            </select>
+            <div class="invalid-feedback">Example invalid custom select feedback</div>
+      </div>
+
+        <div class="form-group row">
+            <div class="col-md-3 col-sm-3 col-xs-12 col-md-offset-3" style="margin-bottom:10px;">
+                 <button class="btn btn-primary"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;"></span>Upload </button>
+            </div>
+        </div>
+        </form>
+      </main>
+    </div>
+{% endblock %}

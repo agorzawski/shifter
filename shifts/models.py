@@ -55,6 +55,9 @@ class Shift(models.Model):
                                on_delete=models.SET_NULL)
     revision = models.ForeignKey(Revision, blank=True, null=True, on_delete=models.SET_NULL)
 
+    class Meta:
+        unique_together = (("date", "slot", "member", "role", "campaign", "revision"),)
+
     def __str__(self):
         return '{} {} {}'.format(self.member, self.date, self.slot)
 

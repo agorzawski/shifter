@@ -25,10 +25,21 @@
       <!-- <a class="item" href=''>Export</a> -->
     </div>
     <div class="right menu">
+      <a class="item" href='/shift-upload-csv'>Edit</a>
       <a class="item" href='/admin'>Admin</a>
     </div>
   </div>
 </div>
+
+<center>
+  {% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li class="{{ message.tags }}"> {{ message }} </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+</center>
 
 {% block 'body' %}
 {% endblock %}

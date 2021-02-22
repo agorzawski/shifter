@@ -58,7 +58,7 @@ class ShiftAdmin(admin.ModelAdmin):
         'revision',
     ]
 
-    list_filter = ('campaign', 'revision', 'slot', 'member__team', 'member__role', 'role')
+    list_filter = ('campaign', 'revision', 'csv_upload_tag', 'slot', 'member__team', 'member__role', 'role')
     ordering = ('-date',)
     actions = (move_to_newest_revision,)
 

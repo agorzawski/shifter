@@ -108,14 +108,12 @@ def shifts_upload(request):
     if "GET" == request.method:
         return render(request, "shifts_upload.html", prepare_default_context(data))
 
-    print(request.POST)
     revision = Revision.objects.filter(number=request.POST['revision']).first()
     campaign = Campaign.objects.filter(id=request.POST['camp']).first()
     shiftrole = ShiftRole.objects.filter(id=request.POST['role']).first()
 
     try:
         csv_file = request.FILES["csv_file"]
-
         if not csv_file.name.endswith('.csv'):
             messages.error(request, "Wrong file type! Needs to be CSV")
             return HttpResponseRedirect(reverse("shifter:shift-upload"))
@@ -126,15 +124,13 @@ def shifts_upload(request):
         file_data = csv_file.read().decode("utf-8")
         date_txt = csv_file.name.replace('.csv', '').split('__')[1]
         date = datetime.datetime.fromisoformat(date_txt)
-
         lines = file_data.split("\n")
-
         for lineIndex, line in enumerate(lines):
             fields = line.split(",")
             for dayIndex, one in enumerate(fields):
                 if dayIndex == 0:
                     continue
-                if one == '' or one == '-':
+                if one == '' or one == '-': # neutral shift slot abbrev
                     continue
                 shiftFullDate = date + datetime.timedelta(days=dayIndex - 1)
                 shift = Shift()
@@ -147,9 +143,10 @@ def shifts_upload(request):
                     shift.date = shiftFullDate
                     shift.slot = slot
                     shift.member = member
+                    shift.csv_upload_tag = csv_file.name
                     totalLinesAdded += 1
                 except Exception:
-                    messages.error(request, 'Could not find member ({}) / slot ({}), in line {} column {}. \
+                    messages.error(request, 'Could not find system member for ({}) / slot ({}), in line {} column {}.\
                                     Skipping for now Check your file'
                                    .format(fields[0], one, lineIndex, dayIndex))
                 try:
@@ -163,5 +160,5 @@ def shifts_upload(request):
     except Exception as e:
         messages.error(request, "Unable to upload file. Critical error, see {}".format(e))
 
-    messages.success(request, "Uploaded and saved {} shifts".format(totalLinesAdded))
+    messages.success(request, "Uploaded and saved {} shifts provided with {}".format(totalLinesAdded, csv_file.name))
     return HttpResponseRedirect(reverse("shifter:shift-upload"))

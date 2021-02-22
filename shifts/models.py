@@ -55,6 +55,8 @@ class Shift(models.Model):
                                on_delete=models.SET_NULL)
     revision = models.ForeignKey(Revision, blank=True, null=True, on_delete=models.SET_NULL)
 
+    csv_upload_tag = models.CharField(max_length=200, blank=True, null=True,)
+
     class Meta:
         unique_together = (("date", "slot", "member", "role", "campaign", "revision"),)
 

@@ -1,6 +1,27 @@
 {% extends 'template_main.html'%}
 {% block 'body' %}
 <br/>
+
+<div class="col-sm-8 mx-auto">
+   <form action="" method="POST" enctype="multipart/form-data" class="form-horizontal">
+  {% csrf_token %}
+    <div class="form-row align-items-center">
+      <div class="col-auto">
+          <select name='revision' id='revision' class="custom-select" required>
+              {% for r in revisions %}
+                  <option value="{{r.number}}">{{r}}</option>
+              {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;"></span>Change </button>
+        </div>
+    </div>
+    </form>
+  <hr>
+</div>
+
+
 <div class='ui container'>
   <div class='ui grid'>
     <div class='ui sixteen column'>
@@ -29,10 +50,8 @@ $(document).ready(function () {
     defaultDate: '{{defaultDate}}',
     navLinks: true, // can click day/week names to navigate views
     editable: false,
+    firstDay:1, // Monday
     eventLimit: true, // allow 'more' link when too many events
-    // title: ' AAAAA '
-    // intervalStart:'2021-03-03',
-    // intervalEnd:'2021-03-10',
 
     events: [
       {% for campaign in scheduled_campaigns_list %}
@@ -51,7 +70,8 @@ $(document).ready(function () {
         title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
         start:'{{ shift.shift_start }}',
         end:'{{ shift.shift_end }}',
-        color:{% if 'Morning' in shift.slot.name %}'#FFFFFF'{% else %}'#AFAFAF'{% endif %}
+        color:{% if 'Morning' in shift.slot.name %}'#FFFFFF'{% else %}'#AFAFAF'{% endif %},
+        {% if 'ShiftLeader' in shift.member.role %} eventBorderColor:'#FF0000', {% endif %}
 
     },
     {% endfor %}

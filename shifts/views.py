@@ -25,14 +25,21 @@ def prepare_default_context(contextToAdd):
 
 
 def index(request):
-    revision = Revision.objects.filter(valid=True).order_by("-number").first()
+    revisions = Revision.objects.filter(valid=True).order_by("-number")
+    if "GET" == request.method:
+        revision = revisions.first()
+    else:
+        revision = Revision.objects.filter(number=request.POST['revision']).first()
+
     scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
                                                                         'member__role__priority')
     scheduled_campaigns = Campaign.objects.filter(revision=revision)
 
     context = {
+        'revisions': revisions,
+        'displayed_revision': revision,
         'scheduled_shifts_list': scheduled_shifts,
-        'scheduled_campaigns_list': scheduled_campaigns
+        'scheduled_campaigns_list': scheduled_campaigns,
     }
     return render(request, 'index.html', prepare_default_context(context))
 
@@ -110,7 +117,9 @@ def shifts_upload(request):
 
     revision = Revision.objects.filter(number=request.POST['revision']).first()
     campaign = Campaign.objects.filter(id=request.POST['camp']).first()
-    shiftrole = ShiftRole.objects.filter(id=request.POST['role']).first()
+    shiftrole = None
+    if int(request.POST['role']) > 0:
+        shiftrole = ShiftRole.objects.filter(id=request.POST['role']).first()
 
     try:
         csv_file = request.FILES["csv_file"]
@@ -132,6 +141,9 @@ def shifts_upload(request):
                     continue
                 if one == '' or one == '-': # neutral shift slot abbrev
                     continue
+
+                # TODO add split on one (eg. NWH:SL, AM:OC, or AM:-) to add specific shift role.
+
                 shiftFullDate = date + datetime.timedelta(days=dayIndex - 1)
                 shift = Shift()
                 try:

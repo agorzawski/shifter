@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import DO_NOTHING
+
 from members.models import Member
 from django.utils.functional import cached_property
 from datetime import datetime, time
@@ -44,17 +46,13 @@ class ShiftRole(models.Model):
 
 
 class Shift(models.Model):
-    campaign = models.ForeignKey(Campaign, blank=True, null=True,
-                                 on_delete=models.SET_NULL)
+    campaign = models.ForeignKey(Campaign, on_delete=DO_NOTHING)
     date = models.DateField()
-    slot = models.ForeignKey(Slot, blank=True, null=True,
-                             on_delete=models.SET_NULL)
-    member = models.ForeignKey(Member, blank=True, null=True,
-                               on_delete=models.SET_NULL)
-    role = models.ForeignKey(ShiftRole, blank=True, null=True,
-                               on_delete=models.SET_NULL)
-    revision = models.ForeignKey(Revision, blank=True, null=True, on_delete=models.SET_NULL)
+    slot = models.ForeignKey(Slot, on_delete=DO_NOTHING)
+    member = models.ForeignKey(Member, on_delete=DO_NOTHING)
+    revision = models.ForeignKey(Revision, on_delete=DO_NOTHING)
 
+    role = models.ForeignKey(ShiftRole, blank=True, null=True, on_delete=DO_NOTHING)
     csv_upload_tag = models.CharField(max_length=200, blank=True, null=True,)
 
     class Meta:

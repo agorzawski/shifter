@@ -62,6 +62,14 @@ class Shift(models.Model):
         return '{} {} {}'.format(self.member, self.date, self.slot)
 
     @cached_property
+    def start(self):
+        return datetime.combine(self.date, self.slot.hour_start)
+
+    @cached_property
+    def end(self):
+        return datetime.combine(self.date, self.slot.hour_end)
+
+    @cached_property
     def shift_start(self):
         return datetime.combine(self.date, self.slot.hour_start).strftime("%Y-%m-%d %H:%M:%S")
 

@@ -24,6 +24,7 @@ def prepare_default_context(contextToAdd):
     context = {
         'defaultDate': date.strftime("%Y-%m-%d"),
         'latest_revision': latest_revision,
+        'displayed_revision': latest_revision,
         'APP_NAME': MAIN_PAGE_HOME_BUTTON,
     }
     for one in contextToAdd.keys():

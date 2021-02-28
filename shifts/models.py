@@ -25,6 +25,13 @@ class Campaign(models.Model):
     def __str__(self):
         return '{}'.format(self.name)
 
+    @cached_property
+    def start_text(self):
+        return self.date_start.strftime("%Y-%m-%d") # %H:%M:%S
+
+    @cached_property
+    def end_text(self):
+        return self.date_end.strftime("%Y-%m-%d")
 
 class Slot(models.Model):
     name = models.CharField(max_length=200)

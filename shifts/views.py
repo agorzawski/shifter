@@ -26,6 +26,10 @@ def prepare_default_context(contextToAdd):
         'latest_revision': latest_revision,
         'displayed_revision': latest_revision,
         'APP_NAME': MAIN_PAGE_HOME_BUTTON,
+        'shifts_colors': {'AM':  '#000000', # TODO include that in smart way into templates
+                          'PM':  '#0A0A0A',
+                          'NWH': '#E8FFC3',
+                        }
     }
     for one in contextToAdd.keys():
         context[one] = contextToAdd[one]
@@ -84,7 +88,6 @@ def todays(request):
 # TODO provide user based view/ (maybe with ics export) on shifts plannings
 @login_required
 def user(request):
-    # from dateutil.relativedelta import relativedelta
     currentMonth = datetime.datetime.now()
     nextMonth = currentMonth + datetime.timedelta(30) # banking rounding
     member = request.user
@@ -103,8 +106,6 @@ def user(request):
 
 @login_required
 def icalendar_view(request):
-
-    # TODO get those from the GET request
     month = None
     monthLabel = request.GET.get('month')
     if request.GET.get('month'):

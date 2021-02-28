@@ -2,7 +2,10 @@
 {% block 'body' %}
 <br/>
 
+{% include 'calendar.html' %}
+<br>
 <div class="col-sm-8 mx-auto">
+   <hr>
    <form action="" method="POST" enctype="multipart/form-data" class="form-horizontal">
   {% csrf_token %}
     <div class="form-row align-items-center">
@@ -18,67 +21,7 @@
         </div>
     </div>
     </form>
-  <hr>
+
 </div>
 
-<div class='ui container'>
-  <div class='ui grid'>
-    <div class='ui sixteen column'>
-      <div id='calendar'></div>
-    </div>
-  </div>
-</div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    var calendarEl = document.getElementById('calendar');
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-      //height: 650,
-      plugins: ['bootstrap','dayGrid', 'dayGridPlugin' ],
-      themeSystem: 'bootstrap',
-      header: { left: 'prev, today, next ',
-                center:   'title',
-                right: 'dayGridMonth, dayGridWeek',
-              },
-      defaultView: 'dayGridWeek', //TODO
-      // dayHeaderFormat: weekday: {'long'}, //TODO add shiftId
-      defaultDate: '{{defaultDate}}',
-      weekNumbers: true,
-      navLinks: true, // can click day/week names to navigate views
-      editable: false,
-      firstDay:1, // Monday
-      eventLimit: true, // allow 'more' link when too many events
-      businessHours: [ // specify an array instead
-         {
-          daysOfWeek: [ 1, 2, 3, 4, 5 ],
-           startTime: '08:00', // 8am
-           endTime: '18:00' // 6pm
-         },
-        ],
-      events: [
-          {% for campaign in scheduled_campaigns_list %}
-          {
-              //title: '{{ campaign.name  }}',
-              start:'{{ campaign.date_start }}',
-              end:'{{ campaign.date_end }}',
-              //color:'#1e7dff', //blue from bootsrap primary
-              rendering: 'background', //TODO investigate why
-          },
-          {% endfor %}
-
-        {% for shift in scheduled_shifts_list %}
-        {
-            title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
-            start:'{{ shift.shift_start }}',
-            end:'{{ shift.shift_end }}',
-            color:{% if 'Morning' in shift.slot.name or 'Normal' in shift.slot.name %}'#EEEEEE'{% else %}'#AFAFAF'{% endif %},
-            {% if 'ShiftLeader' in shift.member.role %} eventBorderColor:'#FF0000', {% endif %}
-        },
-        {% endfor %}
-        ]
-    });
-
-    calendar.render();
-  });
-    </script>
 {% endblock %}

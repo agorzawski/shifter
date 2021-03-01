@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import DO_NOTHING
+
 from members.models import Member
 from django.utils.functional import cached_property
 from datetime import datetime, time
@@ -23,6 +25,13 @@ class Campaign(models.Model):
     def __str__(self):
         return '{}'.format(self.name)
 
+    @cached_property
+    def start_text(self):
+        return self.date_start.strftime("%Y-%m-%d") # %H:%M:%S
+
+    @cached_property
+    def end_text(self):
+        return self.date_end.strftime("%Y-%m-%d")
 
 class Slot(models.Model):
     name = models.CharField(max_length=200)
@@ -44,17 +53,13 @@ class ShiftRole(models.Model):
 
 
 class Shift(models.Model):
-    campaign = models.ForeignKey(Campaign, blank=True, null=True,
-                                 on_delete=models.SET_NULL)
+    campaign = models.ForeignKey(Campaign, on_delete=DO_NOTHING)
     date = models.DateField()
-    slot = models.ForeignKey(Slot, blank=True, null=True,
-                             on_delete=models.SET_NULL)
-    member = models.ForeignKey(Member, blank=True, null=True,
-                               on_delete=models.SET_NULL)
-    role = models.ForeignKey(ShiftRole, blank=True, null=True,
-                               on_delete=models.SET_NULL)
-    revision = models.ForeignKey(Revision, blank=True, null=True, on_delete=models.SET_NULL)
+    slot = models.ForeignKey(Slot, on_delete=DO_NOTHING)
+    member = models.ForeignKey(Member, on_delete=DO_NOTHING)
+    revision = models.ForeignKey(Revision, on_delete=DO_NOTHING)
 
+    role = models.ForeignKey(ShiftRole, blank=True, null=True, on_delete=DO_NOTHING)
     csv_upload_tag = models.CharField(max_length=200, blank=True, null=True,)
 
     class Meta:
@@ -62,6 +67,14 @@ class Shift(models.Model):
 
     def __str__(self):
         return '{} {} {}'.format(self.member, self.date, self.slot)
+
+    @cached_property
+    def start(self):
+        return datetime.combine(self.date, self.slot.hour_start)
+
+    @cached_property
+    def end(self):
+        return datetime.combine(self.date, self.slot.hour_end)
 
     @cached_property
     def shift_start(self):

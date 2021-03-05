@@ -1,0 +1,49 @@
+{% extends 'template_main.html'%}
+{% block 'body' %}
+<div class="col-sm-8 mx-auto">
+  <main role="main">
+      <h2> Update the campaign shifts</h2>
+        This operation, will:
+      <ul>
+          <li>update the campaign with selected revision</li>
+          <li>create new shifts with adjusted to the new date and assigned with selected revision</li>
+      </ul>
+    <form action="{% url "shifter:shift-update" %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+    {% csrf_token %}
+
+      <div class="form-group">
+            <select name='camp' id='camp' class="custom-select" required>
+              <option value="">Campaign to update</option>
+                {% for camp in campaigns %}
+                    <option value="{{camp.id}}">{{camp.full_details}}</option>
+                {% endfor %}
+            </select>
+            <div class="invalid-feedback">Example invalid custom select feedback</div>
+      </div>
+
+      <div class="form-group">
+            <select name='revision' id='revision' class="custom-select" required>
+              <option value="">Revision assignment</option>
+                {% for rev in revisions %}
+                    <option value="{{rev.number}}">{{rev}} (validity: {{rev.valid}}) </option>
+                {% endfor %}
+            </select>
+            <div class="invalid-feedback">Example invalid custom select feedback</div>
+      </div>
+
+    <div class="form-group row">
+      <label for="date-input" class="col-2 col-form-label">New start date</label>
+      <div class="col-10">
+        <input name="new-date" class="form-control" type="date" value="{{today}}" id="date-input">
+      </div>
+    </div>
+
+    <div class="form-group row">
+        <div class="col-md-3 col-sm-3 col-xs-12 col-md-offset-3" style="margin-bottom:10px;">
+             <button class="btn btn-primary"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;"></span>Update </button>
+        </div>
+    </div>
+    </form>
+  </main>
+</div>
+{% endblock %}

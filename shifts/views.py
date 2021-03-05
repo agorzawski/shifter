@@ -85,7 +85,6 @@ def todays(request):
     return render(request, 'today.html', prepare_default_context(context))
 
 
-# TODO provide user based view/ (maybe with ics export) on shifts plannings
 @login_required
 def user(request):
     currentMonth = datetime.datetime.now()
@@ -93,7 +92,7 @@ def user(request):
     member = request.user
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision)
-    scheduled_campaigns = Campaign.objects.all()
+    scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     context = {
         'member' : member,
         'currentmonth':currentMonth.strftime('%B'),
@@ -162,6 +161,58 @@ def ioc_update(request):
     return JsonResponse(data)
 
 
+
+@login_required
+def shifts_update(request):
+    # add campaigns and revisions
+    data = {'campaigns': Campaign.objects.all(),
+            'revisions': Revision.objects.all(),
+            'today': datetime.datetime.now().strftime("%Y-%m-%d")
+            }
+
+    totalLinesAdded = 0
+    if "GET" == request.method:
+        return render(request, "shifts_update.html", prepare_default_context(data))
+
+    else:
+        revision = Revision.objects.filter(number=request.POST['revision']).first()
+        campaign = Campaign.objects.filter(id=request.POST['camp']).first()
+        oldStartDate = campaign.date_start
+        newStartDate = datetime.datetime.strptime(request.POST['new-date'],  "%Y-%m-%d").date()
+        daysDelta = newStartDate - oldStartDate
+        deltaToApply = datetime.timedelta(days=daysDelta.days)
+        messages.info(request, 'Found {} difference to update'.format(daysDelta))
+        shifts_to_update = Shift.objects.filter(campaign=campaign)
+        messages.info(request, 'Found {} shifts to update'.format(len(shifts_to_update)))
+        doneCounter = 0
+        for oldShift in shifts_to_update:
+            shift = Shift()
+            shift.member = oldShift.member
+            shift.campaign = campaign
+            shift.slot = oldShift.slot
+            shift.role = oldShift.role
+            tag = oldShift.csv_upload_tag
+            if tag is None:
+                tag = ""
+            shift.csv_upload_tag = tag + '_update'
+            # updated info
+            shift.revision = revision
+            shift.date = oldShift.date + deltaToApply
+            try:
+                shift.save()
+                doneCounter +=1
+            except Exception:
+                messages.error(request, 'Cannot update old shift {}, skipping!'.format(oldShift))
+
+        # at last, update the actual campaign data
+        campaign.revision = revision
+        campaign.date_start = campaign.date_start + deltaToApply
+        campaign.date_end =  campaign.date_end + deltaToApply
+        campaign.save()
+        messages.info(request, 'Done OK with {} shifts'.format(doneCounter))
+        return HttpResponseRedirect(reverse("shifter:shift-update"))
+
+
 @login_required
 def shifts_upload(request):
     # add campaigns and revisions
@@ -175,6 +226,7 @@ def shifts_upload(request):
     if "GET" == request.method:
         return render(request, "shifts_upload.html", prepare_default_context(data))
 
+    # POST
     revision = Revision.objects.filter(number=request.POST['revision']).first()
     campaign = Campaign.objects.filter(id=request.POST['camp']).first()
     defautshiftrole = None

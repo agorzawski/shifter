@@ -26,6 +26,13 @@ class Campaign(models.Model):
         return '{}'.format(self.name)
 
     @cached_property
+    def full_details(self):
+        return '{} from {} to {} at revision {} (currently {})'.format(self.name,
+                                                                       self.date_start,
+                                                                       self.date_end,
+                                                                       self.revision, self.revision.valid)
+
+    @cached_property
     def start_text(self):
         return self.date_start.strftime("%Y-%m-%d") # %H:%M:%S
 

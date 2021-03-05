@@ -23,20 +23,23 @@
       navLinks: true, // can click day/week names to navigate views
       editable: false,
       firstDay:1, // Monday
-      eventLimit: true, // allow 'more' link when too many events
-      eventDisplay: 'block',
       businessHours: [
          {
           daysOfWeek: [ 1, 2, 3, 4, 5 ],
            startTime: '08:00', // 8am
            endTime: '18:00' // 6pm
          },],
+
+      eventLimit: true, // allow 'more' link when too many events
+      eventDisplay: 'block',
+      eventOrder: "start,id,name,title",
       eventSources: [
         // your event source
         {
           events: [
               {% for campaign in scheduled_campaigns_list %}
               {
+                  id: 0, //not needed so far.
                   title: '{{ campaign.name  }}',
                   start:'{{ campaign.start_text }}',
                   end:'{{ campaign.end_text }}',
@@ -48,11 +51,14 @@
 
             {% for shift in scheduled_shifts_list %}
             {
+                id: {{forloop.counter}}, //shifts are sorted with roles
                 title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
                 start:'{{ shift.shift_start }}',
                 end:'{{ shift.shift_end }}',
                 eventTextColor: '#000000',
-                color:{% if 'TS2' in shift.role.name %}'#1E598B'{% elif 'Morning' in shift.slot.name or 'Normal' in shift.slot.name %}'#B1C4D4'{% else %}'#AFAFAF'{% endif %},
+                color:{% if 'TS2' in shift.role.name %}'#1E598B'
+                {% elif 'Morning' in shift.slot.name or 'Normal' in shift.slot.name %}'#B1C4D4'
+                {% else %}'#AFAFAF'{% endif %},
                 {% if 'ShiftLeader' in shift.member.role %} eventBorderColor:'#FF0000', {% endif %}
             },
             {% endfor %}

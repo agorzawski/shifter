@@ -21,6 +21,7 @@ class CampaignAdmin(admin.ModelAdmin):
     model = Campaign
     list_display = [
         'name',
+        'revision',
         'description',
     ]
     list_filter = ('revision',)

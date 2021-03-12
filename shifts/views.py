@@ -42,6 +42,10 @@ def index(request):
         revision = revisions.first()
     else:
         revision = Revision.objects.filter(number=request.POST['revision']).first()
+        print('===========')
+        print(request.POST.keys())
+        # TODO implement filter on campaigns
+
     scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
                                                                         'member__role__priority')
     scheduled_campaigns = Campaign.objects.filter(revision=revision)

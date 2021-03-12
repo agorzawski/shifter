@@ -1,0 +1,22 @@
+{% extends 'template_main.html'%}
+{% block 'body' %}
+    <div class="col-sm-8 mx-auto">
+      <main role="main">
+          <br>
+          <h2> Hello {{member}}</h2>
+
+          <ul>
+              <li>For the {{campaign}} campaign you are scheduled for {{scheduled_shifts_list|length}} shifts.</li>
+          </ul>
+
+          <p><a class="btn btn-primary" href="calendar.ics?member={{member.id}};month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>
+              <a class="btn btn-primary" href="calendar.ics?member={{member.id}};month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>
+          </p>
+      </main>
+    </div>
+
+<br>
+
+{% include 'calendar.html' %}
+
+{% endblock %}

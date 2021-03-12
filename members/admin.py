@@ -53,4 +53,4 @@ class TeamAdmin(admin.ModelAdmin):
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
     model = Role
-    list_display = ['name', 'priority']
+    list_display = ['name', 'abbreviation', 'priority']

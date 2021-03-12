@@ -1,63 +1,39 @@
 {% extends 'template_main.html'%}
+
+{% block 'extra_menu_item' %}
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <b>Display options<small> Revision:{{displayed_revision}}</small></b>
+        </a>
+        <form class="dropdown-menu p-4" action="" method="POST" enctype="multipart/form-data" >
+          {% csrf_token %}
+          <div class="form-group">
+          <label>Displayed campaigns:</label>
+          {% for c in scheduled_campaigns_list %}
+          <br><input class="form-check-input" type="checkbox" name="campaign{{c.id}}" id="campaign{{c.id}}" value="{{c.id}}" checked disabled>
+          <label class="form-check-label" for="campaign{{c.id}}">{{c}}</label>
+          {% endfor %}
+          </div>
+
+          <div class="dropdown-divider"></div>
+          <div class="form-group">
+          <div class="form-check ">
+          <label>Displayed revision (only valid): </label>
+          <select name='revision' id='revision' class="custom-select" required>
+          {% for r in revisions %}
+              <option value="{{r.number}}">{{r}}</option>
+          {% endfor %}
+          </select>
+          </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Apply</button>
+        </form>
+      </li>
+{% endblock %}
+
 {% block 'body' %}
 <br/>
-<div class='ui container'>
-  <div class='ui grid'>
-    <div class='ui sixteen column'>
-      <div id='calendar'></div>
-    </div>
-  </div>
-</div>
+{% include 'calendar.html' %}
 
-</div>
-
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.7/semantic.min.js'></script>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js'></script>
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.min.js'></script>
-
-<script id='rendered-js'>
-$(document).ready(function () {
-
-  $('#calendar').fullCalendar({
-    header: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'month,basicWeek,basicDay'
-    },
-    defaultView: 'basicWeek',
-    defaultDate: '{{defaultDate}}',
-    navLinks: true, // can click day/week names to navigate views
-    editable: false,
-    eventLimit: true, // allow 'more' link when too many events
-    // title: ' AAAAA '
-    // intervalStart:'2021-03-03',
-    // intervalEnd:'2021-03-10',
-
-    events: [
-      {% for campaign in scheduled_campaigns_list %}
-      {
-          title: '{{ campaign.name  }}',
-          start:'{{ campaign.date_start }}',
-          end:'{{ campaign.date_end }}',
-          color:'#1e7dff', //blue from bootsrap primary
-          //display: 'background',
-      },
-      {% endfor %}
-
-
-    {% for shift in scheduled_shifts_list %}
-    {
-        title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
-        start:'{{ shift.shift_start }}',
-        end:'{{ shift.shift_end }}',
-        color:{% if 'Morning' in shift.slot.name %}'#FFFFFF'{% else %}'#AFAFAF'{% endif %}
-
-    },
-    {% endfor %}
-
-    ] });
-
-});
-    </script>
 {% endblock %}

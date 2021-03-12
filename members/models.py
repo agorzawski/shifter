@@ -14,6 +14,7 @@ class Team(models.Model):
 class Role(models.Model):
     name = models.CharField(max_length=200)
     priority = models.IntegerField(blank=True, default=99)
+    abbreviation = models.CharField(max_length=10, default='OP')
 
     def __str__(self):
         return '{}'.format(self.name)

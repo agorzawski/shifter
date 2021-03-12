@@ -1,0 +1,14 @@
+{% load tz %}BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ESS Shift planning tool//NONSGML v1.0//EN
+X-WR-CALNAME;VALUE=TEXT:ESS Shift {% if campaign %} {{ campaign }}{% endif %}
+{% for s in shifts %}BEGIN:VEVENT
+UID:{{ s.id }}
+STATUS:CONFIRMED
+DTSTAMP:{{ s.created|utc|date:"Ymd\THis\Z" }}
+DTSTART:{{ s.start|date:"Ymd\THis\Z" }}
+DTEND:{{ s.end|date:"Ymd\THis\Z" }}
+SUMMARY:{{member}} as {% if shift.role != null %}{{s.role}} ({{s.member.role}}){%else%}{{s.member.role}}{%endif%}
+LOCATION:ESS/LCR
+END:VEVENT
+{% endfor %}END:VCALENDAR

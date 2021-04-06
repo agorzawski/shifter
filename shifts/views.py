@@ -12,7 +12,7 @@ import datetime
 from shifter.settings import MAIN_PAGE_HOME_BUTTON
 
 
-def prepare_default_context(contextToAdd):
+def prepare_default_context(request, contextToAdd):
     """
     providing any of the following will override their default values:
     @defaultDate   now
@@ -22,6 +22,7 @@ def prepare_default_context(contextToAdd):
     date = datetime.datetime.now().date()
     latest_revision = Revision.objects.filter(valid=True).order_by('-number').first()
     context = {
+        'logged_user': request.user.is_authenticated,
         'defaultDate': date.strftime("%Y-%m-%d"),
         'latest_revision': latest_revision,
         'displayed_revision': latest_revision,
@@ -55,7 +56,7 @@ def index(request):
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
-    return render(request, 'index.html', prepare_default_context(context))
+    return render(request, 'index.html', prepare_default_context(request, context))
 
 
 def dates(request):
@@ -65,14 +66,13 @@ def dates(request):
         'shiftroles': ShiftRole.objects.all(),
         'memberroles': members.models.Role.objects.all(),
     }
-    return render(request, 'dates.html', prepare_default_context(context))
+    return render(request, 'dates.html', prepare_default_context(request, context))
 
 
 def todays(request):
 
     import members.directory as directory
     ldap = directory.LDAP()
-
     today = datetime.datetime.now()
     now = today.time()
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
@@ -90,12 +90,21 @@ def todays(request):
                     print('Check details for {}'.format(shifter.member.last_name))
                     personal_data = ldap.search(field='name', text=shifter.member.last_name)
                     if len(personal_data) > 0:
-                        print(personal_data)
+                        for one in personal_data.keys():
+                            # Temporary assignment from the LDAP, for the purpose of the render,
+                            # NOT TO BE persisted, i.e. do not use shifter.save()!
+                            if shifter.member.last_name.lower() in one.lower() \
+                                    and shifter.member.first_name.lower() in one.lower():
+                                shifter.member.email = personal_data[one]['email']
+                                shifter.member.mobile = personal_data[one]['mobile']
+                                if type(personal_data[one]['photo']) is not str:
+                                    import base64
+                                    shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
     context = {'today': today,
                'activeSlot': activeSlot,
                'currentTeam': currentTeam}
-    return render(request, 'today.html', prepare_default_context(context))
+    return render(request, 'today.html', prepare_default_context(request, context))
 
 
 @login_required
@@ -113,7 +122,7 @@ def user(request):
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
-    return render(request, 'user.html', prepare_default_context(context))
+    return render(request, 'user.html', prepare_default_context(request, context))
 
 
 @login_required
@@ -185,7 +194,7 @@ def shifts_update(request):
 
     totalLinesAdded = 0
     if "GET" == request.method:
-        return render(request, "shifts_update.html", prepare_default_context(data))
+        return render(request, "shifts_update.html", prepare_default_context(request, data))
 
     else:
         revision = Revision.objects.filter(number=request.POST['revision']).first()
@@ -237,7 +246,7 @@ def shifts_upload(request):
 
     totalLinesAdded = 0
     if "GET" == request.method:
-        return render(request, "shifts_upload.html", prepare_default_context(data))
+        return render(request, "shifts_upload.html", prepare_default_context(request, data))
 
     # POST
     revision = Revision.objects.filter(number=request.POST['revision']).first()

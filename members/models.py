@@ -36,6 +36,8 @@ class Member(AbstractUser):
                                      on_delete=models.SET_NULL)
     comments = models.TextField(max_length=10000, blank=True, default='')
 
+    photo = models.TextField(max_length=10000, blank=True, null=True)
+
     @cached_property
     def name(self):
         return f'{self.first_name} {self.last_name}'

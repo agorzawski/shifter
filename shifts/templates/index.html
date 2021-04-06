@@ -19,7 +19,7 @@
           <div class="form-group">
           <div class="form-check ">
           <label>Displayed revision (only valid): </label>
-          <select name='revision' id='revision' class="custom-select" required>
+          <select name='revision' id='revision' class="custom-select" required {%if not logged_user %} disabled {%endif%}>
           {% for r in revisions %}
               <option value="{{r.number}}">{{r}}</option>
           {% endfor %}
@@ -27,7 +27,7 @@
           </div>
           </div>
 
-          <button type="submit" class="btn btn-primary">Apply</button>
+          <button type="submit" class="btn btn-primary" {%if not logged_user %} disabled {%endif%}>Apply</button>
         </form>
       </li>
 {% endblock %}

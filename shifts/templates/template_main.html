@@ -32,9 +32,9 @@
       <li class="nav-item">
         <a class="nav-link" href='/planning'>Calendar Overview</a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" href='/user'>Your shifts</a>
-      </li>
+      {%if logged_user %}<li class="nav-item" >
+        <a class="nav-link" href='/user' >Your shifts</a>
+      </li>{%endif%}
     </ul>
     <ul class="navbar-nav">
     {% block 'extra_menu_item' %}
@@ -45,9 +45,13 @@
         </button>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
           <a class="dropdown-item" href='/dates'>Environment</a>
+          {%if logged_user %}
+          <div class="dropdown-divider"></div>
+          <button class="btn btn-outline-danger" href="/update-ioc" role="button" disabled> Update IOC </button>
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" href='/shift-upload-csv'>Upload new schedule</a>
           <a class="dropdown-item" href='/shift-update'>Update existing schedule</a>
+          {%endif%}
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" href='/admin'>Super user panel</a>
         </div>

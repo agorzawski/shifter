@@ -125,3 +125,5 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 MAIN_PAGE_HOME_BUTTON = os.getenv('MAIN_PAGE_HOME_BUTTON', 'Shifter')
+APP_REPO = os.getenv('APP_REPO', 'NO REPO PROVIDED')
+APP_REPO_ICON = os.getenv('APP_REPO_ICON', 'https://github.githubassets.com/favicon.ico')

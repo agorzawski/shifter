@@ -8,8 +8,9 @@ import django.contrib.messages as messages
 import members.models
 from shifts.models import *
 import datetime
+import os
 
-from shifter.settings import MAIN_PAGE_HOME_BUTTON
+from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON
 
 DATE_FORMAT = '%Y-%m-%d'
 DATE_FORMAT_SLIM = '%Y%m%d'
@@ -23,12 +24,17 @@ def prepare_default_context(request, contextToAdd):
     """
     date = datetime.datetime.now().date()
     latest_revision = Revision.objects.filter(valid=True).order_by('-number').first()
+    stream = os.popen('git describe --tags')
+    GIT_LAST_TAG = stream.read()
     context = {
         'logged_user': request.user.is_authenticated,
         'defaultDate': date.strftime(DATE_FORMAT),
         'latest_revision': latest_revision,
         'displayed_revision': latest_revision,
         'APP_NAME': MAIN_PAGE_HOME_BUTTON,
+        'APP_REPO': APP_REPO,
+        'APP_REPO_ICON': APP_REPO_ICON,
+        'APP_GIT_TAG': GIT_LAST_TAG,
         'shifts_colors': {'AM':  '#000000', # TODO include that in smart way into templates
                           'PM':  '#0A0A0A',
                           'NWH': '#E8FFC3',

@@ -37,40 +37,7 @@ def prepare_default_context(request, contextToAdd):
     return context
 
 
-def index(request):
-    revisions = Revision.objects.filter(valid=True).order_by("-number")
-    if "GET" == request.method:
-        revision = revisions.first()
-    else:
-        revision = Revision.objects.filter(number=request.POST['revision']).first()
-        print('===========')
-        print(request.POST.keys())
-        # TODO implement filter on campaigns
-
-    scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
-                                                                        'member__role__priority')
-    scheduled_campaigns = Campaign.objects.filter(revision=revision)
-    context = {
-        'revisions': revisions,
-        'displayed_revision': revision,
-        'scheduled_shifts_list': scheduled_shifts,
-        'scheduled_campaigns_list': scheduled_campaigns,
-    }
-    return render(request, 'index.html', prepare_default_context(request, context))
-
-
-def dates(request):
-    context = {
-        'campaigns': Campaign.objects.all(),
-        'slots': Slot.objects.all(),
-        'shiftroles': ShiftRole.objects.all(),
-        'memberroles': members.models.Role.objects.all(),
-    }
-    return render(request, 'dates.html', prepare_default_context(request, context))
-
-
-def todays(request):
-
+def prepare_active_crew(request):
     import members.directory as directory
     ldap = directory.LDAP()
     today = datetime.datetime.now()
@@ -106,9 +73,48 @@ def todays(request):
                         import base64
                         shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
-    context = {'today': today,
-               'activeSlot': activeSlot,
-               'currentTeam': currentTeam}
+    return {'today': today,
+            'shiftID': today.strftime('%Y%m%d')+activeSlot.abbreviation,
+            'activeSlot': activeSlot,
+            'currentTeam': currentTeam}
+
+
+
+def index(request):
+    revisions = Revision.objects.filter(valid=True).order_by("-number")
+    if "GET" == request.method:
+        revision = revisions.first()
+    else:
+        revision = Revision.objects.filter(number=request.POST['revision']).first()
+        # TODO implement filter on campaigns
+
+    scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
+                                                                        'member__role__priority')
+    scheduled_campaigns = Campaign.objects.filter(revision=revision)
+    context = {
+        'revisions': revisions,
+        'displayed_revision': revision,
+        'scheduled_shifts_list': scheduled_shifts,
+        'scheduled_campaigns_list': scheduled_campaigns,
+    }
+    return render(request, 'index.html', prepare_default_context(request, context))
+
+
+def dates(request):
+    context = {
+        'campaigns': Campaign.objects.all(),
+        'slots': Slot.objects.all(),
+        'shiftroles': ShiftRole.objects.all(),
+        'memberroles': members.models.Role.objects.all(),
+    }
+    return render(request, 'dates.html', prepare_default_context(request, context))
+
+
+def todays(request):
+    activeShift = prepare_active_crew(request)
+    context = {'today': activeShift['today'],
+               'activeSlot': activeShift['activeSlot'],
+               'currentTeam': activeShift['currentTeam']}
     return render(request, 'today.html', prepare_default_context(request, context))
 
 
@@ -166,27 +172,31 @@ def icalendar_view(request):
     return HttpResponse(body.replace('\n', '\r\n'), content_type='text/calendar')
 
 
-@login_required
 def ioc_update(request):
-    # TODO WIP_IOC used for testing
-    # TODO WIP_IOC see the EPICS integrations options for the IOC (maybe only read is needed)
-    # TODO send a slack webhook announcement
+    """
+    Expose JSON with current shift setup. To be used by any script/tool to update the IOC
+    """
+    # TODO WIP send a slack webhook announcement to remind that this was called
     fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
-    today = datetime.datetime.now()
-    now = today.time()
-    slots = Slot.objects.filter(~Q(abbreviation='NWH'))
-    activeSlot = slots[0]
-    for slot in slots:
-        if slot.hour_start < now < slot.hour_end:
-            activeSlot = slot
-    data = {'datetime': today.strftime("%Y-%m-%d"), 'slot': activeSlot.abbreviation}
+    # TODO add separate call for OC updates + separate url
+    fieldsToUpdate = ['SL', 'OP']
+    activeShift = prepare_active_crew(request)
+    # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
+    dataToReturn = {'_datetime': activeShift['today'].strftime("%Y-%m-%d"),
+                    '_slot': activeShift['activeSlot'].abbreviation,
+                    '_PVPrefix': 'NSO:Ops:',
+                    'SID': activeShift['shiftID'],
+                    }
 
     for one in fieldsToUpdate:
-        # TODO get actual status for now() per shift__role__abbr or shift__member__role__abbrev
-        data[one] = "aaaa"
-    # just return a JsonResponse
-    return JsonResponse(data)
-
+        dataToReturn[one] = "N/A"
+    for one in fieldsToUpdate:
+        for shifter in activeShift['currentTeam']:
+            if one in shifter.member.role.abbreviation:
+                dataToReturn[one] = shifter.member.name
+                dataToReturn[one+"Phone"] = shifter.member.email
+                dataToReturn[one + "Email"] = shifter.member.mobile
+    return JsonResponse(dataToReturn)
 
 
 @login_required

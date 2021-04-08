@@ -89,17 +89,22 @@ def todays(request):
                     currentTeam.append(shifter)
                     print('Check details for {}'.format(shifter.member.last_name))
                     personal_data = ldap.search(field='name', text=shifter.member.last_name)
-                    if len(personal_data) > 0:
-                        for one in personal_data.keys():
-                            # Temporary assignment from the LDAP, for the purpose of the render,
-                            # NOT TO BE persisted, i.e. do not use shifter.save()!
-                            if shifter.member.last_name.lower() in one.lower() \
-                                    and shifter.member.first_name.lower() in one.lower():
-                                shifter.member.email = personal_data[one]['email']
-                                shifter.member.mobile = personal_data[one]['mobile']
-                                if type(personal_data[one]['photo']) is not str:
-                                    import base64
-                                    shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
+                    if len(personal_data) == 0:
+                        continue
+                    one = list(personal_data.keys())[0]
+                    if len(personal_data) > 1:
+                        for oneK in personal_data.keys():
+                            if shifter.member.last_name.lower() in oneK.lower() \
+                                    and shifter.member.first_name.lower() in oneK.lower():
+                                one = oneK
+
+                    # Temporary assignment from the LDAP, for the purpose of the render,
+                    # NOT TO BE persisted, i.e. do not use shifter.save()!
+                    shifter.member.email = personal_data[one]['email']
+                    shifter.member.mobile = personal_data[one]['mobile']
+                    if type(personal_data[one]['photo']) is not str:
+                        import base64
+                        shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
     context = {'today': today,
                'activeSlot': activeSlot,

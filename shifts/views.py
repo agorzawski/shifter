@@ -8,11 +8,14 @@ import django.contrib.messages as messages
 import members.models
 from shifts.models import *
 import datetime
+import os
 
-from shifter.settings import MAIN_PAGE_HOME_BUTTON
+from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON
 
+DATE_FORMAT = '%Y-%m-%d'
+DATE_FORMAT_SLIM = '%Y%m%d'
 
-def prepare_default_context(contextToAdd):
+def prepare_default_context(request, contextToAdd):
     """
     providing any of the following will override their default values:
     @defaultDate   now
@@ -21,11 +24,17 @@ def prepare_default_context(contextToAdd):
     """
     date = datetime.datetime.now().date()
     latest_revision = Revision.objects.filter(valid=True).order_by('-number').first()
+    stream = os.popen('git describe --tags')
+    GIT_LAST_TAG = stream.read()
     context = {
-        'defaultDate': date.strftime("%Y-%m-%d"),
+        'logged_user': request.user.is_authenticated,
+        'defaultDate': date.strftime(DATE_FORMAT),
         'latest_revision': latest_revision,
         'displayed_revision': latest_revision,
         'APP_NAME': MAIN_PAGE_HOME_BUTTON,
+        'APP_REPO': APP_REPO,
+        'APP_REPO_ICON': APP_REPO_ICON,
+        'APP_GIT_TAG': GIT_LAST_TAG,
         'shifts_colors': {'AM':  '#000000', # TODO include that in smart way into templates
                           'PM':  '#0A0A0A',
                           'NWH': '#E8FFC3',
@@ -36,12 +45,59 @@ def prepare_default_context(contextToAdd):
     return context
 
 
+def prepare_active_crew(request, dayToGo=None, slotToGo=None):
+    import members.directory as directory
+    ldap = directory.LDAP()
+    today = datetime.datetime.now()
+    now = today.time()
+    if dayToGo is not None and slotToGo is not None:
+        today = datetime.datetime.strptime(dayToGo, DATE_FORMAT)
+        now = Slot.objects.filter(abbreviation=slotToGo).first().hour_start
+
+    revision = Revision.objects.filter(valid=True).order_by("-number").first()
+    scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
+    slots = Slot.objects.all()
+    activeSlot = slots[0]
+    currentTeam = []
+    for slot in slots:
+        if slot.hour_start <= now < slot.hour_end:
+            for shifter in scheduled_shifts:
+                if shifter.slot == slot:
+                    activeSlot = slot
+                    currentTeam.append(shifter)
+                    print('Check details for {}'.format(shifter.member.last_name))
+                    personal_data = ldap.search(field='name', text=shifter.member.last_name)
+                    if len(personal_data) == 0:
+                        continue
+                    one = list(personal_data.keys())[0]
+                    if len(personal_data) > 1:
+                        for oneK in personal_data.keys():
+                            if shifter.member.last_name.lower() in oneK.lower() \
+                                    and shifter.member.first_name.lower() in oneK.lower():
+                                one = oneK
+
+                    # Temporary assignment from the LDAP, for the purpose of the render,
+                    # NOT TO BE persisted, i.e. do not use shifter.save()!
+                    shifter.member.email = personal_data[one]['email']
+                    shifter.member.mobile = personal_data[one]['mobile']
+                    if type(personal_data[one]['photo']) is not str:
+                        import base64
+                        shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
+
+    return {'today': today,
+            'shiftID': today.strftime(DATE_FORMAT_SLIM)+activeSlot.abbreviation,
+            'activeSlot': activeSlot,
+            'currentTeam': currentTeam}
+
+
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
     if "GET" == request.method:
         revision = revisions.first()
     else:
         revision = Revision.objects.filter(number=request.POST['revision']).first()
+        # TODO implement filter on campaigns
+
     scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
                                                                         'member__role__priority')
     scheduled_campaigns = Campaign.objects.filter(revision=revision)
@@ -51,7 +107,7 @@ def index(request):
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
-    return render(request, 'index.html', prepare_default_context(context))
+    return render(request, 'index.html', prepare_default_context(request, context))
 
 
 def dates(request):
@@ -61,28 +117,17 @@ def dates(request):
         'shiftroles': ShiftRole.objects.all(),
         'memberroles': members.models.Role.objects.all(),
     }
-    return render(request, 'dates.html', prepare_default_context(context))
+    return render(request, 'dates.html', prepare_default_context(request, context))
 
 
 def todays(request):
-    today = datetime.datetime.now()
-    now = today.time()
-    revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
-    slots = Slot.objects.all()
-    activeSlot = slots[0]
-    currentTeam = []
-    for slot in slots:
-        if slot.hour_start < now < slot.hour_end:
-            for shifter in scheduled_shifts:
-                if shifter.slot == slot:
-                    activeSlot = slot
-                    currentTeam.append(shifter)
-
-    context = {'today': today,
-               'activeSlot': activeSlot,
-               'currentTeam': currentTeam}
-    return render(request, 'today.html', prepare_default_context(context))
+    dayToGo = request.GET.get('date', None)
+    slotToGo =  request.GET.get('slot', None)
+    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
+    context = {'today': activeShift['today'],
+               'activeSlot': activeShift['activeSlot'],
+               'currentTeam': activeShift['currentTeam']}
+    return render(request, 'today.html', prepare_default_context(request, context))
 
 
 @login_required
@@ -94,13 +139,13 @@ def user(request):
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     context = {
-        'member' : member,
-        'currentmonth':currentMonth.strftime('%B'),
+        'member': member,
+        'currentmonth': currentMonth.strftime('%B'),
         'nextmonth': nextMonth.strftime('%B'),
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
-    return render(request, 'user.html', prepare_default_context(context))
+    return render(request, 'user.html', prepare_default_context(request, context))
 
 
 @login_required
@@ -139,27 +184,32 @@ def icalendar_view(request):
     return HttpResponse(body.replace('\n', '\r\n'), content_type='text/calendar')
 
 
-@login_required
 def ioc_update(request):
-    # TODO WIP_IOC used for testing
-    # TODO WIP_IOC see the EPICS integrations options for the IOC (maybe only read is needed)
-    # TODO send a slack webhook announcement
+    """
+    Expose JSON with current shift setup. To be used by any script/tool to update the IOC
+    """
+    dayToGo = request.GET.get('date', None)
+    slotToGo =  request.GET.get('slot', None)
+    # TODO WIP send a slack webhook announcement to remind that this was called
     fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
-    today = datetime.datetime.now()
-    now = today.time()
-    slots = Slot.objects.filter(~Q(abbreviation='NWH'))
-    activeSlot = slots[0]
-    for slot in slots:
-        if slot.hour_start < now < slot.hour_end:
-            activeSlot = slot
-    data = {'datetime': today.strftime("%Y-%m-%d"), 'slot': activeSlot.abbreviation}
-
+    # TODO add separate call for OC updates + separate url
+    fieldsToUpdate = ['SL', 'OP']
+    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
+    # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
+    dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
+                    '_slot': activeShift['activeSlot'].abbreviation,
+                    '_PVPrefix': 'NSO:Ops:',
+                    'SID': activeShift['shiftID'],
+                    }
     for one in fieldsToUpdate:
-        # TODO get actual status for now() per shift__role__abbr or shift__member__role__abbrev
-        data[one] = "aaaa"
-    # just return a JsonResponse
-    return JsonResponse(data)
-
+        dataToReturn[one] = "N/A"
+    for one in fieldsToUpdate:
+        for shifter in activeShift['currentTeam']:
+            if one in shifter.member.role.abbreviation:
+                dataToReturn[one] = shifter.member.name
+                dataToReturn[one+"Phone"] = shifter.member.email
+                dataToReturn[one + "Email"] = shifter.member.mobile
+    return JsonResponse(dataToReturn)
 
 
 @login_required
@@ -167,18 +217,18 @@ def shifts_update(request):
     # add campaigns and revisions
     data = {'campaigns': Campaign.objects.all(),
             'revisions': Revision.objects.all(),
-            'today': datetime.datetime.now().strftime("%Y-%m-%d")
+            'today': datetime.datetime.now().strftime(DATE_FORMAT)
             }
 
     totalLinesAdded = 0
     if "GET" == request.method:
-        return render(request, "shifts_update.html", prepare_default_context(data))
+        return render(request, "shifts_update.html", prepare_default_context(request, data))
 
     else:
         revision = Revision.objects.filter(number=request.POST['revision']).first()
         campaign = Campaign.objects.filter(id=request.POST['camp']).first()
         oldStartDate = campaign.date_start
-        newStartDate = datetime.datetime.strptime(request.POST['new-date'],  "%Y-%m-%d").date()
+        newStartDate = datetime.datetime.strptime(request.POST['new-date'], DATE_FORMAT).date()
         daysDelta = newStartDate - oldStartDate
         deltaToApply = datetime.timedelta(days=daysDelta.days)
         messages.info(request, 'Found {} difference to update'.format(daysDelta))
@@ -224,7 +274,7 @@ def shifts_upload(request):
 
     totalLinesAdded = 0
     if "GET" == request.method:
-        return render(request, "shifts_upload.html", prepare_default_context(data))
+        return render(request, "shifts_upload.html", prepare_default_context(request, data))
 
     # POST
     revision = Revision.objects.filter(number=request.POST['revision']).first()

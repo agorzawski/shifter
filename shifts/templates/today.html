@@ -13,8 +13,9 @@
         <div class="float-left" style="padding:40px;text-align:center;"> <h3><strong>{{shifter.member.first_name}}</strong> {{shifter.member.last_name}}</h3>
           <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}light{%endif%}"> {% if shifter.role != null %}{{shifter.role}}<br>({{shifter.member.role}}){%else%}{{shifter.member.role}}{%endif%} </span></h3>
           <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}secondary{%endif%}"> {{shifter.member.team}} </span></h3>
-<!--          <img src='https://clipartstation.com/wp-content/uploads/2018/10/male-face-clipart-2.png' height="150"/>-->
-          <h4> Tel: {{shifter.member.mobile}} </h4>
+          {% if shifter.member.photo|length > 0 %} <img src='data:image/gif;base64,{{shifter.member.photo}}' height="100"/> {% endif %}
+          <h4> mobile: {{shifter.member.mobile}} </h4>
+          <h4> email: {{shifter.member.email}} </h4>
         </div>
         {% endfor%}
 

@@ -5,7 +5,7 @@ A simple system for displaying (Web server) and managing/scheduling:
 - assigned shifts.
 
 Each shift that is saved in the system consists of mandatory (yellow) and optional (white) fields as shown in the Figure:
-![](doc/shifter_shift.png)
+![](doc/Shifter_shift.png)
 If ShiftRole is not assigned, a member-assigned role is displayed instead in the main overview.
 
 ## Import from the CSV file

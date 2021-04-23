@@ -3,8 +3,8 @@ from django.db.models import DO_NOTHING
 
 from members.models import Member
 from django.utils.functional import cached_property
-from datetime import datetime, time
-
+import datetime
+from enum import Enum
 
 class Revision(models.Model):
     number = models.AutoField(primary_key=True, blank=True)
@@ -40,6 +40,7 @@ class Campaign(models.Model):
     def end_text(self):
         return self.date_end.strftime("%Y-%m-%d")
 
+
 class Slot(models.Model):
     name = models.CharField(max_length=200)
     abbreviation = models.CharField(max_length=10, default='AM')
@@ -61,6 +62,12 @@ class ShiftRole(models.Model):
 
 
 class Shift(models.Model):
+
+    class Moment(Enum):
+        START = 0
+        END = 1
+
+    DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
     campaign = models.ForeignKey(Campaign, on_delete=DO_NOTHING)
     date = models.DateField()
     slot = models.ForeignKey(Slot, on_delete=DO_NOTHING)
@@ -77,17 +84,27 @@ class Shift(models.Model):
         return '{} {} {}'.format(self.member, self.date, self.slot)
 
     @cached_property
-    def start(self):
-        return datetime.combine(self.date, self.slot.hour_start)
+    def start(self) -> datetime:
+        return self.get_proper_times(self.Moment.START)
 
     @cached_property
-    def end(self):
-        return datetime.combine(self.date, self.slot.hour_end)
+    def end(self) -> datetime:
+        return self.get_proper_times(self.Moment.END)
 
     @cached_property
-    def shift_start(self):
-        return datetime.combine(self.date, self.slot.hour_start).strftime("%Y-%m-%d %H:%M:%S")
+    def shift_start(self) -> str:
+        return self.get_proper_times(self.Moment.START).strftime(self.DATE_FORMAT)
 
     @cached_property
-    def shift_end(self):
-        return datetime.combine(self.date, self.slot.hour_end).strftime("%Y-%m-%d %H:%M:%S")
+    def shift_end(self) -> str:
+        return self.get_proper_times(self.Moment.END).strftime(self.DATE_FORMAT)
+
+    def get_proper_times(self, moment) -> datetime:
+        timeToUse = self.slot.hour_start
+        if moment == self.Moment.END:
+            timeToUse = self.slot.hour_end
+        deltaToAdd = 0
+        diff = datetime.datetime.combine(self.date, self.slot.hour_start) - datetime.datetime.combine(self.date, self.slot.hour_end)
+        if diff > datetime.timedelta(minutes=0) and moment == self.Moment.END:
+            deltaToAdd = 1
+        return datetime.datetime.combine(self.date, timeToUse) + datetime.timedelta(days=deltaToAdd)

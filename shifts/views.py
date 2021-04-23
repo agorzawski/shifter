@@ -232,7 +232,7 @@ def shifts_update(request):
         daysDelta = newStartDate - oldStartDate
         deltaToApply = datetime.timedelta(days=daysDelta.days)
         messages.info(request, 'Found {} difference to update'.format(daysDelta))
-        shifts_to_update = Shift.objects.filter(campaign=campaign)
+        shifts_to_update = Shift.objects.filter(campaign=campaign, revision=campaign.revision)
         messages.info(request, 'Found {} shifts to update'.format(len(shifts_to_update)))
         doneCounter = 0
         for oldShift in shifts_to_update:

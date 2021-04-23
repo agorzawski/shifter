@@ -44,9 +44,7 @@
                 start:'{{ shift.shift_start }}',
                 end:'{{ shift.shift_end }}',
                 eventTextColor: '#000000',
-                color:{% if 'TS2' in shift.role.name %}'#1E598B'
-                {% elif 'Morning' in shift.slot.name or 'Normal' in shift.slot.name %}'#B1C4D4'
-                {% else %}'#AFAFAF'{% endif %},
+                color:'{{shift.slot.color_in_calendar}}',
                 {% if 'ShiftLeader' in shift.member.role %} eventBorderColor:'#FF0000', {% endif %}
             },
             {% endfor %}

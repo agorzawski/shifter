@@ -15,6 +15,7 @@ from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON
 DATE_FORMAT = '%Y-%m-%d'
 DATE_FORMAT_SLIM = '%Y%m%d'
 
+
 def prepare_default_context(request, contextToAdd):
     """
     providing any of the following will override their default values:
@@ -168,14 +169,12 @@ def icalendar_view(request):
     monthFirstDay = month.replace(day=1).date()
     next_month = monthFirstDay.replace(day=28) + datetime.timedelta(days=4)
     monthLastDay = next_month.replace(day=1) + datetime.timedelta(days=-1)
-
-    campaign = Campaign.objects.filter(name='TS2 Ops').first()
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
 
     shifts = Shift.objects.filter(date__lte=monthLastDay, date__gte=monthFirstDay)\
-                          .filter(member=member, campaign=campaign, revision=revision)
+                          .filter(member=member, revision=revision)
     context = {
-        'campaign': campaign,
+        'campaign': 'Exported Shifts',
         'shifts': shifts,
         'member': member,
     }
@@ -232,7 +231,7 @@ def shifts_update(request):
         daysDelta = newStartDate - oldStartDate
         deltaToApply = datetime.timedelta(days=daysDelta.days)
         messages.info(request, 'Found {} difference to update'.format(daysDelta))
-        shifts_to_update = Shift.objects.filter(campaign=campaign)
+        shifts_to_update = Shift.objects.filter(campaign=campaign, revision=campaign.revision)
         messages.info(request, 'Found {} shifts to update'.format(len(shifts_to_update)))
         doneCounter = 0
         for oldShift in shifts_to_update:

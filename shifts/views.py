@@ -30,16 +30,13 @@ def prepare_default_context(request, contextToAdd):
     context = {
         'logged_user': request.user.is_authenticated,
         'defaultDate': date.strftime(DATE_FORMAT),
+        'slots': Slot.objects.all().order_by('hour_start'),
         'latest_revision': latest_revision,
         'displayed_revision': latest_revision,
         'APP_NAME': MAIN_PAGE_HOME_BUTTON,
         'APP_REPO': APP_REPO,
         'APP_REPO_ICON': APP_REPO_ICON,
         'APP_GIT_TAG': GIT_LAST_TAG,
-        'shifts_colors': {'AM':  '#000000', # TODO include that in smart way into templates
-                          'PM':  '#0A0A0A',
-                          'NWH': '#E8FFC3',
-                        }
     }
     for one in contextToAdd.keys():
         context[one] = contextToAdd[one]

@@ -1,7 +1,16 @@
 <div class='ui container'>
   <div class='ui grid'>
     <div class='ui sixteen column'>
-      <div id='calendar'></div>
+      <button class="btn btn-light" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+        What are the colors in the calendar about?
+      </button>
+       <div class="collapse" id="collapseExample">
+        <div class="card card-body">
+            <h5>Shift slots</h5>
+            {%for s in slots%}<div style="background-color:{{s.color_in_calendar}};color:#FFFFFF;">{{s.name}} <b>({{s.abbreviation}})</b> for <b>{{s.hour_start}}</b> - <b>{{s.hour_end}}</b> </div>{% endfor%}
+        </div>
+      </div>
+      <div id='calendar' style="padding-top: 10px;"></div>
     </div>
   </div>
 </div>

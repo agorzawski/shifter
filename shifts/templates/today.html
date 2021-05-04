@@ -4,22 +4,28 @@
     <div class="col-sm-8 mx-auto">
 
       <main role="main">
-      <div class="float-none" style="padding:40px;text-align:center;" id='{{activeSlot.name}}'>
         <h1> <span class="badge badge-primary"> {{currentTeam.0.campaign}} </span></h1>
         <h3>{{today.date}}</h3>
-        <h1><strong> {{activeSlot}} </strong> </h1>
         <hr>
+        {% for slot in activeSlots %}
+        <div>
+          <h1><strong> {{slot}} </strong> </h1>
+          <hr>
         {% for shifter in currentTeam %}
-        <div class="float-left" style="padding:40px;text-align:center;"> <h3><strong>{{shifter.member.first_name}}</strong> {{shifter.member.last_name}}</h3>
+        {% if shifter.slot == slot %}
+        <div style="padding:40px;text-align:center;float:left;"> <h3><strong>{{shifter.member.first_name}}</strong> {{shifter.member.last_name}}</h3>
           <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}light{%endif%}"> {% if shifter.role != null %}{{shifter.role}}<br>({{shifter.member.role}}){%else%}{{shifter.member.role}}{%endif%} </span></h3>
           <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}secondary{%endif%}"> {{shifter.member.team}} </span></h3>
           {% if shifter.member.photo|length > 0 %} <img src='data:image/gif;base64,{{shifter.member.photo}}' height="100"/> {% endif %}
           <h4> mobile: {{shifter.member.mobile}} </h4>
           <h4> email: {{shifter.member.email}} </h4>
         </div>
-        {% endfor%}
+          {% endif %}
+        {% endfor %}
+        <div style="clear:both;"></div>
+        </div>
+        {% endfor %}
 
-      </div>
       </main>
 
     </div>

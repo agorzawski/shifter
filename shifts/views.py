@@ -54,14 +54,22 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
 
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
-    slots = Slot.objects.all()
-    activeSlot = slots[0]
+    slots = []
+    for slot in Slot.objects.all():
+        if slot.hour_start <= now < slot.hour_end:
+            for shifter in scheduled_shifts:
+                if shifter.slot == slot:
+                    slots.append(slot)
+    print(slots)
+    activeSlot = Slot.objects.first()
+    activeSlots = []
     currentTeam = []
-    for slot in slots:
+    for slot in set(slots):
         if slot.hour_start <= now < slot.hour_end:
             for shifter in scheduled_shifts:
                 if shifter.slot == slot:
                     activeSlot = slot
+                    activeSlots.append(slot)
                     currentTeam.append(shifter)
                     print('Check details for {}'.format(shifter.member.last_name))
                     personal_data = ldap.search(field='name', text=shifter.member.last_name)
@@ -83,7 +91,8 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
                         shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
     return {'today': today,
-            'shiftID': today.strftime(DATE_FORMAT_SLIM)+activeSlot.abbreviation,
+            'shiftID': today.strftime(DATE_FORMAT_SLIM)+ activeSlot.abbreviation, #TODO finish active slot
+            'activeSlots': set(activeSlots),
             'activeSlot': activeSlot,
             'currentTeam': currentTeam}
 
@@ -120,10 +129,10 @@ def dates(request):
 
 def todays(request):
     dayToGo = request.GET.get('date', None)
-    slotToGo =  request.GET.get('slot', None)
+    slotToGo = request.GET.get('slot', None)
     activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
     context = {'today': activeShift['today'],
-               'activeSlot': activeShift['activeSlot'],
+               'activeSlots': activeShift['activeSlots'],
                'currentTeam': activeShift['currentTeam']}
     return render(request, 'today.html', prepare_default_context(request, context))
 

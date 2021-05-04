@@ -60,7 +60,6 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
             for shifter in scheduled_shifts:
                 if shifter.slot == slot:
                     slots.append(slot)
-    print(slots)
     activeSlot = Slot.objects.first()
     activeSlots = []
     currentTeam = []
@@ -71,7 +70,7 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
                     activeSlot = slot
                     activeSlots.append(slot)
                     currentTeam.append(shifter)
-                    print('Check details for {}'.format(shifter.member.last_name))
+                    # print('Check details for {}'.format(shifter.member.last_name))
                     personal_data = ldap.search(field='name', text=shifter.member.last_name)
                     if len(personal_data) == 0:
                         continue

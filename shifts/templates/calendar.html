@@ -1,9 +1,6 @@
 <div class='ui container'>
   <div class='ui grid'>
     <div class='ui sixteen column'>
-      <button class="btn btn-light" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
-        What are the colors in the calendar about?
-      </button>
        <div class="collapse" id="collapseExample">
         <div class="card card-body">
             <h5>Shift slots</h5>
@@ -21,9 +18,17 @@
     var calendar = new FullCalendar.Calendar(calendarEl, {
       //plugins: ['dayGrid', 'dayGridPlugin' ],
       themeSystem: 'bootstrap',
+      customButtons: {
+        legend: {
+          text: 'What are the colors?',
+          click: function() {
+            $('.collapse').toggle();
+          }
+        }
+      },
       headerToolbar: { left: 'prev,today,next',
                 center:'title',
-                right: 'dayGridMonth,dayGridWeek',
+                right: 'legend, dayGridMonth,dayGridWeek',
               },
       //initialView: 'dayGridWeek', //TODO
       columnFormat: {

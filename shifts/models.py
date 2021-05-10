@@ -6,6 +6,7 @@ from django.utils.functional import cached_property
 import datetime
 from enum import Enum
 
+
 class Revision(models.Model):
     number = models.AutoField(primary_key=True, blank=True)
     date_start = models.DateTimeField(null=False)

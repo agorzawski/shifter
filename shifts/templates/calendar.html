@@ -1,9 +1,6 @@
 <div class='ui container'>
   <div class='ui grid'>
     <div class='ui sixteen column'>
-      <button class="btn btn-light" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
-        What are the colors in the calendar about?
-      </button>
        <div class="collapse" id="collapseExample">
         <div class="card card-body">
             <h5>Shift slots</h5>
@@ -21,12 +18,23 @@
     var calendar = new FullCalendar.Calendar(calendarEl, {
       //plugins: ['dayGrid', 'dayGridPlugin' ],
       themeSystem: 'bootstrap',
+      customButtons: {
+        legend: {
+          text: 'What are the colors?',
+          click: function() {
+            $('.collapse').toggle();
+          }
+        }
+      },
       headerToolbar: { left: 'prev,today,next',
                 center:'title',
-                right: 'dayGridMonth,dayGridWeek',
+                right: 'legend, dayGridMonth,dayGridWeek',
               },
       //initialView: 'dayGridWeek', //TODO
-      //dayHeaderFormat: weekday: {'long'}, //TODO add shiftId
+      columnFormat: {
+            month: 'ddd',
+            week: 'ddd M/d',
+        },
       initialDate: '{{defaultDate}}',
       weekNumbers: true,
       navLinks: true, // can click day/week names to navigate views
@@ -38,26 +46,24 @@
            startTime: '08:00', // 8am
            endTime: '18:00' // 6pm
          },],
-
       eventLimit: true, // allow 'more' link when too many events
       eventDisplay: 'block',
       eventOrder: "start,id,name,title",
       eventSources: [
-        // your event source
         {
-          events: [
+          events:[
             {% for shift in scheduled_shifts_list %}
             {
-                id: {{forloop.counter}}, //shifts are sorted with roles
-                title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
-                start:'{{ shift.shift_start }}',
-                end:'{{ shift.shift_end }}',
-                eventTextColor: '#000000',
-                color:'{{shift.slot.color_in_calendar}}',
-                {% if 'ShiftLeader' in shift.member.role %} eventBorderColor:'#FF0000', {% endif %}
+            id: {{forloop.counter}}, //shifts are sorted with roles
+            title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
+            start:'{{ shift.shift_start }}',
+            end:'{{ shift.shift_end }}',
+            {% if 'ShiftLeader' in shift.member.role.name %} textColor: '#E9E72D',{% endif %}
+            color:'{{shift.slot.color_in_calendar}}',
             },
             {% endfor %}
-            ]
+            ],
+          textColor: '#FFFFFF' // regular color
           }
         ]
     });

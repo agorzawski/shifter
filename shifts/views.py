@@ -43,6 +43,17 @@ def prepare_default_context(request, contextToAdd):
     return context
 
 
+def prepareShiftId(today, activeSlot):
+    shiftMap = {0: 'A', 1: 'B', 3: 'C', -1: 'X'}
+    # TODO consider extracting that as config
+    opSlots = Slot.objects.filter(op=True).order_by('hour_start')
+    number = -1
+    for idx, item in enumerate(opSlots):
+        if item == activeSlot:
+            number = idx
+    return today.strftime(DATE_FORMAT_SLIM) + shiftMap[number]
+
+
 def prepare_active_crew(request, dayToGo=None, slotToGo=None):
     import members.directory as directory
     ldap = directory.LDAP()
@@ -90,7 +101,7 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
                         shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
     return {'today': today,
-            'shiftID': today.strftime(DATE_FORMAT_SLIM)+ activeSlot.abbreviation, #TODO finish active slot
+            'shiftID': prepareShiftId(today, activeSlot),
             'activeSlots': set(activeSlots),
             'activeSlot': activeSlot,
             'currentTeam': currentTeam}
@@ -132,7 +143,8 @@ def todays(request):
     activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
     context = {'today': activeShift['today'],
                'activeSlots': activeShift['activeSlots'],
-               'currentTeam': activeShift['currentTeam']}
+               'currentTeam': activeShift['currentTeam'],
+               'shiftID': activeShift['shiftID'],}
     return render(request, 'today.html', prepare_default_context(request, context))
 
 

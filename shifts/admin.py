@@ -32,6 +32,7 @@ class SlotAdmin(admin.ModelAdmin):
     model = Slot
     list_display = [
         'name',
+        'op',
         'hour_start',
         'hour_end',
     ]

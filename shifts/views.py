@@ -223,8 +223,8 @@ def ioc_update(request):
         for shifter in activeShift['currentTeam']:
             if one in shifter.member.role.abbreviation:
                 dataToReturn[one] = shifter.member.name
-                dataToReturn[one+"Phone"] = shifter.member.email
-                dataToReturn[one + "Email"] = shifter.member.mobile
+                dataToReturn[one + "Phone"] = shifter.member.mobile
+                dataToReturn[one + "Email"] = shifter.member.email
     return JsonResponse(dataToReturn)
 
 

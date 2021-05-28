@@ -6,8 +6,8 @@ X-WR-CALNAME;VALUE=TEXT:ESS Shift {% if campaign %} {{ campaign }}{% endif %}
 UID:{{ s.id }}
 STATUS:CONFIRMED
 DTSTAMP:{{ s.created|utc|date:"Ymd\THis\Z" }}
-DTSTART:{{ s.start|date:"Ymd\THis\Z" }}
-DTEND:{{ s.end|date:"Ymd\THis\Z" }}
+DTSTART:{{ s.start|utc|date:"Ymd\THis\Z" }}
+DTEND:{{ s.end|utc|date:"Ymd\THis\Z" }}
 SUMMARY:{{member}} as {% if shift.role != null %}{{s.role}} ({{s.member.role}}){%else%}{{s.member.role}}{%endif%}
 LOCATION:ESS/LCR
 END:VEVENT

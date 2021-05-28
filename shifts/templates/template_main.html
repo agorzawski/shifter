@@ -32,20 +32,21 @@
       <li class="nav-item">
         <a class="nav-link" href='/planning'>Calendar Overview</a>
       </li>
-      {%if logged_user %}<li class="nav-item" >
-        <a class="nav-link" href='/user' >Your shifts</a>
-      </li>{%endif%}
+      <li class="nav-item" >
+        <a class="nav-link" href='/user' >My shifts  {%if not logged_user %} <span class="badge bg-success">Login required</span> {%endif%} </a>
+      </li>
+
     </ul>
     <ul class="navbar-nav">
     {% block 'extra_menu_item' %}
     {% endblock %}
       <li class="nav-item dropdown">
-        <button class="btn btn-outline-dark" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          Actions
+        <button class="btn btn-success" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Actions {% if request.user.is_staff %} for {{request.user.first_name}} {% endif %}
         </button>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
           <a class="dropdown-item" href='/dates'>Show environment configuration</a>
-          {%if logged_user %}
+          {% if request.user.is_staff %}
           <div class="dropdown-divider"></div>
           <button class="btn btn-outline-danger" href="/update-ioc" role="button" disabled> Update IOC </button>
           <div class="dropdown-divider"></div>
@@ -61,12 +62,19 @@
           <img src='{{APP_REPO_ICON}}' height="20" width="20"/>Submit Ideas/Requests</a>
 
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href='/admin'><b>Super user panel (login)</b></a>
+          <a class="dropdown-item" href='/admin'><b>Super user panel </b> <span class="badge bg-success">Login required</span></a>
         </div>
       </li>
       <li class="nav-item">
         &nbsp&nbsp
       </li>
+       {%if logged_user %}<li class="nav-item">
+<!--        <a class="nav-link" href="options/logout"><span class="badge bg-warning">Logout</span></a>-->
+        <a class="btn btn-warning my-2 my-sm-0" type="submit" href="options/logout">Logout</a>
+      </li>
+      <li class="nav-item">
+        &nbsp&nbsp
+      </li>{%endif%}
     </ul>
 
     <form class="form-inline my-2 my-lg-0">

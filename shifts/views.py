@@ -10,7 +10,7 @@ from shifts.models import *
 import datetime
 import os
 
-from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON
+from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO
 
 DATE_FORMAT = '%Y-%m-%d'
 DATE_FORMAT_SLIM = '%Y%m%d'
@@ -37,6 +37,8 @@ def prepare_default_context(request, contextToAdd):
         'APP_REPO': APP_REPO,
         'APP_REPO_ICON': APP_REPO_ICON,
         'APP_GIT_TAG': GIT_LAST_TAG,
+        'controlRoomPhoneNumber': CONTROL_ROOM_PHONE_NUMBER,
+        'wwwWithMoreInfo': WWW_EXTRA_INFO,
     }
     for one in contextToAdd.keys():
         context[one] = contextToAdd[one]

@@ -10,7 +10,8 @@ from shifts.models import *
 import datetime
 import os
 
-from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO
+from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO,\
+    SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE
 
 DATE_FORMAT = '%Y-%m-%d'
 DATE_FORMAT_SLIM = '%Y%m%d'
@@ -27,6 +28,11 @@ def prepare_default_context(request, contextToAdd):
     latest_revision = Revision.objects.filter(valid=True).order_by('-number').first()
     stream = os.popen('git describe --tags')
     GIT_LAST_TAG = stream.read()
+    print(SHIFTER_TEST_INSTANCE)
+    if SHIFTER_TEST_INSTANCE:
+        messages.info(request, 'This is an test instance. Please refer to <a href="{}">the production instance</a> for uptodate schedule.'.format(SHIFTER_PRODUCTION_INSTANCE),)
+    for oneShifterMessages in ShifterMessage.objects.filter(valid=True).order_by('-number'):
+        messages.warning(request, oneShifterMessages.description)
     context = {
         'logged_user': request.user.is_authenticated,
         'defaultDate': date.strftime(DATE_FORMAT),

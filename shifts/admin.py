@@ -6,6 +6,16 @@ from django.contrib import messages
 from .models import *
 
 
+@admin.register(ShifterMessage)
+class ShifterMessageAdmin(admin.ModelAdmin):
+    model = Revision
+    list_display = [
+        'number',
+        'valid',
+        'description',
+    ]
+
+
 @admin.register(Revision)
 class RevisionAdmin(admin.ModelAdmin):
     model = Revision

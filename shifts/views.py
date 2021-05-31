@@ -143,10 +143,14 @@ def todays(request):
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
     activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
+
+    import esslogbook
+    logbookEntries = esslogbook.getEntries(logbook=None, shiftId=activeShift['shiftID'])
     context = {'today': activeShift['today'],
                'activeSlots': activeShift['activeSlots'],
                'currentTeam': activeShift['currentTeam'],
-               'shiftID': activeShift['shiftID'],}
+               'shiftID': activeShift['shiftID'],
+               'logbookEntries': logbookEntries}
     return render(request, 'today.html', prepare_default_context(request, context))
 
 

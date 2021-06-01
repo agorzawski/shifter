@@ -1,5 +1,9 @@
 # ESS OP Shifter Changelog
 
+### v.0.4.6
+- added team view calendar
+- added summarised working hours calculator  (day/off/nights)
+
 ### v.0.4.5
 - added dismissible messages for the main display (editable from the django admin)
 - fixed the default redirect

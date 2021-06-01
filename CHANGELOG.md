@@ -1,5 +1,10 @@
 # ESS OP Shifter Changelog
 
+### v.0.4.5
+- added dismissible messages for the main display (editable from the django admin)
+- fixed the default redirect
+- extra message for the test/production server
+
 ### v0.4.4
 - users login/logout support
 - user's shift visible under 'My shift'

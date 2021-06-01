@@ -86,17 +86,11 @@
 
 <center>
 <div class="col-sm-4 mx-auto">
-<div id="load" class="d-flex align-items-center">
+<div id="load" class="d-flex align-items-center alert-dark">
   <strong>Loading...</strong>
   <div class="spinner-border text-warning ml-auto" role="status" aria-hidden="true"></div>
 </div>
-  {% if messages %}
-  <ul class="messages">
-    {% for message in messages %}
-      <li class="{{ message.tags }}"> {{ message }} </li>
-    {% endfor %}
-  </ul>
-{% endif %}
+{% include 'messages.html' %}
 </div>
 </center>
 

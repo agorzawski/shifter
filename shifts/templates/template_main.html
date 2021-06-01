@@ -33,7 +33,10 @@
         <a class="nav-link" href='/planning'>Calendar Overview</a>
       </li>
       <li class="nav-item" >
-        <a class="nav-link" href='/user' >My shifts  {%if not logged_user %} <span class="badge bg-success">Login required</span> {%endif%} </a>
+        <a class="nav-link" href='/user' >My Shifts {% if not logged_user %} <span class="badge bg-success">Login required</span> {%endif%} </a>
+      </li>
+      <li class="nav-item" >
+        <a class="nav-link" href='/team' >My Team Shift Summary {% if not logged_user %} <span class="badge bg-success">Login required</span> {%endif%} </a>
       </li>
 
     </ul>

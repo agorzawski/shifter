@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.template.loader import render_to_string
 from django.urls import reverse
 import django.contrib.messages as messages
@@ -10,7 +10,7 @@ from shifts.models import *
 import datetime
 import os
 
-from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO,\
+from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
     SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -30,7 +30,9 @@ def prepare_default_context(request, contextToAdd):
     GIT_LAST_TAG = stream.read()
     print(SHIFTER_TEST_INSTANCE)
     if SHIFTER_TEST_INSTANCE:
-        messages.info(request, 'This is an test instance. Please refer to <a href="{}">the production instance</a> for uptodate schedule.'.format(SHIFTER_PRODUCTION_INSTANCE),)
+        messages.info(request,
+                      'This is an test instance. Please refer to <a href="{}">the production instance</a> for uptodate schedule.'.format(
+                          SHIFTER_PRODUCTION_INSTANCE), )
     for oneShifterMessages in ShifterMessage.objects.filter(valid=True).order_by('-number'):
         messages.warning(request, oneShifterMessages.description)
     context = {
@@ -152,14 +154,14 @@ def todays(request):
     context = {'today': activeShift['today'],
                'activeSlots': activeShift['activeSlots'],
                'currentTeam': activeShift['currentTeam'],
-               'shiftID': activeShift['shiftID'],}
+               'shiftID': activeShift['shiftID'], }
     return render(request, 'today.html', prepare_default_context(request, context))
 
 
 @login_required
 def user(request):
     currentMonth = datetime.datetime.now()
-    nextMonth = currentMonth + datetime.timedelta(30) # banking rounding
+    nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
     member = request.user
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision)
@@ -174,12 +176,61 @@ def user(request):
     return render(request, 'user.html', prepare_default_context(request, context))
 
 
+def get_shift_summary(m, validSlots, revision, currentMonth) -> tuple:
+    scheduled_shifts = Shift.objects.filter(member=m,
+                                            revision=revision,
+                                            date__year=currentMonth.year,
+                                            date__month=currentMonth.month)
+
+    differentSlots = Shift.objects.filter(member=m,
+                                            revision=revision,
+                                            date__year=currentMonth.year,
+                                            date__month=currentMonth.month)\
+                                  .values('slot__abbreviation')\
+                                  .annotate(total=Count('slot'))
+
+    result = {a['slot__abbreviation']:a['total'] for a in differentSlots}
+    return len(scheduled_shifts), result
+
+
+@login_required
+def team(request):
+    currentMonth = datetime.datetime.now()
+    nextMonth = currentMonth + datetime.timedelta(31)  # banking rounding
+    member = request.user
+    teamMembers = Member.objects.filter(team=member.team)
+    revision = Revision.objects.filter(valid=True).order_by("-number").first()
+    scheduled_shifts = Shift.objects.filter(member__team=member.team, revision=revision)
+    scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
+    # TODO get this outside the main code, maybe another flag in the Slot? TBC
+    slotLookUp = ['NWH', 'PM', 'AM', 'EV', 'NG']
+    validSlots = Slot.objects.filter(abbreviation__in=slotLookUp).order_by('hour_start')
+    teamMembersSummary = []
+    for m in teamMembers:
+        l, result = get_shift_summary(m, validSlots, revision, currentMonth)
+        memberSummary = [m,l]
+        for oneSlot in validSlots:
+            memberSummary.append(result.get(oneSlot.abbreviation,'--'))
+        teamMembersSummary.append(memberSummary)
+
+    context = {
+        'member': member,
+        'teamMembers': teamMembersSummary,
+        'validSlots': validSlots,
+        'currentmonth': currentMonth.strftime('%B'),
+        'nextmonth': nextMonth.strftime('%B'),
+        'scheduled_shifts_list': scheduled_shifts,
+        'scheduled_campaigns_list': scheduled_campaigns,
+    }
+    return render(request, 'team.html', prepare_default_context(request, context))
+
+
 @login_required
 def icalendar_view(request):
     month = None
     monthLabel = request.GET.get('month')
     if request.GET.get('month'):
-        if monthLabel=='current':
+        if monthLabel == 'current':
             month = datetime.datetime.now()
         if monthLabel == 'next':
             month = datetime.datetime.now() + datetime.timedelta(30)
@@ -196,8 +247,8 @@ def icalendar_view(request):
     monthLastDay = next_month.replace(day=1) + datetime.timedelta(days=-1)
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
 
-    shifts = Shift.objects.filter(date__lte=monthLastDay, date__gte=monthFirstDay)\
-                          .filter(member=member, revision=revision)
+    shifts = Shift.objects.filter(date__lte=monthLastDay, date__gte=monthFirstDay) \
+        .filter(member=member, revision=revision)
     context = {
         'campaign': 'Exported Shifts',
         'shifts': shifts,
@@ -213,7 +264,7 @@ def ioc_update(request):
     Expose JSON with current shift setup. To be used by any script/tool to update the IOC
     """
     dayToGo = request.GET.get('date', None)
-    slotToGo =  request.GET.get('slot', None)
+    slotToGo = request.GET.get('slot', None)
     # TODO WIP send a slack webhook announcement to remind that this was called
     fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
     # TODO add separate call for OC updates + separate url
@@ -274,14 +325,14 @@ def shifts_update(request):
             shift.date = oldShift.date + deltaToApply
             try:
                 shift.save()
-                doneCounter +=1
+                doneCounter += 1
             except Exception:
                 messages.error(request, 'Cannot update old shift {}, skipping!'.format(oldShift))
 
         # at last, update the actual campaign data
         campaign.revision = revision
         campaign.date_start = campaign.date_start + deltaToApply
-        campaign.date_end =  campaign.date_end + deltaToApply
+        campaign.date_end = campaign.date_end + deltaToApply
         campaign.save()
         messages.info(request, 'Done OK with {} shifts'.format(doneCounter))
         return HttpResponseRedirect(reverse("shifter:shift-update"))
@@ -293,7 +344,7 @@ def shifts_upload(request):
 
     data = {'campaigns': Campaign.objects.all(),
             'revisions': Revision.objects.all(),
-            'roles' : ShiftRole.objects.all(),
+            'roles': ShiftRole.objects.all(),
             }
 
     totalLinesAdded = 0
@@ -326,11 +377,11 @@ def shifts_upload(request):
             for dayIndex, one in enumerate(fields):
                 if dayIndex == 0:
                     continue
-                if one == '' or one == '-': # neutral shift slot abbrev
+                if one == '' or one == '-':  # neutral shift slot abbrev
                     continue
                 slotAbbrev = one
                 shiftDetais = one.split(':')
-                if len(shiftDetais): # index 0-> name, index -> shift role
+                if len(shiftDetais):  # index 0-> name, index -> shift role
                     slotAbbrev = shiftDetais[0]
                     if len(shiftDetais) > 1:
                         if shiftDetais[1] == "-":
@@ -339,9 +390,9 @@ def shifts_upload(request):
                             shiftRole = ShiftRole.objects.filter(abbreviation=shiftDetais[1]).first()
                             if shiftRole is None:
                                 messages.error(request, 'Cannot find role defined like {} for at line \
-                                                            {} and column {} (for {}), using default one {}.'\
-                                                        .format(shiftDetais[1], lineIndex, dayIndex,
-                                                                nameFromFile, defautshiftrole))
+                                                            {} and column {} (for {}), using default one {}.' \
+                                               .format(shiftDetais[1], lineIndex, dayIndex,
+                                                       nameFromFile, defautshiftrole))
                                 shiftRole = defautshiftrole
 
                 shiftFullDate = date + datetime.timedelta(days=dayIndex - 1)
@@ -368,7 +419,7 @@ def shifts_upload(request):
                     messages.error(request, 'Could not add member {} for {} {}, \
                                             Already in the system for the same \
                                             role: {}  campaign: {} and revision {}'
-                                            .format(member, shiftFullDate, one, shiftRole, campaign, revision))
+                                   .format(member, shiftFullDate, one, shiftRole, campaign, revision))
 
     except Exception as e:
         messages.error(request, "Unable to upload file. Critical error, see {}".format(e))

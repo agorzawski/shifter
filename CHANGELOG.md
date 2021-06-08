@@ -1,5 +1,8 @@
 # ESS OP Shifter Changelog
 
+### v.0.4.7
+- fixed the 'now on shift' and 'update-ioc' data fetch, to follow the shifts overlap
+
 ### v.0.4.6
 - added team view calendar
 - added summarised working hours calculator  (day/off/nights)

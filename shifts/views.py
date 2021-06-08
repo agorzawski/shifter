@@ -76,15 +76,21 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
     slots = []
-    for slot in Slot.objects.all():
+    for slot in Slot.objects.filter(op=True):
         if slot.hour_start <= now < slot.hour_end:
             for shifter in scheduled_shifts:
                 if shifter.slot == slot:
                     slots.append(slot)
+
+    def takeHourEnd(slotToSort):
+        return slotToSort.hour_end
+
+    sortedSlots = list(set(slots))
+    sortedSlots.sort(key=takeHourEnd)
     activeSlot = Slot.objects.first()
     activeSlots = []
     currentTeam = []
-    for slot in set(slots):
+    for slot in sortedSlots:
         if slot.hour_start <= now < slot.hour_end:
             for shifter in scheduled_shifts:
                 if shifter.slot == slot:
@@ -280,7 +286,7 @@ def ioc_update(request):
         dataToReturn[one] = "N/A"
     for one in fieldsToUpdate:
         for shifter in activeShift['currentTeam']:
-            if one in shifter.member.role.abbreviation:
+            if one in shifter.member.role.abbreviation and shifter.role is None: # no extra role in the same shift
                 dataToReturn[one] = shifter.member.name
                 dataToReturn[one + "Phone"] = shifter.member.mobile
                 dataToReturn[one + "Email"] = shifter.member.email

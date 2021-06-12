@@ -33,7 +33,10 @@
         <a class="nav-link" href='/planning'>Calendar Overview</a>
       </li>
       <li class="nav-item" >
-        <a class="nav-link" href='/user' >My shifts  {%if not logged_user %} <span class="badge bg-success">Login required</span> {%endif%} </a>
+        <a class="nav-link" href='/user' >My Shifts {% if not logged_user %} <span class="badge bg-success">Login required</span> {%endif%} </a>
+      </li>
+      <li class="nav-item" >
+        <a class="nav-link" href='/team' >My Team Shift Summary {% if not logged_user %} <span class="badge bg-success">Login required</span> {%endif%} </a>
       </li>
 
     </ul>
@@ -47,8 +50,6 @@
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
           <a class="dropdown-item" href='/dates'>Show environment configuration</a>
           {% if request.user.is_staff %}
-          <div class="dropdown-divider"></div>
-          <button class="btn btn-outline-danger" href="/update-ioc" role="button" disabled> Update IOC </button>
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" href='/shift-upload-csv'>Upload new schedule</a>
           <a class="dropdown-item" href='/shift-update'>Update existing schedule</a>
@@ -86,17 +87,11 @@
 
 <center>
 <div class="col-sm-4 mx-auto">
-<div id="load" class="d-flex align-items-center">
+<div id="load" class="d-flex align-items-center alert-dark">
   <strong>Loading...</strong>
   <div class="spinner-border text-warning ml-auto" role="status" aria-hidden="true"></div>
 </div>
-  {% if messages %}
-  <ul class="messages">
-    {% for message in messages %}
-      <li class="{{ message.tags }}"> {{ message }} </li>
-    {% endfor %}
-  </ul>
-{% endif %}
+{% include 'messages.html' %}
 </div>
 </center>
 

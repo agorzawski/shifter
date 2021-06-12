@@ -7,6 +7,12 @@ import datetime
 from enum import Enum
 
 
+class ShifterMessage(models.Model):
+    number = models.AutoField(primary_key=True, blank=True)
+    description = models.TextField()
+    valid = models.BooleanField(default=False)
+
+
 class Revision(models.Model):
     number = models.AutoField(primary_key=True, blank=True)
     date_start = models.DateTimeField(null=False)

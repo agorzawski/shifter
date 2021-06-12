@@ -105,7 +105,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = 'members.Member'
 
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/user'
 LOGOUT_REDIRECT_URL = '/'
 
 # Internationalization
@@ -132,3 +132,6 @@ APP_REPO = os.getenv('APP_REPO', 'NO REPO PROVIDED')
 APP_REPO_ICON = os.getenv('APP_REPO_ICON', 'https://github.githubassets.com/favicon.ico')
 CONTROL_ROOM_PHONE_NUMBER = os.getenv('CONTROL_ROOM_PHONE_NUMBER', 'No number provided.')
 WWW_EXTRA_INFO = os.getenv('WWW_EXTRA_INFO', '')
+
+SHIFTER_TEST_INSTANCE = os.getenv("SHIFTER_TEST_INSTANCE", 'False').lower() in ('true', '1', 't')
+SHIFTER_PRODUCTION_INSTANCE = os.getenv('SHIFTER_PRODUCTION_INSTANCE', '')

@@ -157,9 +157,9 @@ def todays(request):
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
     activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
-
-    import esslogbook
-    logbookEntries = esslogbook.getEntries(logbook=None, shiftId=activeShift['shiftID'])
+    import shifts.esslogbook as esslogbook
+    logbook = esslogbook.EssLogbook()
+    logbookEntries = logbook.getEntries(shiftId=activeShift['shiftID'])
     context = {'today': activeShift['today'],
                'activeSlots': activeShift['activeSlots'],
                'currentTeam': activeShift['currentTeam'],
@@ -167,6 +167,25 @@ def todays(request):
                'logbookEntries': logbookEntries}
 
     return render(request, 'today.html', prepare_default_context(request, context))
+
+
+def logbook(request):
+    dayToGo = request.GET.get('date', None)
+    slotToGo = request.GET.get('slot', None)
+    shiftId = request.GET.get('shiftID', None)
+    if shiftId is None:
+        # activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
+        # shiftId = activeShift['shiftID']
+        pass
+    import shifts.esslogbook as esslogbook
+    logbook = esslogbook.EssLogbook()
+    logbookEntries = logbook.getEntries(shiftId=shiftId)
+    lastShiftIds = ['20210612B', '20210612A', '20210611B', '20210611A'] # logbook.getLastShiftIds()
+    context = {'shiftID': shiftId,
+               'lastShiftIds': lastShiftIds,
+               'logbookEntries': logbookEntries}
+
+    return render(request, 'logbook.html', prepare_default_context(request, context))
 
 
 @login_required

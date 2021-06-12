@@ -1,0 +1,15 @@
+<div class="col-sm-8 mx-auto">
+<main role="main">
+<hr/>
+    <h3>Logbook summary for {{shiftID}}</h3>
+{% for logMsg in logbookEntries %}
+<div class="card border-{%if 'Fault' in logMsg.type%}danger{%else%}primary{%endif%}" >
+  <h5 class="card-header">{{logMsg.timestamp}} by {{logMsg.author}}</h5>
+  <div class="card-body">
+    <h5 class="card-title"><b>{{logMsg.subject}}</b></h5>
+    <p class="card-text"> {% autoescape off %}{{logMsg.body}}{% endautoescape %}</p>
+  </div>
+</div>
+{% endfor %}
+</main>
+</div>

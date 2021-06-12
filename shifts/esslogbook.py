@@ -1,36 +1,61 @@
 import elog
+import os
 
 
 class LogEntry:
-
-    def __init__(self, author=None, subject=None, body=None, tags=[], date=None, shiftId=None):
+    def __init__(self, author=None, subject=None, body=None, tags=[], type=None, timestamp=None, shiftId=None, attachements=None):
         self.author = author
         self.subject = subject
+        self.type = type
         self.body = body
         self.tags = tags
-        self.date = date
+        self.timestamp = timestamp
         self.shiftId = shiftId
+        self.attachements = attachements
 
 
-def getLogbook(user=None, password=None, urlLogbook='https://ics-elog-test.esss.lu.se', nameLogbook='Operation'):
-    return elog.open(urlLogbook,
-                     logbook=nameLogbook,
-                     user=user,
-                     password=password,
-                     use_ssl=True)
+class EssLogbook:
+    def __init__(self):
+        server = os.getenv('LOGBOOK_SERVER', '')
+        username = os.getenv('LOGBOOK_USER', '')
+        password = os.getenv('LOGBOOK_PASSWORD', '')
+        self.nameLogbook = 'Operation'
+        self.logbook = elog.open(server,
+                                 logbook=self.nameLogbook,
+                                 user=username,
+                                 password=password,
+                                 use_ssl=True)
 
+    def getEntries(self, shiftId=None):
+        if shiftId is None:
+            return ()
+        toReturn = []
+        for logMsgId in self.logbook.search({'Shift ID': shiftId}):
+            message, attributes, attachements = self.logbook.read(logMsgId)
+            toReturn.append(LogEntry(author=attributes['Author'],
+                                     subject=attributes['Subject'],
+                                     timestamp=attributes['Date'],  # TODO convert to date time
+                                     type=attributes['Entry Type'],
+                                     shiftId=attributes['Shift ID'],
+                                     body=message,
+                                     attachements=attachements))
+        return toReturn
+        # return (
+        # LogEntry(author='Arek', shiftId='20210528X', body='<h4> summary</h4><b>nice entry</b>', timestamp='some date',
+        #          subject='PSS1 problem'),
+        # LogEntry(author='Arek', shiftId='20210528X', body='<h4> PSS1 summary</h4><b>nice entry</b>',
+        #          timestamp='some date', subject='PSS1 problem solved'),)
 
-def getEntries(logbook, shiftId):
-    return (LogEntry(author='Arek', shiftId='20210528X', body='<h4> summary</h4><b>nice entry</b>', date='some date', subject='PSS1 problem'),
-            LogEntry(author='Arek', shiftId='20210528X', body='<h4> PSS1 summary</h4><b>nice entry</b>', date='some date', subject='PSS1 problem solved'),)
-
-
-def createEntry(logbook, entry_body, dict_of_attributes):
-    new_msg_id = logbook.post(entry_body, attributes=dict_of_attributes, encoding='HTML')
-
-
-def prepareBeamModeChange(logbook, shiftId, shiftLeader, operator, shiftLeaderPhone):
-    pass
+    def getLastShiftIds(self, lastMessages= 100, lastDistinctToShow=10):
+        x = self.logbook.get_last_message_id()
+        toReturn = []
+        for oneMId in range(x-lastMessages, x):
+            try:
+                message, attributes, attachements = self.logbook.read(oneMId)
+                toReturn.append(attributes['Shift ID'])
+            except:
+                pass
+        return list(set(toReturn))[:lastDistinctToShow]
 
 
 if __name__ == "__main__":

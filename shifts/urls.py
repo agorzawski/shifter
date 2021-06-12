@@ -7,6 +7,7 @@ urlpatterns = [
     path('today', views.todays, name='today'),
     path('user', views.user, name='user'),
     path('team', views.team, name='team'),
+    path('logbook', views.logbook, name='logbook'),
     path('calendar.ics', views.icalendar_view, name='calendar'),
     path('dates', views.dates, name='dates'),
     path('ioc-update', views.ioc_update, name='ioc-update'),

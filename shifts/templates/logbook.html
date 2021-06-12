@@ -1,0 +1,10 @@
+{% extends 'template_main.html'%}
+{% block 'body' %}
+    <div class="col-sm-8 mx-auto">
+      <main role="main">
+        <h1> <span class="badge badge-primary"> Logbook preview </span></h1>
+         {%for shid in lastShiftIds%}<a class="btn btn{%if shid == shiftID %}{%else%}-outline{%endif%}-primary" href="?shiftID={{shid}}">{{shid}}</a> {%endfor%}
+      </main>
+    </div>
+    {% include 'shift_log.html'  %}
+{% endblock %}

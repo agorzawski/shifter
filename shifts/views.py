@@ -54,7 +54,7 @@ def prepare_default_context(request, contextToAdd):
 
 
 def prepareShiftId(today, activeSlot):
-    shiftMap = {0: 'A', 1: 'B', 3: 'C', -1: 'X'}
+    shiftMap = {0: 'A', 1: 'B', 2: 'C', -1: 'X'}
     # TODO consider extracting that as config
     opSlots = Slot.objects.filter(op=True).order_by('hour_start')
     number = -1
@@ -69,6 +69,9 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
     ldap = directory.LDAP()
     today = datetime.datetime.now()
     now = today.time()
+    # now = datetime.datetime(2021, 6, 29, 3, 12, 00).time()
+    # TODO fix the date switch when probing the current shift
+    #  but day after like 29/06 at 3:00 should still give ID for one started at 28/06..
     if dayToGo is not None and slotToGo is not None:
         today = datetime.datetime.strptime(dayToGo, DATE_FORMAT)
         now = Slot.objects.filter(abbreviation=slotToGo).first().hour_start
@@ -77,7 +80,8 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
     slots = []
     for slot in Slot.objects.filter(op=True):
-        if slot.hour_start <= now < slot.hour_end:
+        if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
+                or slot.hour_start <= now < slot.hour_end:
             for shifter in scheduled_shifts:
                 if shifter.slot == slot:
                     slots.append(slot)
@@ -91,7 +95,8 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
     activeSlots = []
     currentTeam = []
     for slot in sortedSlots:
-        if slot.hour_start <= now < slot.hour_end:
+        if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
+                or slot.hour_start <= now < slot.hour_end:
             for shifter in scheduled_shifts:
                 if shifter.slot == slot:
                     activeSlot = slot

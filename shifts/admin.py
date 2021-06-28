@@ -39,6 +39,25 @@ class CampaignAdmin(admin.ModelAdmin):
 
 @admin.register(Slot)
 class SlotAdmin(admin.ModelAdmin):
+
+    def move_to_op_TRUE(self, request, queryset):
+
+        updated = queryset.update(op=True)
+        self.message_user(request, ngettext(
+            '%d slots was set to TRUE.',
+            '%d slots were set to TRUE status',
+            updated,
+        ) % updated, messages.SUCCESS)
+
+    def move_to_op_FALSE(self, request, queryset):
+
+        updated = queryset.update(op=False)
+        self.message_user(request, ngettext(
+            '%d slots was set to FALSE.',
+            '%d slots were set to FALSE status',
+            updated,
+        ) % updated, messages.SUCCESS)
+
     model = Slot
     list_display = [
         'name',
@@ -46,6 +65,7 @@ class SlotAdmin(admin.ModelAdmin):
         'hour_start',
         'hour_end',
     ]
+    actions = (move_to_op_TRUE, move_to_op_FALSE)
 
 
 @admin.register(Shift)

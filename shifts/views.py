@@ -194,13 +194,13 @@ def get_shift_summary(m, validSlots, revision, currentMonth) -> tuple:
                                             date__month=currentMonth.month)
 
     differentSlots = Shift.objects.filter(member=m,
-                                            revision=revision,
-                                            date__year=currentMonth.year,
-                                            date__month=currentMonth.month)\
-                                  .values('slot__abbreviation')\
-                                  .annotate(total=Count('slot'))
+                                          revision=revision,
+                                          date__year=currentMonth.year,
+                                          date__month=currentMonth.month) \
+        .values('slot__abbreviation') \
+        .annotate(total=Count('slot'))
 
-    result = {a['slot__abbreviation']:a['total'] for a in differentSlots}
+    result = {a['slot__abbreviation']: a['total'] for a in differentSlots}
     return len(scheduled_shifts), result
 
 
@@ -219,9 +219,9 @@ def team(request):
     teamMembersSummary = []
     for m in teamMembers:
         l, result = get_shift_summary(m, validSlots, revision, currentMonth)
-        memberSummary = [m,l]
+        memberSummary = [m, l]
         for oneSlot in validSlots:
-            memberSummary.append(result.get(oneSlot.abbreviation,'--'))
+            memberSummary.append(result.get(oneSlot.abbreviation, '--'))
         teamMembersSummary.append(memberSummary)
 
     context = {
@@ -291,7 +291,7 @@ def ioc_update(request):
         dataToReturn[one] = "N/A"
     for one in fieldsToUpdate:
         for shifter in activeShift['currentTeam']:
-            if one in shifter.member.role.abbreviation and shifter.role is None: # no extra role in the same shift
+            if one in shifter.member.role.abbreviation and shifter.role is None:  # no extra role in the same shift
                 dataToReturn[one] = shifter.member.name
                 dataToReturn[one + "Phone"] = shifter.member.mobile
                 dataToReturn[one + "Email"] = shifter.member.email
@@ -437,3 +437,26 @@ def shifts_upload(request):
 
     messages.success(request, "Uploaded and saved {} shifts provided with {}".format(totalLinesAdded, csv_file.name))
     return HttpResponseRedirect(reverse("shifter:shift-upload"))
+
+
+def phonebook(request):
+    context = {
+        'result': [],
+    }
+
+    print(request.POST.keys())
+    if request.POST.get('searchKey') is not None:
+        import members.directory as directory
+        ldap = directory.LDAP()
+        r = ldap.search(field='name', text=request.POST.get('searchKey'))
+        for one in r.keys():
+            photo = None
+            if len(r[one]['photo']):
+                import base64
+                photo = base64.b64encode(r[one]['photo']).decode("utf-8")
+            context['result'].append({'name': one,
+                                      'mobile': r[one]['mobile'],
+                                      'email': r[one]['email'],
+                                      'photo': photo, })
+
+    return render(request, 'phonebook.html', prepare_default_context(request, context))

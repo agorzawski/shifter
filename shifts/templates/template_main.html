@@ -27,16 +27,24 @@
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
     <ul class="navbar-nav mr-auto">
       <li class="nav-item">
-        <a class="nav-link" href='/today'>Now on shift</a>
+        <a class="nav-link" href='/today'> {% load static %}
+      <img src="{% static 'img/shifter.png' %}" height="20"/>Now on shift</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href='/planning'>Calendar Overview</a>
+        <a class="nav-link" href='/planning'> {% load static %}
+      <img src="{% static 'img/calendar.png' %}" height="20"/> Calendar Overview</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/phonebook'> {% load static %}
+      <img src="{% static 'img/phonebook.png' %}" height="20"/> Phonebook</a>
       </li>
       <li class="nav-item" >
-        <a class="nav-link" href='/user' >My Shifts {% if not logged_user %} <span class="badge bg-success">Login required</span> {%endif%} </a>
+        <a class="nav-link" href='/user' > My Shifts {% if not logged_user %} {% load static %}
+      <img src="{% static 'img/padlock.png' %}" height="20"/><span class="badge bg-success">Login required</span> {%endif%} </a>
       </li>
       <li class="nav-item" >
-        <a class="nav-link" href='/team' >My Team Shift Summary {% if not logged_user %} <span class="badge bg-success">Login required</span> {%endif%} </a>
+        <a class="nav-link" href='/team' >My Team Shift Summary {% if not logged_user %} {% load static %}
+      <img src="{% static 'img/padlock.png' %}" height="20"/><span class="badge bg-success">Login required</span> {%endif%} </a>
       </li>
 
     </ul>

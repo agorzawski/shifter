@@ -1,0 +1,37 @@
+---
+stages:
+  - build
+  - analyse
+  - release
+
+default:
+  tags:
+    - docker
+  image: docker:latest
+
+build:
+  stage: build
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+
+sonar-scanner:
+  stage: analyse
+  image: sonarsource/sonar-scanner-cli:latest
+  script:
+    - sonar-scanner -Dsonar.login=$SONAR_LOGIN -Dsonar.projectKey=op-shift-schedule -Dsonar.projectVersion=$CI_COMMIT_REF_NAME -Dsonar.sources=shifter,shifts,members
+  only:
+    - branches@accop/op-shift-schedule
+
+release:
+  stage: release
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+    - docker pull "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+    - docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$CI_REGISTRY_IMAGE:latest"
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+  only:
+    - tags

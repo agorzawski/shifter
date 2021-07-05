@@ -1,5 +1,8 @@
 # ESS OP Shifter Changelog
 
+### v.0.5.0
+- LDAP functionality extended, a separate phonebook available /phonebook (no auth needed)
+
 ### v.0.4.7
 - fixed the 'now on shift' and 'update-ioc' data fetch, to follow the shifts overlap
 

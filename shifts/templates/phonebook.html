@@ -1,0 +1,24 @@
+{% extends 'template_main.html'%}
+{% block 'body' %}
+    <div class="col-sm-8 mx-auto">
+      <main role="main">
+        <h1> {% load static %}
+      <span class="badge badge-primary"><img src="{% static 'img/phonebook.png' %}" height="25"/>  ESS phonebook </span></h1>
+
+        <form class="form-inline my-2 my-lg-0" action="{% url "shifter:phonebook" %}" method="POST" enctype="multipart/form-data">
+       {% csrf_token  %}
+        <input class="form-control mr-sm-2" type="search" name='searchKey' id="searchKey" placeholder="Search" aria-label="Search">
+        <button class="btn btn-success my-2 my-sm-0" type="submit">Search</button>
+        </form>
+        {% for member in result %}
+          <div ><hr/> <h3><strong>{{member.name}}</strong></h3>
+            {% if member.photo|length > 0 %} <img src='data:image/gif;base64,{{member.photo}}' height="100"/> {% endif %}
+            <h4> mobile: <a class="btn btn-outline-primary" href="tel:{{member.mobile}}"><b>{{member.mobile}}</b></a> </h4>
+            <h4> email: <a class="btn btn-outline-primary" href="mailto:{{member.email}}">{{member.email}}</a> </h4>
+          </div>
+        {% endfor %}
+        <hr/>
+        <h5>Control Room Phone Number: <a class="btn btn-outline-primary" href="tel:{{controlRoomPhoneNumber}}"><b>{{controlRoomPhoneNumber}}</b></a></h5>
+      </main>
+    </div>
+{% endblock %}

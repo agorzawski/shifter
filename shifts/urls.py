@@ -9,6 +9,7 @@ urlpatterns = [
     path('team', views.team, name='team'),
     path('calendar.ics', views.icalendar_view, name='calendar'),
     path('dates', views.dates, name='dates'),
+    path('phonebook', views.phonebook, name='phonebook'),
     path('ioc-update', views.ioc_update, name='ioc-update'),
     path('shift-upload-csv', views.shifts_upload, name="shift-upload"),
     path('shift-update', views.shifts_update, name="shift-update"),

@@ -4,7 +4,7 @@
        <div class="collapse" id="collapseExample">
         <div class="card card-body">
             <h5>Shift slots</h5>
-            {%for s in slots%}<div style="background-color:{{s.color_in_calendar}};color:#FFFFFF;">{{s.name}} <b>({{s.abbreviation}})</b> for <b>{{s.hour_start}}</b> - <b>{{s.hour_end}}</b> </div>{% endfor%}
+            {%for s in slots%}<div style="background-color:{{s.color_in_calendar}};color:#FFFFFF;">{{s.name}} <strong>({{s.abbreviation}})</strong> for <strong>{{s.hour_start}}</strong> - <strong>{{s.hour_end}}</strong> </div>{% endfor%}
         </div>
       </div>
       <div id='calendar' style="padding-top: 10px;"></div>

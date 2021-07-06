@@ -13,12 +13,12 @@
         {% for member in result %}
           <div ><hr/> <h3><strong>{{member.name}}</strong></h3>
             {% if member.photo|length > 0 %} <img src='data:image/gif;base64,{{member.photo}}' height="100"/> {% endif %}
-            <h4> mobile: <a class="btn btn-outline-primary" href="tel:{{member.mobile}}"><b>{{member.mobile}}</b></a> </h4>
+            <h4> mobile: <a class="btn btn-outline-primary" href="tel:{{member.mobile}}"><strong>{{member.mobile}}</strong></a> </h4>
             <h4> email: <a class="btn btn-outline-primary" href="mailto:{{member.email}}">{{member.email}}</a> </h4>
           </div>
         {% endfor %}
         <hr/>
-        <h5>Control Room Phone Number: <a class="btn btn-outline-primary" href="tel:{{controlRoomPhoneNumber}}"><b>{{controlRoomPhoneNumber}}</b></a></h5>
+        <h5>Control Room Phone Number: <a class="btn btn-outline-primary" href="tel:{{controlRoomPhoneNumber}}"><strong>{{controlRoomPhoneNumber}}</strong></a></h5>
       </main>
     </div>
 {% endblock %}

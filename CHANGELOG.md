@@ -1,5 +1,11 @@
 # ESS OP Shifter Changelog
 
+### v.0.5.1
+- fix for the Today's page (now again includes all slots at given moment)
+- minor bugs correction (found thanks to sonar scan)
+- prepared for the docker releases
+- included gitlab CI/CD
+
 ### v.0.5.0
 - LDAP functionality extended, a separate phonebook available /phonebook (no auth needed)
 

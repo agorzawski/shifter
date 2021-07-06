@@ -3,7 +3,7 @@
 {% block 'extra_menu_item' %}
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <b>Display options<small> Revision:{{displayed_revision}}</small></b>
+            <strong>Display options<small> Revision:{{displayed_revision}}</small></strong>
         </a>
         <form class="dropdown-menu p-4" action="" method="POST" enctype="multipart/form-data" >
           {% csrf_token %}

@@ -7,7 +7,7 @@
       <div class="float-none" style="padding:40px;text-align:center;" >
         <h1> <span class="badge badge-primary"> Defined campaigns and their dates </span></h1>
         {% for c in campaigns %}
-          <p> <span class="badge badge-primary">{{c.name}}</span> for <b>{{c.date_start}}</b> - <b>{{c.date_end}}</b> <small>(revision {{c.revision}})</small> </p>
+          <p> <span class="badge badge-primary">{{c.name}}</span> for <strog>{{c.date_start}}</strog> - <strong>{{c.date_end}}</strong> <small>(revision {{c.revision}})</small> </p>
         {% endfor%}
       </div>
 
@@ -15,7 +15,7 @@
           <div class="float-none" style="padding:40px;text-align:center;" >
         <h1> <span class="badge badge-info"> Defined day slots </span></h1>
         {% for c in slots %}
-          <p> <span class="badge badge-info">{{c.name}} ({{c.abbreviation}})</span> for <b>{{c.hour_start}}</b> - <b>{{c.hour_end}}</b> </p>
+          <p> <span class="badge badge-info">{{c.name}} ({{c.abbreviation}})</span> for <strong>{{c.hour_start}}</strong> - <strong>{{c.hour_end}}</strong> </p>
         {% endfor%}
         </div>
 

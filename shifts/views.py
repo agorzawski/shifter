@@ -5,6 +5,8 @@ from django.db.models import Q, Count
 from django.template.loader import render_to_string
 from django.urls import reverse
 import django.contrib.messages as messages
+from django.views.decorators.csrf import csrf_protect
+
 import members.models
 from shifts.models import *
 import datetime
@@ -64,7 +66,7 @@ def prepareShiftId(today, activeSlot):
     return today.strftime(DATE_FORMAT_SLIM) + shiftMap[number]
 
 
-def prepare_active_crew(request, dayToGo=None, slotToGo=None):
+def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
     import members.directory as directory
     ldap = directory.LDAP()
     today = datetime.datetime.now()
@@ -79,7 +81,8 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
     slots = []
-    for slot in Slot.objects.filter(op=True):
+    slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
+    for slot in slotsToConsider:
         if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
                 or slot.hour_start <= now < slot.hour_end:
             for shifter in scheduled_shifts:
@@ -128,6 +131,7 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
             'currentTeam': currentTeam}
 
 
+@csrf_protect
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
     if "GET" == request.method:
@@ -163,6 +167,7 @@ def todays(request):
     slotToGo = request.GET.get('slot', None)
     activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
     context = {'today': activeShift['today'],
+               'checkTime': activeShift['today'].time(),
                'activeSlots': activeShift['activeSlots'],
                'currentTeam': activeShift['currentTeam'],
                'shiftID': activeShift['shiftID'], }
@@ -280,7 +285,7 @@ def ioc_update(request):
     fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
     # TODO add separate call for OC updates + separate url
     fieldsToUpdate = ['SL', 'OP']
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
+    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, onlyOP=True)
     # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
                     '_slot': activeShift['activeSlot'].abbreviation,
@@ -298,6 +303,7 @@ def ioc_update(request):
     return JsonResponse(dataToReturn)
 
 
+@csrf_protect
 @login_required
 def shifts_update(request):
     # add campaigns and revisions
@@ -349,6 +355,7 @@ def shifts_update(request):
         return HttpResponseRedirect(reverse("shifter:shift-update"))
 
 
+@csrf_protect
 @login_required
 def shifts_upload(request):
     # add campaigns and revisions
@@ -439,6 +446,7 @@ def shifts_upload(request):
     return HttpResponseRedirect(reverse("shifter:shift-upload"))
 
 
+@csrf_protect
 def phonebook(request):
     context = {
         'result': [],

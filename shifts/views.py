@@ -5,6 +5,8 @@ from django.db.models import Q, Count
 from django.template.loader import render_to_string
 from django.urls import reverse
 import django.contrib.messages as messages
+from django.views.decorators.csrf import csrf_protect
+
 import members.models
 from shifts.models import *
 import datetime
@@ -128,6 +130,7 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None):
             'currentTeam': currentTeam}
 
 
+@csrf_protect
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
     if "GET" == request.method:
@@ -298,6 +301,7 @@ def ioc_update(request):
     return JsonResponse(dataToReturn)
 
 
+@csrf_protect
 @login_required
 def shifts_update(request):
     # add campaigns and revisions
@@ -349,6 +353,7 @@ def shifts_update(request):
         return HttpResponseRedirect(reverse("shifter:shift-update"))
 
 
+@csrf_protect
 @login_required
 def shifts_upload(request):
     # add campaigns and revisions
@@ -439,6 +444,7 @@ def shifts_upload(request):
     return HttpResponseRedirect(reverse("shifter:shift-upload"))
 
 
+@csrf_protect
 def phonebook(request):
     context = {
         'result': [],

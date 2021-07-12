@@ -78,16 +78,25 @@ WSGI_APPLICATION = 'shifter.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': os.getenv('DATABASE_ENGINE', 'django.db.backends.sqlite3'),
-        'HOST':os.getenv('DATABASE_HOST'),
-        'PORT': os.getenv('DATABASE_PORT'),
-        'NAME': os.getenv('DATABASE_NAME', BASE_DIR / 'db.sqlite3'),
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD')
+
+if os.getenv('DJANGO_LOCAL_DEV'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.getenv('DATABASE_ENGINE'),
+            'HOST': os.getenv('DATABASE_HOST'),
+            'PORT': os.getenv('DATABASE_PORT'),
+            'NAME': os.getenv('DATABASE_NAME'),
+            'USER': os.getenv('DATABASE_USER'),
+            'PASSWORD': os.getenv('DATABASE_PASSWORD')
+        }
+    }
 
 
 # Password validation

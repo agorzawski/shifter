@@ -132,7 +132,7 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
             'currentTeam': currentTeam}
 
 
-@require_http_methods(["POST", "GET"])
+# @require_http_methods(["POST", "GET"])
 @csrf_protect
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
@@ -311,7 +311,7 @@ def ioc_update(request):
     return JsonResponse(dataToReturn)
 
 
-@require_http_methods(["POST", "GET"])
+# @require_http_methods(["POST", "GET"])
 @csrf_protect
 @login_required
 def shifts_update(request):
@@ -364,7 +364,7 @@ def shifts_update(request):
         return HttpResponseRedirect(reverse("shifter:shift-update"))
 
 
-@require_http_methods(["POST", "GET"])
+# @require_http_methods(["POST", "GET"])
 @csrf_protect
 @login_required
 def shifts_upload(request):
@@ -456,7 +456,7 @@ def shifts_upload(request):
     return HttpResponseRedirect(reverse("shifter:shift-upload"))
 
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 @csrf_protect
 def phonebook(request):
     context = {

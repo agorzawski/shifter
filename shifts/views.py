@@ -6,7 +6,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 import django.contrib.messages as messages
 from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.http import require_POST, require_GET, require_safe
+from django.views.decorators.http import require_http_methods, require_safe
 
 import members.models
 from shifts.models import *
@@ -132,8 +132,7 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
             'currentTeam': currentTeam}
 
 
-@require_POST
-@require_GET
+@require_http_methods(["POST", "GET"])
 @csrf_protect
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
@@ -166,7 +165,7 @@ def dates(request):
     return render(request, 'dates.html', prepare_default_context(request, context))
 
 
-@require_GET
+@require_http_methods(["GET"])
 def todays(request):
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
@@ -248,7 +247,7 @@ def team(request):
     return render(request, 'team.html', prepare_default_context(request, context))
 
 
-@require_GET
+@require_http_methods(["GET"])
 @login_required
 def icalendar_view(request):
     month = None
@@ -283,7 +282,7 @@ def icalendar_view(request):
     return HttpResponse(body.replace('\n', '\r\n'), content_type='text/calendar')
 
 
-@require_GET
+@require_http_methods(["GET"])
 def ioc_update(request):
     """
     Expose JSON with current shift setup. To be used by any script/tool to update the IOC
@@ -312,8 +311,7 @@ def ioc_update(request):
     return JsonResponse(dataToReturn)
 
 
-@require_POST
-@require_GET
+@require_http_methods(["POST", "GET"])
 @csrf_protect
 @login_required
 def shifts_update(request):
@@ -366,8 +364,7 @@ def shifts_update(request):
         return HttpResponseRedirect(reverse("shifter:shift-update"))
 
 
-@require_POST
-@require_GET
+@require_http_methods(["POST", "GET"])
 @csrf_protect
 @login_required
 def shifts_upload(request):
@@ -459,8 +456,7 @@ def shifts_upload(request):
     return HttpResponseRedirect(reverse("shifter:shift-upload"))
 
 
-@require_POST
-@require_GET
+@require_http_methods(["POST", "GET"])
 @csrf_protect
 def phonebook(request):
     context = {

@@ -28,23 +28,23 @@
     <ul class="navbar-nav mr-auto">
       <li class="nav-item">
         <a class="nav-link" href='/today'> {% load static %}
-      <img src="{% static 'img/shifter.png' %}" height="20"/>Now on shift</a>
+      <img src="{% static 'img/shifter.png' %}" height="20" alt=""/>Now on shift</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href='/planning'> {% load static %}
-      <img src="{% static 'img/calendar.png' %}" height="20"/> Calendar Overview</a>
+      <img src="{% static 'img/calendar.png' %}" height="20" alt=""/> Calendar Overview</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href='/phonebook'> {% load static %}
-      <img src="{% static 'img/phonebook.png' %}" height="20"/> Phonebook</a>
+      <img src="{% static 'img/phonebook.png' %}" height="20" alt=""/> Phonebook</a>
       </li>
       <li class="nav-item" >
         <a class="nav-link" href='/user' > My Shifts {% if not logged_user %} {% load static %}
-      <img src="{% static 'img/padlock.png' %}" height="20"/><span class="badge bg-success">Login required</span> {%endif%} </a>
+      <img src="{% static 'img/padlock.png' %}" height="20"/ alt=""><span class="badge bg-success">Login required</span> {%endif%} </a>
       </li>
       <li class="nav-item" >
         <a class="nav-link" href='/team' >My Team Shift Summary {% if not logged_user %} {% load static %}
-      <img src="{% static 'img/padlock.png' %}" height="20"/><span class="badge bg-success">Login required</span> {%endif%} </a>
+      <img src="{% static 'img/padlock.png' %}" height="20"/ alt=""><span class="badge bg-success">Login required</span> {%endif%} </a>
       </li>
 
     </ul>
@@ -65,10 +65,10 @@
 
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" target='new' href='{{APP_REPO}}/-/blob/master/CHANGELOG.md'>
-          <img src='{{APP_REPO_ICON}}' height="20" width="20"/>See ChangeLog</a>
+          <img src='{{APP_REPO_ICON}}' height="20" width="20" alt=""/>See ChangeLog</a>
 
           <a class="dropdown-item" target='new' href='{{APP_REPO}}/-/issues/new'>
-          <img src='{{APP_REPO_ICON}}' height="20" width="20"/>Submit Ideas/Requests</a>
+          <img src='{{APP_REPO_ICON}}' height="20" width="20" alt=""/>Submit Ideas/Requests</a>
 
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" href='/admin'><strong>Super user panel </strong> <span class="badge bg-success">Login required</span></a>

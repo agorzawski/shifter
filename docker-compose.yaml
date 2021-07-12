@@ -9,5 +9,20 @@ services:
     environment:
       DJANGO_SECRET_KEY: mysecret
       DJANGO_DEBUG: "True"
+      DATABASE_ENGINE: django.db.backends.postgresql_psycopg2
+      DATABASE_HOST: database
+      DATABASE_PORT: 5432
+      DATABASE_NAME: shifter
+      DATABASE_USER: shifter
+      DATABASE_PASSWORD: secret
     ports:
       - 8000:8000
+    depends_on:
+      - database
+
+  database:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: shifter
+      POSTGRES_USER: shifter
+      POSTGRES_PASSWORD: secret

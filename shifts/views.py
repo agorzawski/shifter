@@ -31,7 +31,6 @@ def prepare_default_context(request, contextToAdd):
     latest_revision = Revision.objects.filter(valid=True).order_by('-number').first()
     stream = os.popen('git describe --tags')
     GIT_LAST_TAG = stream.read()
-    print(SHIFTER_TEST_INSTANCE)
     if SHIFTER_TEST_INSTANCE:
         messages.info(request,
                       'This is an test instance. Please refer to <a href="{}">the production instance</a> for uptodate schedule.'.format(
@@ -132,16 +131,24 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
             'currentTeam': currentTeam}
 
 
-# @require_http_methods(["POST", "GET"])
-@csrf_protect
+@require_safe
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
-    if "GET" == request.method:
-        revision = revisions.first()
-    else:
-        revision = Revision.objects.filter(number=request.POST['revision']).first()
-        # TODO implement filter on campaigns
+    revision = revisions.first()
+    return prepare_main_page(request, revisions, revision)
 
+
+@require_http_methods(["POST"])
+@csrf_protect
+def index_post(request):
+    revisions = Revision.objects.filter(valid=True).order_by("-number")
+    revision = Revision.objects.filter(number=request.POST['revision']).first()
+    # TODO implement filter on campaigns
+    filtered_campaigns = None
+    return prepare_main_page(request, revisions, revision, filtered_campaigns=filtered_campaigns)
+
+
+def prepare_main_page(request, revisions, revision, filtered_campaigns=None):
     scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
                                                                         'member__role__priority')
     scheduled_campaigns = Campaign.objects.filter(revision=revision)
@@ -149,6 +156,7 @@ def index(request):
         'revisions': revisions,
         'displayed_revision': revision,
         'scheduled_shifts_list': scheduled_shifts,
+        'filtered_campaigns': filtered_campaigns,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
     return render(request, 'index.html', prepare_default_context(request, context))
@@ -165,7 +173,7 @@ def dates(request):
     return render(request, 'dates.html', prepare_default_context(request, context))
 
 
-@require_http_methods(["GET"])
+@require_safe
 def todays(request):
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
@@ -247,7 +255,7 @@ def team(request):
     return render(request, 'team.html', prepare_default_context(request, context))
 
 
-@require_http_methods(["GET"])
+@require_safe
 @login_required
 def icalendar_view(request):
     month = None
@@ -282,7 +290,7 @@ def icalendar_view(request):
     return HttpResponse(body.replace('\n', '\r\n'), content_type='text/calendar')
 
 
-@require_http_methods(["GET"])
+@require_safe
 def ioc_update(request):
     """
     Expose JSON with current shift setup. To be used by any script/tool to update the IOC
@@ -311,8 +319,7 @@ def ioc_update(request):
     return JsonResponse(dataToReturn)
 
 
-@require_http_methods(["GET", "POST"])
-@csrf_protect
+@require_safe
 @login_required
 def shifts_update(request):
     # add campaigns and revisions
@@ -320,159 +327,177 @@ def shifts_update(request):
             'revisions': Revision.objects.all(),
             'today': datetime.datetime.now().strftime(DATE_FORMAT)
             }
-
-    totalLinesAdded = 0
-    if request.method == "POST":
-        revision = Revision.objects.filter(number=request.POST['revision']).first()
-        campaign = Campaign.objects.filter(id=request.POST['camp']).first()
-        oldStartDate = campaign.date_start
-        newStartDate = datetime.datetime.strptime(request.POST['new-date'], DATE_FORMAT).date()
-        daysDelta = newStartDate - oldStartDate
-        deltaToApply = datetime.timedelta(days=daysDelta.days)
-        messages.info(request, 'Found {} difference to update'.format(daysDelta))
-        shifts_to_update = Shift.objects.filter(campaign=campaign, revision=campaign.revision)
-        messages.info(request, 'Found {} shifts to update'.format(len(shifts_to_update)))
-        doneCounter = 0
-        for oldShift in shifts_to_update:
-            shift = Shift()
-            shift.member = oldShift.member
-            shift.campaign = campaign
-            shift.slot = oldShift.slot
-            shift.role = oldShift.role
-            tag = oldShift.csv_upload_tag
-            if tag is None:
-                tag = ""
-            shift.csv_upload_tag = tag + '_update'
-            # updated info
-            shift.revision = revision
-            shift.date = oldShift.date + deltaToApply
-            try:
-                shift.save()
-                doneCounter += 1
-            except Exception:
-                messages.error(request, 'Cannot update old shift {}, skipping!'.format(oldShift))
-
-        # at last, update the actual campaign data
-        campaign.revision = revision
-        campaign.date_start = campaign.date_start + deltaToApply
-        campaign.date_end = campaign.date_end + deltaToApply
-        campaign.save()
-        messages.info(request, 'Done OK with {} shifts'.format(doneCounter))
-        return HttpResponseRedirect(reverse("shifter:shift-update"))
-    else:
-        return render(request, "shifts_update.html", prepare_default_context(request, data))
-
-
-@require_http_methods(["GET", "POST"])
-@csrf_protect
-@login_required
-def shifts_upload(request):
-    # add campaigns and revisions
-
-    data = {'campaigns': Campaign.objects.all(),
-            'revisions': Revision.objects.all(),
-            'roles': ShiftRole.objects.all(),
-            }
-
-    totalLinesAdded = 0
-    if "POST" == request.method:
-        revision = Revision.objects.filter(number=request.POST['revision']).first()
-        campaign = Campaign.objects.filter(id=request.POST['camp']).first()
-        defautshiftrole = None
-        if int(request.POST['role']) > 0:
-            defautshiftrole = ShiftRole.objects.filter(id=request.POST['role']).first()
-        shiftRole = defautshiftrole
-        try:
-            csv_file = request.FILES["csv_file"]
-            if not csv_file.name.endswith('.csv'):
-                messages.error(request, "Wrong file type! Needs to be CSV")
-                return HttpResponseRedirect(reverse("shifter:shift-upload"))
-            if csv_file.multiple_chunks():
-                messages.error(request, "Too large file")
-                return HttpResponseRedirect(reverse("shifter:shift-upload"))
-
-            file_data = csv_file.read().decode("utf-8")
-            date_txt = csv_file.name.replace('.csv', '').split('__')[1]
-            date = datetime.datetime.fromisoformat(date_txt)
-            lines = file_data.split("\n")
-            for lineIndex, line in enumerate(lines):
-                fields = line.split(",")
-                nameFromFile = fields[0]
-                for dayIndex, one in enumerate(fields):
-                    if dayIndex == 0:
-                        continue
-                    if one == '' or one == '-':  # neutral shift slot abbrev
-                        continue
-                    slotAbbrev = one
-                    shiftDetais = one.split(':')
-                    if len(shiftDetais):  # index 0-> name, index -> shift role
-                        slotAbbrev = shiftDetais[0]
-                        if len(shiftDetais) > 1:
-                            if shiftDetais[1] == "-":
-                                shiftRole = None
-                            else:
-                                shiftRole = ShiftRole.objects.filter(abbreviation=shiftDetais[1]).first()
-                                if shiftRole is None:
-                                    messages.error(request, 'Cannot find role defined like {} for at line \
-                                                                {} and column {} (for {}), using default one {}.' \
-                                                   .format(shiftDetais[1], lineIndex, dayIndex,
-                                                           nameFromFile, defautshiftrole))
-                                    shiftRole = defautshiftrole
-
-                    shiftFullDate = date + datetime.timedelta(days=dayIndex - 1)
-                    shift = Shift()
-                    try:
-                        member = Member.objects.get(first_name=nameFromFile)
-                        slot = Slot.objects.get(abbreviation=slotAbbrev)
-                        shift.campaign = campaign
-                        shift.role = shiftRole
-                        shift.revision = revision
-                        shift.date = shiftFullDate
-                        shift.slot = slot
-                        shift.member = member
-                        shift.csv_upload_tag = csv_file.name
-                        totalLinesAdded += 1
-                    except Exception:
-                        messages.error(request, 'Could not find system member for ({}) / slot ({}), in line {} column {}.\
-                                        Skipping for now Check your file'
-                                       .format(fields[0], one, lineIndex, dayIndex))
-                    try:
-                        shift.save()
-                        shiftRole = defautshiftrole
-                    except Exception:
-                        messages.error(request, 'Could not add member {} for {} {}, \
-                                                Already in the system for the same \
-                                                role: {}  campaign: {} and revision {}'
-                                       .format(member, shiftFullDate, one, shiftRole, campaign, revision))
-
-        except Exception as e:
-            messages.error(request, "Unable to upload file. Critical error, see {}".format(e))
-
-        messages.success(request, "Uploaded and saved {} shifts provided with {}".format(totalLinesAdded, csv_file.name))
-        return HttpResponseRedirect(reverse("shifter:shift-upload"))
-    else:
-        return render(request, "shifts_upload.html", prepare_default_context(request, data))
+    return render(request, "shifts_update.html", prepare_default_context(request, data))
 
 
 @require_http_methods(["POST"])
 @csrf_protect
+@login_required
+def shifts_update_post(request):
+    # add campaigns and revisions
+    data = {'campaigns': Campaign.objects.all(),
+            'revisions': Revision.objects.all(),
+            'today': datetime.datetime.now().strftime(DATE_FORMAT)
+            }
+
+    revision = Revision.objects.filter(number=request.POST['revision']).first()
+    campaign = Campaign.objects.filter(id=request.POST['camp']).first()
+    oldStartDate = campaign.date_start
+    newStartDate = datetime.datetime.strptime(request.POST['new-date'], DATE_FORMAT).date()
+    daysDelta = newStartDate - oldStartDate
+    deltaToApply = datetime.timedelta(days=daysDelta.days)
+    messages.info(request, 'Found {} difference to update'.format(daysDelta))
+    shifts_to_update = Shift.objects.filter(campaign=campaign, revision=campaign.revision)
+    messages.info(request, 'Found {} shifts to update'.format(len(shifts_to_update)))
+    doneCounter = 0
+    for oldShift in shifts_to_update:
+        shift = Shift()
+        shift.member = oldShift.member
+        shift.campaign = campaign
+        shift.slot = oldShift.slot
+        shift.role = oldShift.role
+        tag = oldShift.csv_upload_tag
+        if tag is None:
+            tag = ""
+        shift.csv_upload_tag = tag + '_update'
+        # updated info
+        shift.revision = revision
+        shift.date = oldShift.date + deltaToApply
+        try:
+            shift.save()
+            doneCounter += 1
+        except Exception:
+            messages.error(request, 'Cannot update old shift {}, skipping!'.format(oldShift))
+
+    # at last, update the actual campaign data
+    campaign.revision = revision
+    campaign.date_start = campaign.date_start + deltaToApply
+    campaign.date_end = campaign.date_end + deltaToApply
+    campaign.save()
+    messages.info(request, 'Done OK with {} shifts'.format(doneCounter))
+    return HttpResponseRedirect(reverse("shifter:shift-update"))
+
+
+@require_safe
+@login_required
+def shifts_upload(request):
+    data = {'campaigns': Campaign.objects.all(),
+            'revisions': Revision.objects.all(),
+            'roles': ShiftRole.objects.all(),
+            }
+    return render(request, "shifts_upload.html", prepare_default_context(request, data))
+
+
+@require_http_methods(["POST"])
+@csrf_protect
+@login_required
+def shifts_upload_post(request):
+    # add campaigns and revisions
+    data = {'campaigns': Campaign.objects.all(),
+            'revisions': Revision.objects.all(),
+            'roles': ShiftRole.objects.all(),
+            }
+    totalLinesAdded = 0
+    revision = Revision.objects.filter(number=request.POST['revision']).first()
+    campaign = Campaign.objects.filter(id=request.POST['camp']).first()
+    defaultShiftRole = None
+    if int(request.POST['role']) > 0:
+        defaultShiftRole = ShiftRole.objects.filter(id=request.POST['role']).first()
+    shiftRole = defaultShiftRole
+    try:
+        csv_file = request.FILES["csv_file"]
+        if not csv_file.name.endswith('.csv'):
+            messages.error(request, "Wrong file type! Needs to be CSV")
+            return HttpResponseRedirect(reverse("shifter:shift-upload"))
+        if csv_file.multiple_chunks():
+            messages.error(request, "Too large file")
+            return HttpResponseRedirect(reverse("shifter:shift-upload"))
+
+        file_data = csv_file.read().decode("utf-8")
+        date_txt = csv_file.name.replace('.csv', '').split('__')[1]
+        date = datetime.datetime.fromisoformat(date_txt)
+        lines = file_data.split("\n")
+        for lineIndex, line in enumerate(lines):
+            fields = line.split(",")
+            nameFromFile = fields[0]
+            for dayIndex, one in enumerate(fields):
+                if dayIndex == 0:
+                    continue
+                if one == '' or one == '-':  # neutral shift slot abbrev
+                    continue
+                slotAbbrev = one
+                shiftDetails = one.split(':')
+                if len(shiftDetails):  # index 0-> name, index -> shift role
+                    slotAbbrev = shiftDetails[0]
+                    if len(shiftDetails) > 1:
+                        if shiftDetails[1] == "-":
+                            shiftRole = None
+                        else:
+                            shiftRole = ShiftRole.objects.filter(abbreviation=shiftDetails[1]).first()
+                            if shiftRole is None:
+                                messages.error(request, 'Cannot find role defined like {} for at line \
+                                                            {} and column {} (for {}), using default one {}.' \
+                                               .format(shiftDetails[1], lineIndex, dayIndex,
+                                                       nameFromFile, defaultShiftRole))
+                                shiftRole = defaultShiftRole
+
+                shiftFullDate = date + datetime.timedelta(days=dayIndex - 1)
+                shift = Shift()
+                try:
+                    member = Member.objects.get(first_name=nameFromFile)
+                    slot = Slot.objects.get(abbreviation=slotAbbrev)
+                    shift.campaign = campaign
+                    shift.role = shiftRole
+                    shift.revision = revision
+                    shift.date = shiftFullDate
+                    shift.slot = slot
+                    shift.member = member
+                    shift.csv_upload_tag = csv_file.name
+                    totalLinesAdded += 1
+                except Exception:
+                    messages.error(request, 'Could not find system member for ({}) / slot ({}), in line {} column {}.\
+                                    Skipping for now Check your file'
+                                   .format(fields[0], one, lineIndex, dayIndex))
+                try:
+                    shift.save()
+                    shiftRole = defaultShiftRole
+                except Exception:
+                    messages.error(request, 'Could not add member {} for {} {}, \
+                                            Already in the system for the same \
+                                            role: {}  campaign: {} and revision {}'
+                                   .format(member, shiftFullDate, one, shiftRole, campaign, revision))
+
+    except Exception as e:
+        messages.error(request, "Unable to upload file. Critical error, see {}".format(e))
+
+    messages.success(request, "Uploaded and saved {} shifts provided with {}".format(totalLinesAdded, csv_file.name))
+    return HttpResponseRedirect(reverse("shifter:shift-upload"))
+
+
+@require_safe
 def phonebook(request):
     context = {
         'result': [],
     }
+    return render(request, 'phonebook.html', prepare_default_context(request, context))
 
-    if request.POST.get('searchKey') is not None:
-        import members.directory as directory
-        ldap = directory.LDAP()
-        r = ldap.search(field='name', text=request.POST.get('searchKey'))
-        for one in r.keys():
-            photo = None
-            if len(r[one]['photo']):
-                import base64
-                photo = base64.b64encode(r[one]['photo']).decode("utf-8")
-            context['result'].append({'name': one,
-                                      'mobile': r[one]['mobile'],
-                                      'email': r[one]['email'],
-                                      'photo': photo, })
 
+@require_http_methods(["POST"])
+@csrf_protect
+def phonebook_post(request):
+    context = {
+        'result': [],
+    }
+    import members.directory as directory
+    ldap = directory.LDAP()
+    r = ldap.search(field='name', text=request.POST.get('searchKey','SomeNonsenseToNotBeFound'))
+    for one in r.keys():
+        photo = None
+        if len(r[one]['photo']):
+            import base64
+            photo = base64.b64encode(r[one]['photo']).decode("utf-8")
+        context['result'].append({'name': one,
+                                  'mobile': r[one]['mobile'],
+                                  'email': r[one]['email'],
+                                  'photo': photo, })
     return render(request, 'phonebook.html', prepare_default_context(request, context))

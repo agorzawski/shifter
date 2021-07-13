@@ -66,6 +66,17 @@ def prepareShiftId(today, activeSlot):
     return today.strftime(DATE_FORMAT_SLIM) + shiftMap[number]
 
 
+def filter_active_slots(now, scheduled_shifts, slotsToConsider):
+    slots = []
+    for slot in slotsToConsider:
+        if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
+                or slot.hour_start <= now < slot.hour_end:
+            for shifter in scheduled_shifts:
+                if shifter.slot == slot:
+                    slots.append(slot)
+    return slots
+
+
 def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
     import members.directory as directory
     ldap = directory.LDAP()
@@ -80,14 +91,12 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
 
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
-    slots = []
     slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
-    for slot in slotsToConsider:
-        if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
-                or slot.hour_start <= now < slot.hour_end:
-            for shifter in scheduled_shifts:
-                if shifter.slot == slot:
-                    slots.append(slot)
+    slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
+    slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts, Slot.objects.filter(op=True))
+    if len(slotsOPWithinScheduled) == 0:
+        slotsOPWithinScheduled = slots
+        # FIXME check when off 24h slots
 
     def takeHourEnd(slotToSort):
         return slotToSort.hour_end
@@ -125,9 +134,9 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
                         shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
     return {'today': today,
-            'shiftID': prepareShiftId(today, activeSlot),
+            'shiftID': prepareShiftId(today, slotsOPWithinScheduled[0]),
             'activeSlots': set(activeSlots),
-            'activeSlot': activeSlot,
+            'activeSlot': slotsOPWithinScheduled[0],
             'currentTeam': currentTeam}
 
 

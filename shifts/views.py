@@ -18,6 +18,7 @@ from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CON
 
 DATE_FORMAT = '%Y-%m-%d'
 DATE_FORMAT_SLIM = '%Y%m%d'
+MONTH_NAME = '%B'
 
 
 def prepare_default_context(request, contextToAdd):
@@ -206,8 +207,8 @@ def user(request):
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     context = {
         'member': member,
-        'currentmonth': currentMonth.strftime('%B'),
-        'nextmonth': nextMonth.strftime('%B'),
+        'currentmonth': currentMonth.strftime(MONTH_NAME),
+        'nextmonth': nextMonth.strftime(MONTH_NAME),
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
@@ -235,7 +236,10 @@ def get_shift_summary(m, validSlots, revision, currentMonth) -> tuple:
 @login_required
 def team(request):
     currentMonth = datetime.datetime.now()
+    if request.GET.get('date'):
+        currentMonth = datetime.datetime.strptime(request.GET['date'], SIMPLE_DATE)
     nextMonth = currentMonth + datetime.timedelta(31)  # banking rounding
+    lastMonth = currentMonth - datetime.timedelta(31)
     member = request.user
     teamMembers = Member.objects.filter(team=member.team)
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
@@ -256,8 +260,11 @@ def team(request):
         'member': member,
         'teamMembers': teamMembersSummary,
         'validSlots': validSlots,
-        'currentmonth': currentMonth.strftime('%B'),
-        'nextmonth': nextMonth.strftime('%B'),
+        'currentmonth_label': currentMonth.strftime(MONTH_NAME),
+        'nextmonth': nextMonth.strftime(SIMPLE_DATE),
+        'lastmonth': lastMonth.strftime(SIMPLE_DATE),
+        'nextmonth_label': nextMonth.strftime(MONTH_NAME),
+        'lastmonth_label': lastMonth.strftime(MONTH_NAME),
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }

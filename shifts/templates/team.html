@@ -4,7 +4,14 @@
       <main role="main">
           <br>
           <h2> Hello {{member.first_name}}!</h2>
-          <h4>Your team - {{member.team}} - breakdown <strong>in {{currentmonth}}</strong>:</h4>
+          <h4>Your team - {{member.team}} - breakdown</h4>
+          <p>
+          <div class="btn-group" role="group" aria-label="Basic example">
+              <a type="button" class="btn btn-primary" href="team?date={{lastmonth}}">{{lastmonth_label}} < </a>
+              <a type="button" class="btn btn-light" > <strong>{{currentmonth_label}}</strong></a>
+              <a type="button" class="btn btn-primary"href="team?date={{nextmonth}}"> > {{nextmonth_label}}</a>
+          </div>
+          </p>
           <table class="table table-striped" >
               <thead>
                 <tr>

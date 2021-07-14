@@ -1,5 +1,10 @@
 # ESS OP Shifter Changelog
 
+### v.0.5.2
+- fixes for code quality issues (sonarqube report before deploying to production)
+- fix for the phone number formatting
+- added extended view on the team's shift breakdown
+
 ### v.0.5.1
 - fix for the Today's page (now again includes all slots at given moment)
 - minor bugs correction (found thanks to sonar scan)

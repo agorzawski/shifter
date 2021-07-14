@@ -12,6 +12,7 @@ import members.models
 from shifts.models import *
 import datetime
 import os
+import phonenumbers
 
 from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
     SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE
@@ -129,7 +130,9 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
                     # Temporary assignment from the LDAP, for the purpose of the render,
                     # NOT TO BE persisted, i.e. do not use shifter.save()!
                     shifter.member.email = personal_data[one]['email']
-                    shifter.member.mobile = personal_data[one]['mobile']
+                    pn = phonenumbers.parse(personal_data[one]['mobile'], 'SE')
+                    shifter.member.mobile =  phonenumbers.format_number(pn,
+                                                                        phonenumbers.PhoneNumberFormat.INTERNATIONAL)
                     if type(personal_data[one]['photo']) is not str:
                         import base64
                         shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")

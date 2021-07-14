@@ -3,7 +3,7 @@ from django.utils.translation import ngettext
 from django.contrib import messages
 # Register your models here.
 
-from .models import *
+from shifts.models import ShifterMessage, Revision, Campaign, Slot, Shift, ShiftRole
 
 
 @admin.register(ShifterMessage)

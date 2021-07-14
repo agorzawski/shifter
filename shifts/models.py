@@ -6,6 +6,8 @@ from django.utils.functional import cached_property
 import datetime
 from enum import Enum
 
+SIMPLE_DATE = "%Y-%m-%d"
+
 
 class ShifterMessage(models.Model):
     number = models.AutoField(primary_key=True, blank=True)
@@ -19,7 +21,7 @@ class Revision(models.Model):
     valid = models.BooleanField()
 
     def __str__(self):
-        return 'v{} from {}'.format(self.number, self.date_start.strftime("%Y-%m-%d"))
+        return 'v{} from {}'.format(self.number, self.date_start.strftime(SIMPLE_DATE))
 
 
 class Campaign(models.Model):
@@ -41,11 +43,11 @@ class Campaign(models.Model):
 
     @cached_property
     def start_text(self):
-        return self.date_start.strftime("%Y-%m-%d") # %H:%M:%S
+        return self.date_start.strftime(SIMPLE_DATE) # %H:%M:%S
 
     @cached_property
     def end_text(self):
-        return self.date_end.strftime("%Y-%m-%d")
+        return self.date_end.strftime(SIMPLE_DATE)
 
 
 class Slot(models.Model):

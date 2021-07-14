@@ -1,5 +1,7 @@
 import os
+import ssl
 import ldap3
+from ldap3 import Tls
 
 
 class LDAP:
@@ -8,7 +10,8 @@ class LDAP:
         server = os.getenv('LDAP_SERVER','')
         username = os.getenv('LDAP_USER','')
         password = os.getenv('LDAP_PASSWORD','')
-        self.server = ldap3.Server(server)
+        tls = Tls(validate=ssl.CERT_REQUIRED, version=ssl.PROTOCOL_TLSv1_2)
+        self.server = ldap3.Server(server, port=636, use_ssl=True, tls=tls)
         self.connection = ldap3.Connection(self.server, username, password)
         print('LDAP connection...', self.connection)
 

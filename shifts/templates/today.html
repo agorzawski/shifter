@@ -19,7 +19,7 @@
         <div style="padding:40px;text-align:center;float:left;"> <h3><strong>{{shifter.member.first_name}}</strong> {{shifter.member.last_name}}</h3>
           <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}light{%endif%}"> {% if shifter.role != null %}{{shifter.role}}<br>({{shifter.member.role}}){%else%}{{shifter.member.role}}{%endif%} </span></h3>
           <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}secondary{%endif%}"> {{shifter.member.team}} </span></h3>
-          {% if shifter.member.photo|length > 0 %} <img src='data:image/gif;base64,{{shifter.member.photo}}' height="100"/> {% endif %}
+          {% if shifter.member.photo|length > 0 %} <img src='data:image/gif;base64,{{shifter.member.photo}}' height="100" alt=""/> {% endif %}
           <h4> mobile: <a class="btn btn-outline-primary" href="tel:{{shifter.member.mobile}}"><strong>{{shifter.member.mobile}}</strong></a> </h4>
           <h4> email: <a class="btn btn-outline-primary" href="mailto:{{shifter.member.email}}">{{shifter.member.email}}</a> </h4>
         </div>

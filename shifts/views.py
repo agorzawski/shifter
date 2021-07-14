@@ -6,17 +6,20 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 import django.contrib.messages as messages
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods, require_safe
 
 import members.models
 from shifts.models import *
 import datetime
 import os
+import phonenumbers
 
 from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
     SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE
 
 DATE_FORMAT = '%Y-%m-%d'
 DATE_FORMAT_SLIM = '%Y%m%d'
+MONTH_NAME = '%B'
 
 
 def prepare_default_context(request, contextToAdd):
@@ -30,7 +33,6 @@ def prepare_default_context(request, contextToAdd):
     latest_revision = Revision.objects.filter(valid=True).order_by('-number').first()
     stream = os.popen('git describe --tags')
     GIT_LAST_TAG = stream.read()
-    print(SHIFTER_TEST_INSTANCE)
     if SHIFTER_TEST_INSTANCE:
         messages.info(request,
                       'This is an test instance. Please refer to <a href="{}">the production instance</a> for uptodate schedule.'.format(
@@ -66,6 +68,17 @@ def prepareShiftId(today, activeSlot):
     return today.strftime(DATE_FORMAT_SLIM) + shiftMap[number]
 
 
+def filter_active_slots(now, scheduled_shifts, slotsToConsider):
+    slots = []
+    for slot in slotsToConsider:
+        if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
+                or slot.hour_start <= now < slot.hour_end:
+            for shifter in scheduled_shifts:
+                if shifter.slot == slot:
+                    slots.append(slot)
+    return slots
+
+
 def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
     import members.directory as directory
     ldap = directory.LDAP()
@@ -80,14 +93,12 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
 
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
-    slots = []
     slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
-    for slot in slotsToConsider:
-        if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
-                or slot.hour_start <= now < slot.hour_end:
-            for shifter in scheduled_shifts:
-                if shifter.slot == slot:
-                    slots.append(slot)
+    slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
+    slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts, Slot.objects.filter(op=True))
+    if len(slotsOPWithinScheduled) == 0:
+        slotsOPWithinScheduled = slots
+        # FIXME check when off 24h slots
 
     def takeHourEnd(slotToSort):
         return slotToSort.hour_end
@@ -119,27 +130,38 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
                     # Temporary assignment from the LDAP, for the purpose of the render,
                     # NOT TO BE persisted, i.e. do not use shifter.save()!
                     shifter.member.email = personal_data[one]['email']
-                    shifter.member.mobile = personal_data[one]['mobile']
+                    pn = phonenumbers.parse(personal_data[one]['mobile'], 'SE')
+                    shifter.member.mobile =  phonenumbers.format_number(pn,
+                                                                        phonenumbers.PhoneNumberFormat.INTERNATIONAL)
                     if type(personal_data[one]['photo']) is not str:
                         import base64
                         shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
     return {'today': today,
-            'shiftID': prepareShiftId(today, activeSlot),
+            'shiftID': prepareShiftId(today, slotsOPWithinScheduled[0]),
             'activeSlots': set(activeSlots),
-            'activeSlot': activeSlot,
+            'activeSlot': slotsOPWithinScheduled[0],
             'currentTeam': currentTeam}
 
 
-@csrf_protect
+@require_safe
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
-    if "GET" == request.method:
-        revision = revisions.first()
-    else:
-        revision = Revision.objects.filter(number=request.POST['revision']).first()
-        # TODO implement filter on campaigns
+    revision = revisions.first()
+    return prepare_main_page(request, revisions, revision)
 
+
+@require_http_methods(["POST"])
+@csrf_protect
+def index_post(request):
+    revisions = Revision.objects.filter(valid=True).order_by("-number")
+    revision = Revision.objects.filter(number=request.POST['revision']).first()
+    # TODO implement filter on campaigns
+    filtered_campaigns = None
+    return prepare_main_page(request, revisions, revision, filtered_campaigns=filtered_campaigns)
+
+
+def prepare_main_page(request, revisions, revision, filtered_campaigns=None):
     scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
                                                                         'member__role__priority')
     scheduled_campaigns = Campaign.objects.filter(revision=revision)
@@ -147,11 +169,13 @@ def index(request):
         'revisions': revisions,
         'displayed_revision': revision,
         'scheduled_shifts_list': scheduled_shifts,
+        'filtered_campaigns': filtered_campaigns,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
     return render(request, 'index.html', prepare_default_context(request, context))
 
 
+@require_safe
 def dates(request):
     context = {
         'campaigns': Campaign.objects.all(),
@@ -162,6 +186,7 @@ def dates(request):
     return render(request, 'dates.html', prepare_default_context(request, context))
 
 
+@require_safe
 def todays(request):
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
@@ -174,6 +199,7 @@ def todays(request):
     return render(request, 'today.html', prepare_default_context(request, context))
 
 
+@require_safe
 @login_required
 def user(request):
     currentMonth = datetime.datetime.now()
@@ -184,8 +210,8 @@ def user(request):
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     context = {
         'member': member,
-        'currentmonth': currentMonth.strftime('%B'),
-        'nextmonth': nextMonth.strftime('%B'),
+        'currentmonth': currentMonth.strftime(MONTH_NAME),
+        'nextmonth': nextMonth.strftime(MONTH_NAME),
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
@@ -209,10 +235,14 @@ def get_shift_summary(m, validSlots, revision, currentMonth) -> tuple:
     return len(scheduled_shifts), result
 
 
+@require_safe
 @login_required
 def team(request):
     currentMonth = datetime.datetime.now()
+    if request.GET.get('date'):
+        currentMonth = datetime.datetime.strptime(request.GET['date'], SIMPLE_DATE)
     nextMonth = currentMonth + datetime.timedelta(31)  # banking rounding
+    lastMonth = currentMonth - datetime.timedelta(31)
     member = request.user
     teamMembers = Member.objects.filter(team=member.team)
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
@@ -233,14 +263,18 @@ def team(request):
         'member': member,
         'teamMembers': teamMembersSummary,
         'validSlots': validSlots,
-        'currentmonth': currentMonth.strftime('%B'),
-        'nextmonth': nextMonth.strftime('%B'),
+        'currentmonth_label': currentMonth.strftime(MONTH_NAME),
+        'nextmonth': nextMonth.strftime(SIMPLE_DATE),
+        'lastmonth': lastMonth.strftime(SIMPLE_DATE),
+        'nextmonth_label': nextMonth.strftime(MONTH_NAME),
+        'lastmonth_label': lastMonth.strftime(MONTH_NAME),
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
     return render(request, 'team.html', prepare_default_context(request, context))
 
 
+@require_safe
 @login_required
 def icalendar_view(request):
     month = None
@@ -275,6 +309,7 @@ def icalendar_view(request):
     return HttpResponse(body.replace('\n', '\r\n'), content_type='text/calendar')
 
 
+@require_safe
 def ioc_update(request):
     """
     Expose JSON with current shift setup. To be used by any script/tool to update the IOC
@@ -303,7 +338,7 @@ def ioc_update(request):
     return JsonResponse(dataToReturn)
 
 
-@csrf_protect
+@require_safe
 @login_required
 def shifts_update(request):
     # add campaigns and revisions
@@ -311,71 +346,83 @@ def shifts_update(request):
             'revisions': Revision.objects.all(),
             'today': datetime.datetime.now().strftime(DATE_FORMAT)
             }
-
-    totalLinesAdded = 0
-    if "GET" == request.method:
-        return render(request, "shifts_update.html", prepare_default_context(request, data))
-
-    else:
-        revision = Revision.objects.filter(number=request.POST['revision']).first()
-        campaign = Campaign.objects.filter(id=request.POST['camp']).first()
-        oldStartDate = campaign.date_start
-        newStartDate = datetime.datetime.strptime(request.POST['new-date'], DATE_FORMAT).date()
-        daysDelta = newStartDate - oldStartDate
-        deltaToApply = datetime.timedelta(days=daysDelta.days)
-        messages.info(request, 'Found {} difference to update'.format(daysDelta))
-        shifts_to_update = Shift.objects.filter(campaign=campaign, revision=campaign.revision)
-        messages.info(request, 'Found {} shifts to update'.format(len(shifts_to_update)))
-        doneCounter = 0
-        for oldShift in shifts_to_update:
-            shift = Shift()
-            shift.member = oldShift.member
-            shift.campaign = campaign
-            shift.slot = oldShift.slot
-            shift.role = oldShift.role
-            tag = oldShift.csv_upload_tag
-            if tag is None:
-                tag = ""
-            shift.csv_upload_tag = tag + '_update'
-            # updated info
-            shift.revision = revision
-            shift.date = oldShift.date + deltaToApply
-            try:
-                shift.save()
-                doneCounter += 1
-            except Exception:
-                messages.error(request, 'Cannot update old shift {}, skipping!'.format(oldShift))
-
-        # at last, update the actual campaign data
-        campaign.revision = revision
-        campaign.date_start = campaign.date_start + deltaToApply
-        campaign.date_end = campaign.date_end + deltaToApply
-        campaign.save()
-        messages.info(request, 'Done OK with {} shifts'.format(doneCounter))
-        return HttpResponseRedirect(reverse("shifter:shift-update"))
+    return render(request, "shifts_update.html", prepare_default_context(request, data))
 
 
+@require_http_methods(["POST"])
 @csrf_protect
 @login_required
-def shifts_upload(request):
+def shifts_update_post(request):
     # add campaigns and revisions
+    data = {'campaigns': Campaign.objects.all(),
+            'revisions': Revision.objects.all(),
+            'today': datetime.datetime.now().strftime(DATE_FORMAT)
+            }
 
+    revision = Revision.objects.filter(number=request.POST['revision']).first()
+    campaign = Campaign.objects.filter(id=request.POST['camp']).first()
+    oldStartDate = campaign.date_start
+    newStartDate = datetime.datetime.strptime(request.POST['new-date'], DATE_FORMAT).date()
+    daysDelta = newStartDate - oldStartDate
+    deltaToApply = datetime.timedelta(days=daysDelta.days)
+    messages.info(request, 'Found {} difference to update'.format(daysDelta))
+    shifts_to_update = Shift.objects.filter(campaign=campaign, revision=campaign.revision)
+    messages.info(request, 'Found {} shifts to update'.format(len(shifts_to_update)))
+    doneCounter = 0
+    for oldShift in shifts_to_update:
+        shift = Shift()
+        shift.member = oldShift.member
+        shift.campaign = campaign
+        shift.slot = oldShift.slot
+        shift.role = oldShift.role
+        tag = oldShift.csv_upload_tag
+        if tag is None:
+            tag = ""
+        shift.csv_upload_tag = tag + '_update'
+        # updated info
+        shift.revision = revision
+        shift.date = oldShift.date + deltaToApply
+        try:
+            shift.save()
+            doneCounter += 1
+        except Exception:
+            messages.error(request, 'Cannot update old shift {}, skipping!'.format(oldShift))
+
+    # at last, update the actual campaign data
+    campaign.revision = revision
+    campaign.date_start = campaign.date_start + deltaToApply
+    campaign.date_end = campaign.date_end + deltaToApply
+    campaign.save()
+    messages.info(request, 'Done OK with {} shifts'.format(doneCounter))
+    return HttpResponseRedirect(reverse("shifter:shift-update"))
+
+
+@require_safe
+@login_required
+def shifts_upload(request):
     data = {'campaigns': Campaign.objects.all(),
             'revisions': Revision.objects.all(),
             'roles': ShiftRole.objects.all(),
             }
+    return render(request, "shifts_upload.html", prepare_default_context(request, data))
 
+
+@require_http_methods(["POST"])
+@csrf_protect
+@login_required
+def shifts_upload_post(request):
+    # add campaigns and revisions
+    data = {'campaigns': Campaign.objects.all(),
+            'revisions': Revision.objects.all(),
+            'roles': ShiftRole.objects.all(),
+            }
     totalLinesAdded = 0
-    if "GET" == request.method:
-        return render(request, "shifts_upload.html", prepare_default_context(request, data))
-
-    # POST
     revision = Revision.objects.filter(number=request.POST['revision']).first()
     campaign = Campaign.objects.filter(id=request.POST['camp']).first()
-    defautshiftrole = None
+    defaultShiftRole = None
     if int(request.POST['role']) > 0:
-        defautshiftrole = ShiftRole.objects.filter(id=request.POST['role']).first()
-    shiftRole = defautshiftrole
+        defaultShiftRole = ShiftRole.objects.filter(id=request.POST['role']).first()
+    shiftRole = defaultShiftRole
     try:
         csv_file = request.FILES["csv_file"]
         if not csv_file.name.endswith('.csv'):
@@ -398,20 +445,20 @@ def shifts_upload(request):
                 if one == '' or one == '-':  # neutral shift slot abbrev
                     continue
                 slotAbbrev = one
-                shiftDetais = one.split(':')
-                if len(shiftDetais):  # index 0-> name, index -> shift role
-                    slotAbbrev = shiftDetais[0]
-                    if len(shiftDetais) > 1:
-                        if shiftDetais[1] == "-":
+                shiftDetails = one.split(':')
+                if len(shiftDetails):  # index 0-> name, index -> shift role
+                    slotAbbrev = shiftDetails[0]
+                    if len(shiftDetails) > 1:
+                        if shiftDetails[1] == "-":
                             shiftRole = None
                         else:
-                            shiftRole = ShiftRole.objects.filter(abbreviation=shiftDetais[1]).first()
+                            shiftRole = ShiftRole.objects.filter(abbreviation=shiftDetails[1]).first()
                             if shiftRole is None:
                                 messages.error(request, 'Cannot find role defined like {} for at line \
                                                             {} and column {} (for {}), using default one {}.' \
-                                               .format(shiftDetais[1], lineIndex, dayIndex,
-                                                       nameFromFile, defautshiftrole))
-                                shiftRole = defautshiftrole
+                                               .format(shiftDetails[1], lineIndex, dayIndex,
+                                                       nameFromFile, defaultShiftRole))
+                                shiftRole = defaultShiftRole
 
                 shiftFullDate = date + datetime.timedelta(days=dayIndex - 1)
                 shift = Shift()
@@ -432,7 +479,7 @@ def shifts_upload(request):
                                    .format(fields[0], one, lineIndex, dayIndex))
                 try:
                     shift.save()
-                    shiftRole = defautshiftrole
+                    shiftRole = defaultShiftRole
                 except Exception:
                     messages.error(request, 'Could not add member {} for {} {}, \
                                             Already in the system for the same \
@@ -446,25 +493,30 @@ def shifts_upload(request):
     return HttpResponseRedirect(reverse("shifter:shift-upload"))
 
 
-@csrf_protect
+@require_safe
 def phonebook(request):
     context = {
         'result': [],
     }
+    return render(request, 'phonebook.html', prepare_default_context(request, context))
 
-    print(request.POST.keys())
-    if request.POST.get('searchKey') is not None:
-        import members.directory as directory
-        ldap = directory.LDAP()
-        r = ldap.search(field='name', text=request.POST.get('searchKey'))
-        for one in r.keys():
-            photo = None
-            if len(r[one]['photo']):
-                import base64
-                photo = base64.b64encode(r[one]['photo']).decode("utf-8")
-            context['result'].append({'name': one,
-                                      'mobile': r[one]['mobile'],
-                                      'email': r[one]['email'],
-                                      'photo': photo, })
 
+@require_http_methods(["POST"])
+@csrf_protect
+def phonebook_post(request):
+    context = {
+        'result': [],
+    }
+    import members.directory as directory
+    ldap = directory.LDAP()
+    r = ldap.search(field='name', text=request.POST.get('searchKey','SomeNonsenseToNotBeFound'))
+    for one in r.keys():
+        photo = None
+        if len(r[one]['photo']):
+            import base64
+            photo = base64.b64encode(r[one]['photo']).decode("utf-8")
+        context['result'].append({'name': one,
+                                  'mobile': r[one]['mobile'],
+                                  'email': r[one]['email'],
+                                  'photo': photo, })
     return render(request, 'phonebook.html', prepare_default_context(request, context))

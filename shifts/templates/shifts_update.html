@@ -8,7 +8,7 @@
           <li>update the campaign with selected revision</li>
           <li>create new shifts with adjusted to the new date and assigned with selected revision</li>
       </ul>
-    <form action="{% url "shifter:shift-update" %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+    <form action="{% url "shifter:shift-update-post" %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
     {% csrf_token %}
 
       <div class="form-group">

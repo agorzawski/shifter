@@ -15,7 +15,7 @@ import os
 import phonenumbers
 
 from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
-    SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE
+    SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME
 
 DATE_FORMAT = '%Y-%m-%d'
 DATE_FORMAT_SLIM = '%Y%m%d'
@@ -48,6 +48,7 @@ def prepare_default_context(request, contextToAdd):
         'APP_NAME': MAIN_PAGE_HOME_BUTTON,
         'APP_REPO': APP_REPO,
         'APP_REPO_ICON': APP_REPO_ICON,
+        'PHONEBOOK_NAME': PHONEBOOK_NAME,
         'APP_GIT_TAG': GIT_LAST_TAG,
         'controlRoomPhoneNumber': CONTROL_ROOM_PHONE_NUMBER,
         'wwwWithMoreInfo': WWW_EXTRA_INFO,
@@ -96,9 +97,12 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
     slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
     slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
     slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts, Slot.objects.filter(op=True))
+    slotToBeUsed = None
     if len(slotsOPWithinScheduled) == 0:
         slotsOPWithinScheduled = slots
         # FIXME check when off 24h slots
+    else:
+        slotToBeUsed = slotsOPWithinScheduled[0]
 
     def takeHourEnd(slotToSort):
         return slotToSort.hour_end
@@ -130,17 +134,21 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
                     # Temporary assignment from the LDAP, for the purpose of the render,
                     # NOT TO BE persisted, i.e. do not use shifter.save()!
                     shifter.member.email = personal_data[one]['email']
-                    pn = phonenumbers.parse(personal_data[one]['mobile'], 'SE')
-                    shifter.member.mobile =  phonenumbers.format_number(pn,
-                                                                        phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+                    shifter.member.mobile = 'N/A'
+                    try:
+                        pn = phonenumbers.parse(personal_data[one]['mobile'])
+                        shifter.member.mobile = phonenumbers.format_number(pn,
+                                                                           phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+                    except Exception:
+                        pass
                     if type(personal_data[one]['photo']) is not str:
                         import base64
                         shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
     return {'today': today,
-            'shiftID': prepareShiftId(today, slotsOPWithinScheduled[0]),
+            'shiftID': prepareShiftId(today, slotToBeUsed),
             'activeSlots': set(activeSlots),
-            'activeSlot': slotsOPWithinScheduled[0],
+            'activeSlot': slotToBeUsed,
             'currentTeam': currentTeam}
 
 
@@ -515,8 +523,15 @@ def phonebook_post(request):
         if len(r[one]['photo']):
             import base64
             photo = base64.b64encode(r[one]['photo']).decode("utf-8")
+        phoneNb = 'N/A'
+        try:
+            pn = phonenumbers.parse(r[one]['mobile'])
+            phoneNb = phonenumbers.format_number(pn,
+                                                 phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+        except Exception:
+            pass
         context['result'].append({'name': one,
-                                  'mobile': r[one]['mobile'],
+                                  'mobile': phoneNb,
                                   'email': r[one]['email'],
                                   'photo': photo, })
     return render(request, 'phonebook.html', prepare_default_context(request, context))

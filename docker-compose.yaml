@@ -7,14 +7,32 @@ services:
       - .:/app
     command: /bin/bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     environment:
-      DJANGO_SECRET_KEY: mysecret
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: "True"
+
       DATABASE_ENGINE: django.db.backends.postgresql_psycopg2
       DATABASE_HOST: database
       DATABASE_PORT: 5432
       DATABASE_NAME: shifter
       DATABASE_USER: shifter
-      DATABASE_PASSWORD: secret
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+
+      MAIN_PAGE_HOME_BUTTON: ${MAIN_PAGE_HOME_BUTTON}
+      APP_REPO: ${APP_REPO}
+      APP_REPO_ICON: ${APP_REPO_ICON}
+      WWW_EXTRA_INFO: ${WWW_EXTRA_INFO}
+      CONTROL_ROOM_PHONE_NUMBER: ${CONTROL_ROOM_PHONE_NUMBER}
+      PHONEBOOK_NAME: ${PHONEBOOK_NAME}
+
+      LDAP_SERVER: ${LDAP_SERVER}
+      LDAP_DIRECTORY: ${LDAP_DIRECTORY}
+      LDAP_USER: ${LDAP_USER}
+      LDAP_PASSWORD: ${LDAP_PASSWORD}
+
+      LOGBOOK_SERVER: ${LOGBOOK_SERVER}
+      LOGBOOK_USER: ${LOGBOOK_USER}
+      LOGBOOK_PASSWORD: ${LOGBOOK_PASSWORD}
+
     ports:
       - 8000:8000
     depends_on:
@@ -25,4 +43,4 @@ services:
     environment:
       POSTGRES_DB: shifter
       POSTGRES_USER: shifter
-      POSTGRES_PASSWORD: secret
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

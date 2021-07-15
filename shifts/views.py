@@ -97,9 +97,12 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
     slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
     slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
     slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts, Slot.objects.filter(op=True))
+    slotToBeUsed = None
     if len(slotsOPWithinScheduled) == 0:
         slotsOPWithinScheduled = slots
         # FIXME check when off 24h slots
+    else:
+        slotToBeUsed = slotsOPWithinScheduled[0]
 
     def takeHourEnd(slotToSort):
         return slotToSort.hour_end
@@ -143,9 +146,9 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
                         shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
     return {'today': today,
-            'shiftID': prepareShiftId(today, slotsOPWithinScheduled[0]),
+            'shiftID': prepareShiftId(today, slotToBeUsed),
             'activeSlots': set(activeSlots),
-            'activeSlot': slotsOPWithinScheduled[0],
+            'activeSlot': slotToBeUsed,
             'currentTeam': currentTeam}
 
 

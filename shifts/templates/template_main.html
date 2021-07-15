@@ -31,12 +31,12 @@
       <img src="{% static 'img/shifter.png' %}" height="20" alt=""/>Now on shift</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href='/planning'> {% load static %}
+        <a class="nav-link" href='/'> {% load static %}
       <img src="{% static 'img/calendar.png' %}" height="20" alt=""/> Calendar Overview</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href='/phonebook'> {% load static %}
-      <img src="{% static 'img/phonebook.png' %}" height="20" alt=""/> Phonebook</a>
+      <img src="{% static 'img/phonebook.png' %}" height="20" alt=""/> {{PHONEBOOK_NAME}}</a>
       </li>
       <li class="nav-item" >
         <a class="nav-link" href='/user' > My Shifts {% if not logged_user %} {% load static %}

@@ -1,5 +1,9 @@
 # ESS OP Shifter Changelog
 
+### v.0.5.3
+- bug fixes
+- doc update
+
 ### v.0.5.2
 - fixes for code quality issues (sonarqube report before deploying to production)
 - fix for the phone number formatting

@@ -35,8 +35,10 @@ def prepare_default_context(request, contextToAdd):
     GIT_LAST_TAG = stream.read()
     if SHIFTER_TEST_INSTANCE:
         messages.info(request,
-                      'This is an test instance. Please refer to <a href="{}">the production instance</a> for uptodate schedule.'.format(
-                          SHIFTER_PRODUCTION_INSTANCE), )
+                      '<h4> <span class="badge bg-danger">ATTENTION!</span> </h4> \
+                       <strong>This is a DEVELOPMENT instance</strong>. <br>\
+                       In order to find current schedules, please refer to <a href="{}">the production instance</a>'
+                      .format(SHIFTER_PRODUCTION_INSTANCE), )
     for oneShifterMessages in ShifterMessage.objects.filter(valid=True).order_by('-number'):
         messages.warning(request, oneShifterMessages.description)
     context = {
@@ -49,6 +51,7 @@ def prepare_default_context(request, contextToAdd):
         'APP_REPO': APP_REPO,
         'APP_REPO_ICON': APP_REPO_ICON,
         'PHONEBOOK_NAME': PHONEBOOK_NAME,
+        'SHIFTER_TEST_INSTANCE': SHIFTER_TEST_INSTANCE,
         'APP_GIT_TAG': GIT_LAST_TAG,
         'controlRoomPhoneNumber': CONTROL_ROOM_PHONE_NUMBER,
         'wwwWithMoreInfo': WWW_EXTRA_INFO,

@@ -515,12 +515,11 @@ def phonebook(request):
 @require_http_methods(["POST"])
 @csrf_protect
 def phonebook_post(request):
-    context = {
-        'result': [],
-    }
+    tmp = []
     import members.directory as directory
     ldap = directory.LDAP()
-    r = ldap.search(field='name', text=request.POST.get('searchKey','SomeNonsenseToNotBeFound'))
+    searchKey = request.POST.get('searchKey', 'SomeNonsenseToNotBeFound')
+    r = ldap.search(field='name', text=searchKey)
     for one in r.keys():
         photo = None
         if len(r[one]['photo']):
@@ -533,8 +532,23 @@ def phonebook_post(request):
                                                  phonenumbers.PhoneNumberFormat.INTERNATIONAL)
         except Exception:
             pass
-        context['result'].append({'name': one,
-                                  'mobile': phoneNb,
-                                  'email': r[one]['email'],
-                                  'photo': photo, })
+        tmp.append({'name': one,
+                    'mobile': phoneNb,
+                    'email': r[one]['email'],
+                    'photo': photo,
+                    'valid': False})
+
+    context = {
+        'result': [],
+        'searchkey': searchKey
+    }
+    invalid = []
+    for one in tmp:
+        if one['mobile'] == 'N/A' or len(one['email']) == 0 :
+            invalid.append(one)
+            continue
+        one['valid'] = True
+        context['result'].append(one)
+    for one in invalid:
+        context['result'].append(one)
     return render(request, 'phonebook.html', prepare_default_context(request, context))

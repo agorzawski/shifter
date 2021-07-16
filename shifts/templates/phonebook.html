@@ -7,16 +7,28 @@
 
         <form class="form-inline my-2 my-lg-0" action="{% url "shifter:phonebook-post" %}" method="POST" enctype="multipart/form-data">
        {% csrf_token  %}
-        <input class="form-control mr-sm-2" type="search" name='searchKey' id="searchKey" placeholder="Search" aria-label="Search">
+        <input class="form-control mr-sm-2" type="search" name='searchKey' id="searchKey" placeholder={% if searchkey %}{{searchkey}}{% else %}"Search key..."{% endif %} aria-label="Search">
         <button class="btn btn-success my-2 my-sm-0" type="submit">Search</button>
         </form>
+         <hr/>
         {% for member in result %}
-          <div ><hr/> <h3><strong>{{member.name}}</strong></h3>
-            {% if member.photo|length > 0 %} <img src='data:image/gif;base64,{{member.photo}}' height="100" alt=""/> {% endif %}
-            <h4> mobile: <a class="btn btn-outline-primary" href="tel:{{member.mobile}}"><strong>{{member.mobile}}</strong></a> </h4>
-            <h4> email: <a class="btn btn-outline-primary" href="mailto:{{member.email}}">{{member.email}}</a> </h4>
+          <div class="card text-end mb-3" style="width:560px;float:left;">
+            <div class="row g-0">
+                <div class="col-md-4">
+                  {% if member.photo|length > 0 %} <img src='data:image/gif;base64,{{member.photo}}' height="200" alt=""/> {% endif %}
+                </div>
+                <div class="col-md-8">
+                {% if member.valid %}<div class="card-header">Full details</div>{% endif %}
+                <h3 class="card-title"><strong>{{member.name}}</strong></h3>
+                    <div class="card-body">
+                    <h5> mobile: <a class="btn btn-outline-primary" href="tel:{{member.mobile}}"><strong>{{member.mobile}}</strong></a> </h5>
+                    <h5> email: <a class="btn btn-outline-primary" href="mailto:{{member.email}}">{{member.email}}</a> </h5>
+                    </div>
+                </div>
+            </div>
           </div>
         {% endfor %}
+        <div style="clear:both;"></div>
         <hr/>
         <h5>Control Room Phone Number: <a class="btn btn-outline-primary" href="tel:{{controlRoomPhoneNumber}}"><strong>{{controlRoomPhoneNumber}}</strong></a></h5>
       </main>

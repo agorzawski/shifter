@@ -1,5 +1,9 @@
 # ESS OP Shifter Changelog
 
+### v.0.5.4
+- cleanup on phonebook entries style and sorting
+- updated production/development server indications
+
 ### v.0.5.3
 - bug fixes
 - doc update

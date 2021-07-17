@@ -1,5 +1,9 @@
 # ESS OP Shifter Changelog
 
+### v.0.5.7
+- view bugfixes
+- 
+
 ### v.0.5.6
 - exposed 'users' view (including ical get)
 - exposed 'team's' view

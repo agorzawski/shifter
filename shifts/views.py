@@ -213,9 +213,22 @@ def todays(request):
 @require_safe
 @login_required
 def user(request):
+    member = request.user
+    return prepare_user(request, member)
+
+
+@require_safe
+def user_simple(request):
+    if request.GET.get('id', None) is not None:
+        member = Member.objects.filter(id=request.GET.get('id')).first()
+        return prepare_user(request, member)
+    messages.info(request, 'Unauthorized access. Returning back to the main page!')
+    return HttpResponseRedirect(reverse("shifter:index"))
+
+
+def prepare_user(request, member):
     currentMonth = datetime.datetime.now()
     nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
-    member = request.user
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
@@ -249,18 +262,31 @@ def get_shift_summary(m, validSlots, revision, currentMonth) -> tuple:
 @require_safe
 @login_required
 def team(request):
+    member = request.user
+    return prepare_team(request, member, extraContext={'browsable': True})
+
+
+@require_safe
+def team_simple(request):
+    if request.GET.get('mid', None) is not None:
+        member = Member.objects.filter(id=request.GET.get('mid')).first()
+        return prepare_team(request, member, extraContext={'browsable': False})
+    messages.info(request, 'Unauthorized access. Returning back to the main page!')
+    return HttpResponseRedirect(reverse("shifter:index"))
+
+
+def prepare_team(request, member, extraContext=None):
     currentMonth = datetime.datetime.now()
     if request.GET.get('date'):
         currentMonth = datetime.datetime.strptime(request.GET['date'], SIMPLE_DATE)
     nextMonth = currentMonth + datetime.timedelta(31)  # banking rounding
     lastMonth = currentMonth - datetime.timedelta(31)
-    member = request.user
     teamMembers = Member.objects.filter(team=member.team)
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(member__team=member.team, revision=revision)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     # TODO get this outside the main code, maybe another flag in the Slot? TBC
-    slotLookUp = ['NWH', 'PM', 'AM', 'EV', 'NG']
+    slotLookUp = ['NWH', 'PM', 'AM', 'EV', 'NG', 'LMS', 'LES']
     validSlots = Slot.objects.filter(abbreviation__in=slotLookUp).order_by('hour_start')
     teamMembersSummary = []
     for m in teamMembers:
@@ -282,6 +308,9 @@ def team(request):
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }
+    if isinstance(extraContext, dict):
+        for one in extraContext.keys():
+            context[one]=extraContext[one]
     return render(request, 'team.html', prepare_default_context(request, context))
 
 

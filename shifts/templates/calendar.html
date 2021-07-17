@@ -58,6 +58,7 @@
             title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
             start:'{{ shift.shift_start }}',
             end:'{{ shift.shift_end }}',
+            url:'/u?id={{shift.member.id}}',
             {% if 'ShiftLeader' in shift.member.role.name %} textColor: '#E9E72D',{% endif %}
             color:'{{shift.slot.color_in_calendar}}',
             },

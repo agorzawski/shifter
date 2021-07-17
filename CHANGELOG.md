@@ -1,5 +1,13 @@
 # ESS OP Shifter Changelog
 
+### v.0.5.6
+- exposed 'users' view (including ical get)
+- exposed 'team's' view
+
+### v.0.5.5
+- bugfix on ical link
+- 
+
 ### v.0.5.4
 - cleanup on phonebook entries style and sorting
 - updated production/development server indications

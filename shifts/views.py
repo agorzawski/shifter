@@ -524,7 +524,7 @@ def shifts_upload_post(request):
                     messages.error(request, 'Could not add member {} for {} {}, \
                                             Already in the system for the same \
                                             role: {}  campaign: {} and revision {}'
-                                   .format(member, shiftFullDate, one, shiftRole, campaign, revision))
+                                   .format(fields[0], shiftFullDate, one, shiftRole, campaign, revision))
 
     except Exception as e:
         messages.error(request, "Unable to upload file. Critical error, see {}".format(e))

@@ -2,10 +2,10 @@ from django.test import TestCase
 from shifts.models import *
 import shifts.hrcodes as hrc
 
-HOURS_AM = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 0}  #
-HOURS_PM = {'OB1': 4, 'OB2': 0, 'OB3': 0, 'OB4': 0}  #
-HOURS_NG = {'OB1': 2, 'OB2': 6, 'OB3': 0, 'OB4': 0}  #
-HOURS_WE = {'OB1': 0, 'OB2': 0, 'OB3': 8, 'OB4': 0}  #
+HOURS_AM = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 8}  #
+HOURS_PM = {'OB1': 4, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 4}  #
+HOURS_NG = {'OB1': 2, 'OB2': 6, 'OB3': 0, 'OB4': 0, 'NWH': 0}  #
+HOURS_WE = {'OB1': 0, 'OB2': 0, 'OB3': 8, 'OB4': 0, 'NWH': 0}  #
 
 
 def get_shift(slot=None, fancy_date=None):

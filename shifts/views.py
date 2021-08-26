@@ -231,6 +231,8 @@ def prepare_user(request, member):
     nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision)
+    import shifts.hrcodes as hrc
+    shift2codes = hrc.get_date_code_counts(scheduled_shifts)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     context = {
         'member': member,
@@ -238,6 +240,8 @@ def prepare_user(request, member):
         'nextmonth': nextMonth.strftime(MONTH_NAME),
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
+        'hrcodes': shift2codes,
+        'hrcodes_summary': hrc.count_total(shift2codes)
     }
     return render(request, 'user.html', prepare_default_context(request, context))
 

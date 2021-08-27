@@ -4,7 +4,7 @@
       <main role="main">
           <br>
           <h2> Hello {{member.first_name}}!</h2>
-          <h4>Your team - {{member.team}} - breakdown</h4>
+          <h4>{{team}} - breakdown</h4>
           {% if browsable %}
           <div class="btn-group" role="group" aria-label="Basic example">
               <a type="button" class="btn btn-primary" href="?date={{lastmonth}}">{{lastmonth_label}} < </a>
@@ -16,7 +16,7 @@
               <thead>
                 <tr>
                   <th scope="col">TeamMate</th>
-                  <th scope="col">Role</th>
+
                   <th scope="col">Total Shifts</th>
                     {% for s in validSlots %} <th scope="col">{{s.name}}<br><small>({{s.hour_start}} - {{s.hour_end}})</small></th>
                   {% endfor %}
@@ -24,12 +24,12 @@
               </thead>
               <tbody>
               {% for m in teamMembers %}
-              <tr><td>{{m.0}}</td> <td>{{m.0.role}}</td><td>{{m.1}}</td> <td>{{m.2}}</td> <td>{{m.3}}</td><td>{{m.4}}</td><td>{{m.5}}</td><td>{{m.6}}</td><td>{{m.7}}</td><td>{{m.8}}</td></tr>
+              <tr><td><strong>{{m.0}}</strong>({{m.0.role}})</td><td>{{m.1}}</td> <td>{{m.2}}</td> <td>{{m.3}}</td><td>{{m.4}}</td><td>{{m.5}}</td><td>{{m.6}}</td><td>{{m.7}}</td><td>{{m.8}}</td></tr>
               {% endfor %}
               </tbody>
             </table>
           </ul>
-          <h2>{{member.team}} calendar</h2>
+         <h2>{{team}} calendar</h2>
       </main>
     </div>
 

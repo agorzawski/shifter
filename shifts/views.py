@@ -11,13 +11,14 @@ from django.views.decorators.http import require_http_methods, require_safe
 from django.db import IntegrityError
 
 import members.models
+from members.models import Team
 from shifts.models import *
 import datetime
 import os
 import phonenumbers
 
 from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
-    SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME
+    SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME, STOP_DEV_MESSAGES
 
 DATE_FORMAT = '%Y-%m-%d'
 DATE_FORMAT_SLIM = '%Y%m%d'
@@ -35,7 +36,7 @@ def prepare_default_context(request, contextToAdd):
     latest_revision = Revision.objects.filter(valid=True).order_by('-number').first()
     stream = os.popen('git describe --tags')
     GIT_LAST_TAG = stream.read()
-    if SHIFTER_TEST_INSTANCE:
+    if SHIFTER_TEST_INSTANCE and not STOP_DEV_MESSAGES:
         messages.info(request,
                       '<h4> <span class="badge bg-danger">ATTENTION!</span> </h4> \
                        <strong>This is a DEVELOPMENT instance</strong>. <br>\
@@ -47,6 +48,7 @@ def prepare_default_context(request, contextToAdd):
         'logged_user': request.user.is_authenticated,
         'defaultDate': date.strftime(DATE_FORMAT),
         'slots': Slot.objects.all().order_by('hour_start'),
+        'teams': Team.objects.all().order_by('name'),
         'latest_revision': latest_revision,
         'displayed_revision': latest_revision,
         'APP_NAME': MAIN_PAGE_HOME_BUTTON,
@@ -276,23 +278,29 @@ def team(request):
 def team_simple(request):
     if request.GET.get('mid', None) is not None:
         member = Member.objects.filter(id=request.GET.get('mid')).first()
-        return prepare_team(request, member, extraContext={'browsable': False})
+        return prepare_team(request, member=member, extraContext={'browsable': False})
+    if request.GET.get('id', None) is not None:
+        team = Team.objects.filter(id=request.GET.get('id')).first()
+        return prepare_team(request, team=team, extraContext={'browsable': False})
+
     messages.info(request, 'Unauthorized access. Returning back to the main page!')
     return HttpResponseRedirect(reverse("shifter:index"))
 
 
-def prepare_team(request, member, extraContext=None):
+def prepare_team(request, member=None, team=None, extraContext=None):
     currentMonth = datetime.datetime.now()
     if request.GET.get('date'):
         currentMonth = datetime.datetime.strptime(request.GET['date'], SIMPLE_DATE)
     nextMonth = currentMonth + datetime.timedelta(31)  # banking rounding
     lastMonth = currentMonth - datetime.timedelta(31)
-    teamMembers = Member.objects.filter(team=member.team)
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    scheduled_shifts = Shift.objects.filter(member__team=member.team, revision=revision)
+    if team is None and Member is not None:
+        team = member.team
+    teamMembers = Member.objects.filter(team=team)
+    scheduled_shifts = Shift.objects.filter(member__team=team, revision=revision)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     # TODO get this outside the main code, maybe another flag in the Slot? TBC
-    slotLookUp = ['NWH', 'PM', 'AM', 'EV', 'NG', 'LMS', 'LES']
+    slotLookUp = ['NWH', 'PM', 'AM', 'EV', 'NG', 'LMS', 'LES', 'D', 'A']
     validSlots = Slot.objects.filter(abbreviation__in=slotLookUp).order_by('hour_start')
     teamMembersSummary = []
     for m in teamMembers:
@@ -304,6 +312,7 @@ def prepare_team(request, member, extraContext=None):
 
     context = {
         'member': member,
+        'team': team,
         'teamMembers': teamMembersSummary,
         'validSlots': validSlots,
         'currentmonth_label': currentMonth.strftime(MONTH_NAME),

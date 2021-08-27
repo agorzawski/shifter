@@ -11,8 +11,16 @@
         {% endfor%}
       </div>
 
-      <hr>
-          <div class="float-none" style="padding:40px;text-align:center;" >
+        <hr>
+        <div class="float-none" style="padding:40px;text-align:center;" >
+        <h1> <span class="badge badge-secondary"> Teams </span></h1>
+        {% for c in teams %}
+          <p> <a href="/t?id={{c.id}}"> {{c.name}} </a></p>
+        {% endfor%}
+        </div>
+
+        <hr>
+        <div class="float-none" style="padding:40px;text-align:center;" >
         <h1> <span class="badge badge-info"> Defined day slots </span></h1>
         {% for c in slots %}
           <p> <span class="badge badge-info">{{c.name}} ({{c.abbreviation}})</span> for <strong>{{c.hour_start}}</strong> - <strong>{{c.hour_end}}</strong> </p>

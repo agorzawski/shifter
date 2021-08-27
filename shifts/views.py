@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.db.models import Q, Count
@@ -7,6 +8,7 @@ from django.urls import reverse
 import django.contrib.messages as messages
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods, require_safe
+from django.db import IntegrityError
 
 import members.models
 from shifts.models import *
@@ -482,13 +484,14 @@ def shifts_upload_post(request):
         lines = file_data.split("\n")
         for lineIndex, line in enumerate(lines):
             fields = line.split(",")
-            nameFromFile = fields[0]
+            nameFromFile = fields[0].replace(" ", "")
             for dayIndex, one in enumerate(fields):
                 if dayIndex == 0:
                     continue
-                if one == '' or one == '-':  # neutral shift slot abbrev
+                one.replace(" ", "")
+                slotAbbrev = one.strip()
+                if slotAbbrev == '' or slotAbbrev == '-':  # neutral shift slot abbrev
                     continue
-                slotAbbrev = one
                 shiftDetails = one.split(':')
                 if len(shiftDetails):  # index 0-> name, index -> shift role
                     slotAbbrev = shiftDetails[0]
@@ -517,14 +520,17 @@ def shifts_upload_post(request):
                     shift.member = member
                     shift.csv_upload_tag = csv_file.name
                     totalLinesAdded += 1
-                except Exception:
+                    shift.save()
+                    shiftRole = defaultShiftRole
+                except ObjectDoesNotExist as e:
+                    # print(e)
+                    print("'{}' '{}' ".format(nameFromFile, slotAbbrev))
                     messages.error(request, 'Could not find system member for ({}) / slot ({}), in line {} column {}.\
                                     Skipping for now Check your file'
                                    .format(fields[0], one, lineIndex, dayIndex))
-                try:
-                    shift.save()
-                    shiftRole = defaultShiftRole
-                except Exception:
+
+                except IntegrityError as e:
+                    # print(e)
                     messages.error(request, 'Could not add member {} for {} {}, \
                                             Already in the system for the same \
                                             role: {}  campaign: {} and revision {}'

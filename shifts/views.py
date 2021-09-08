@@ -378,7 +378,8 @@ def ioc_update(request):
     activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, onlyOP=True)
     # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
-                    '_slot': activeShift['activeSlot'].abbreviation,
+                    '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift['activeSlot'].abbreviation,
+                    '_time': datetime.datetime.now().strftime(SIMPLE_TIME),
                     '_PVPrefix': 'NSO:Ops:',
                     'SID': activeShift['shiftID'],
                     }

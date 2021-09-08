@@ -2,39 +2,48 @@
 {% block 'body' %}
     <div class="col-sm-8 mx-auto">
       <main role="main">
-          <br>
-          <h2> Hello {{member.first_name}}!</h2>
-          <h4>Your team - {{member.team}} - breakdown</h4>
-          {% if browsable %}
-          <div class="btn-group" role="group" aria-label="Basic example">
-              <a type="button" class="btn btn-primary" href="?date={{lastmonth}}">{{lastmonth_label}} < </a>
-              <a type="button" class="btn btn-light" > <strong>{{currentmonth_label}}</strong></a>
-              <a type="button" class="btn btn-primary" href="?date={{nextmonth}}"> > {{nextmonth_label}}</a>
-          </div>
-          {%endif%}
-          <table class="table table-striped" >
-              <thead>
-                <tr>
-                  <th scope="col">TeamMate</th>
-                  <th scope="col">Role</th>
-                  <th scope="col">Total Shifts</th>
-                    {% for s in validSlots %} <th scope="col">{{s.name}}<br><small>({{s.hour_start}} - {{s.hour_end}})</small></th>
-                  {% endfor %}
-                </tr>
-              </thead>
-              <tbody>
-              {% for m in teamMembers %}
-              <tr><td>{{m.0}}</td> <td>{{m.0.role}}</td><td>{{m.1}}</td> <td>{{m.2}}</td> <td>{{m.3}}</td><td>{{m.4}}</td><td>{{m.5}}</td><td>{{m.6}}</td><td>{{m.7}}</td><td>{{m.8}}</td></tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </ul>
-          <h2>{{member.team}} calendar</h2>
+          <h2> Hello {{member.first_name}} {{team}}!</h2>
+          <h4><a data-toggle="collapse" href="#collapseCodesDiv" role="button"
+                 aria-expanded="false" aria-controls="collapseCodesDiv">Check tabular shift breakdown</a></h4>
+         <h2>Team's calendar</h2>
       </main>
     </div>
 
 <br>
 
 {% include 'calendar.html' %}
+
+<div class="col-sm-8 mx-auto">
+  <main role="main">
+    <div class="collapse" id="collapseCodesDiv">
+      <div class="card card-body">
+      <h4>{{team}} - tabular shift breakdown</h4>
+      {% if browsable %}
+      <div class="btn-group" role="group" aria-label="Basic example">
+          <a type="button" class="btn btn-primary" href="?date={{lastmonth}}">{{lastmonth_label}} < </a>
+          <a type="button" class="btn btn-light" > <strong>{{currentmonth_label}}</strong></a>
+          <a type="button" class="btn btn-primary" href="?date={{nextmonth}}"> > {{nextmonth_label}}</a>
+      </div>
+      {%endif%}
+      <table class="table table-striped" >
+          <thead>
+            <tr>
+              <th scope="col">TeamMate</th>
+              <th scope="col">Total Shifts</th>
+                {% for s in validSlots %} <th scope="col">{{s.name}}<br><small>({{s.hour_start}} - {{s.hour_end}})</small></th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+          {% for m in teamMembers %}
+          <tr><td><strong>{{m.0}}</strong>({{m.0.role}})</td><td>{{m.1}}</td> <td>{{m.2}}</td> <td>{{m.3}}</td><td>{{m.4}}</td><td>{{m.5}}</td><td>{{m.6}}</td><td>{{m.7}}</td><td>{{m.8}}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </ul>
+      </div>
+    </div>
+  </main>
+</div>
 
 {% endblock %}

@@ -7,6 +7,8 @@ import datetime
 from enum import Enum
 
 SIMPLE_DATE = "%Y-%m-%d"
+SIMPLE_TIME = "%H:%M:%S"
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 class ShifterMessage(models.Model):
@@ -77,7 +79,6 @@ class Shift(models.Model):
         START = 0
         END = 1
 
-    DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
     campaign = models.ForeignKey(Campaign, on_delete=DO_NOTHING)
     date = models.DateField()
     slot = models.ForeignKey(Slot, on_delete=DO_NOTHING)
@@ -103,11 +104,11 @@ class Shift(models.Model):
 
     @cached_property
     def shift_start(self) -> str:
-        return self.get_proper_times(self.Moment.START).strftime(self.DATE_FORMAT)
+        return self.get_proper_times(self.Moment.START).strftime(DATE_FORMAT)
 
     @cached_property
     def shift_end(self) -> str:
-        return self.get_proper_times(self.Moment.END).strftime(self.DATE_FORMAT)
+        return self.get_proper_times(self.Moment.END).strftime(DATE_FORMAT)
 
     def get_proper_times(self, moment) -> datetime:
         timeToUse = self.slot.hour_start

@@ -1,8 +1,16 @@
 # ESS OP Shifter Changelog
 
+### v.0.6.0
+- shift time codes counts and display (ESS specific)
+- shift import adjustments/fixes
+- navigation menu expanded (teams)
+- team's view revisited with collapsable table
+- shiftId api exposed by date & time (beta)
+- ioc setup data fixed for outside the/not found the active shift data
+
 ### v.0.5.7
-- view bugfixes
-- 
+- view & upload bugfixes
+- doc update
 
 ### v.0.5.6
 - exposed 'users' view (including ical get)
@@ -10,7 +18,6 @@
 
 ### v.0.5.5
 - bugfix on ical link
-- 
 
 ### v.0.5.4
 - cleanup on phonebook entries style and sorting

@@ -6,9 +6,50 @@
           <h2> Hello {{member}}</h2>
 
           <ul>
-              <li>For the {{campaign}} campaign you are scheduled for {{scheduled_shifts_list|length}} shifts.</li>
-              <li>Check out your team  <a href="/t?mid={{member.id}}"> <strong>{{member.team}}</strong> shifts breakdown</a> </li>
+              <li>In the current revision <small>{{revision}}</small> you are scheduled for {{scheduled_shifts_list|length}} shifts.</li>
+              <li>Check out your team  <a href="/t?mid={{member.id}}"> <strong>{{member.team}}</strong> shifts breakdown</a></li>
+              <li><a data-toggle="collapse" href="#collapseCodesDiv" role="button"
+                 aria-expanded="false" aria-controls="collapseCodesDiv">
+                Show your specific codes to report (ESS HR)
+              </a></li>
           </ul>
+            <div class="collapse" id="collapseCodesDiv">
+              <div class="card card-body">
+                  <h5>HR CODES TO REPORT</h5>
+
+                  <div class="alert alert-warning {{ message.tags }} alert-dismissible" role="alert" >
+                    <strong>DISCLAIMER:</strong> These counts here are build to the best of our knowledge based on the HR documents, but should be treated as an indication rather than the ultimate reference.
+                  </div>
+
+                  <table class="table table-striped small">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">OB1 hours</th>
+                      <th scope="col">OB2 hours</th>
+                      <th scope="col">OB3 hours</th>
+                      <th scope="col">OB4 hours</th>
+                      <th scope="col">NWH hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                {%for one, codes in hrcodes.items %}
+                    <tr>
+                      <th scope="row">{{one}}</th>
+                      {% for key, oneCount in codes.items %}<td>{%if oneCount > 0 %}<strong>{%endif%}{{oneCount}}{%if oneCount > 0 %}</strong>{%endif%}</td> {% endfor %}
+                    </tr>
+                {%endfor%}
+                </tbody>
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      {% for key, oneCode in hrcodes_summary.items %}<th scope="col">{{oneCode}}</th> {% endfor %}
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+            <br>
 
           <p><a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>
               <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>

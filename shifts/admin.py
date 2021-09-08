@@ -61,6 +61,7 @@ class SlotAdmin(admin.ModelAdmin):
     model = Slot
     list_display = [
         'name',
+        'abbreviation',
         'op',
         'hour_start',
         'hour_end',
@@ -90,7 +91,7 @@ class ShiftAdmin(admin.ModelAdmin):
         'revision',
     ]
 
-    list_filter = ('campaign', 'revision', 'csv_upload_tag', 'slot', 'member__team', 'member__role', 'role')
+    list_filter = ('campaign', 'revision', 'csv_upload_tag', 'slot' ,'member__team', 'member__role', 'role', 'member')
     ordering = ('-date',)
     actions = (move_to_newest_revision,)
 

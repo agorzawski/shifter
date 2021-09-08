@@ -152,3 +152,4 @@ PHONEBOOK_NAME = os.getenv('PHONEBOOK_NAME', 'Phonebook')
 
 SHIFTER_TEST_INSTANCE = os.getenv("SHIFTER_TEST_INSTANCE", 'False').lower() in ('true', '1', 't')
 SHIFTER_PRODUCTION_INSTANCE = os.getenv('SHIFTER_PRODUCTION_INSTANCE', '')
+STOP_DEV_MESSAGES = os.getenv('STOP_DEV_MESSAGES', 'False').lower() in ('true', '1', 't')

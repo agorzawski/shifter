@@ -56,5 +56,6 @@ def _check(shift, code, counts):
     dateToCheck = shift.start
     while dateToCheck < shift.end:
         if codes[code][0] < (dateToCheck + timedelta(seconds=30)).time() < codes[code][1]:
-            counts[code] += 1
+            if counts[code] < 8:
+                counts[code] += 1
         dateToCheck += timedelta(hours=1)

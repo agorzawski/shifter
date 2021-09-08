@@ -16,6 +16,11 @@
             <div class="collapse" id="collapseCodesDiv">
               <div class="card card-body">
                   <h5>HR CODES TO REPORT</h5>
+
+                  <div class="alert alert-warning {{ message.tags }} alert-dismissible" role="alert" >
+                    <strong>DISCLAIMER:</strong> These counts here are build to the best of our knowledge based on the HR documents, but should be treated as an indication rather than the ultimate reference.
+                  </div>
+
                   <table class="table table-striped small">
                   <thead>
                     <tr>
@@ -31,7 +36,7 @@
                 {%for one, codes in hrcodes.items %}
                     <tr>
                       <th scope="row">{{one}}</th>
-                      {% for key, oneCode in codes.items %}<td>{{oneCode}}</td> {% endfor %}
+                      {% for key, oneCount in codes.items %}<td>{%if oneCount > 0 %}<strong>{%endif%}{{oneCount}}{%if oneCount > 0 %}</strong>{%endif%}</td> {% endfor %}
                     </tr>
                 {%endfor%}
                 </tbody>

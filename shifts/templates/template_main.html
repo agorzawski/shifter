@@ -43,13 +43,19 @@
       </li>
       <li class="nav-item" >
         <a class="nav-link" href='/user' > My Shifts {% if not logged_user %} {% load static %}
-      <img src="{% static 'img/padlock.png' %}" height="20"/ alt=""><span class="badge bg-success">Login required</span> {%endif%} </a>
-      </li>
-      <li class="nav-item" >
-        <a class="nav-link" href='/team' >My Team Shift Summary {% if not logged_user %} {% load static %}
-      <img src="{% static 'img/padlock.png' %}" height="20"/ alt=""><span class="badge bg-success">Login required</span> {%endif%} </a>
+      <img src="{% static 'img/padlock.png' %}" height="20" alt=""><span class="badge bg-success">Login required</span> {%endif%} </a>
       </li>
 
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Teams View</a>
+        <div class="dropdown-menu">
+            <a class="dropdown-item"  href='/team' >My Team detailed Summary {% if not logged_user %} {% load static %}
+            <img src="{% static 'img/padlock.png' %}" height="20" alt=""><span class="badge bg-success">Login required</span> {%endif%} </a>
+            <div class="dropdown-divider"></div>
+            {% for c in teams %}<a class="dropdown-item"  href="/t?id={{c.id}}"> {{c.name}} </a>
+            {% endfor%}
+        </div>
+      </li>
     </ul>
     <ul class="navbar-nav">
     {% block 'extra_menu_item' %}
@@ -93,7 +99,7 @@
       <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" disabled>
       <button class="btn btn-success my-2 my-sm-0" type="submit" disabled>Search</button>
     </form>
-  </div>
+  </ul>
 </nav>
 
 <div class="col-sm-4 mx-auto">

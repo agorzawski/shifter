@@ -87,7 +87,7 @@ def filter_active_slots(now, scheduled_shifts, slotsToConsider):
     return slots
 
 
-def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
+def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False):
     import members.directory as directory
     ldap = directory.LDAP()
     today = datetime.datetime.now()
@@ -95,9 +95,12 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
     # now = datetime.datetime(2021, 6, 29, 3, 12, 00).time()
     # TODO fix the date switch when probing the current shift
     #  but day after like 29/06 at 3:00 should still give ID for one started at 28/06..
-    if dayToGo is not None and slotToGo is not None:
+    if dayToGo is not None and (slotToGo is not None or hourToGo is not None):
         today = datetime.datetime.strptime(dayToGo, DATE_FORMAT)
-        now = Slot.objects.filter(abbreviation=slotToGo).first().hour_start
+        if hourToGo is None and slotToGo is not None:
+            now = Slot.objects.filter(abbreviation=slotToGo).first().hour_start
+        if hourToGo is not None and slotToGo is None:
+            now = datetime.datetime.strptime(hourToGo, SIMPLE_TIME).time()
 
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
@@ -153,6 +156,7 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
                         shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
 
     return {'today': today,
+            'now': now,
             'shiftID': prepareShiftId(today, slotToBeUsed),
             'activeSlots': set(activeSlots),
             'activeSlot': slotToBeUsed,
@@ -205,7 +209,8 @@ def dates(request):
 def todays(request):
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
+    hourToGo = request.GET.get('hour', None)
+    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo)
     context = {'today': activeShift['today'],
                'checkTime': activeShift['today'].time(),
                'activeSlots': activeShift['activeSlots'],
@@ -371,15 +376,17 @@ def ioc_update(request):
     """
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
+    hourToGo = request.GET.get('hour', None)
+    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo)
     # TODO WIP send a slack webhook announcement to remind that this was called
     fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
     # TODO add separate call for OC updates + separate url
     fieldsToUpdate = ['SL', 'OP']
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, onlyOP=True)
     # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
                     '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift['activeSlot'].abbreviation,
-                    '_time': datetime.datetime.now().strftime(SIMPLE_TIME),
+                    '_timeNow': datetime.datetime.now().strftime(SIMPLE_TIME),
+                    '_timeRequested': activeShift['now'],
                     '_PVPrefix': 'NSO:Ops:',
                     'SID': activeShift['shiftID'],
                     }

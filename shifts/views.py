@@ -87,7 +87,8 @@ def filter_active_slots(now, scheduled_shifts, slotsToConsider):
     return slots
 
 
-def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False):
+def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False, fullUpdate=False):
+    print('Use the fullUpdate: ', fullUpdate)
     import members.directory as directory
     ldap = directory.LDAP()
     today = datetime.datetime.now()
@@ -117,6 +118,36 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
     def takeHourEnd(slotToSort):
         return slotToSort.hour_end
 
+    def updateDetailsFromLDAP(shifterDuty):
+        if shifterDuty.member.email is not None and shifterDuty.member.mobile is not None:
+            # print(shifterDuty.member, " has all data locally")
+            return None
+
+        personal_data = ldap.search(field='name', text=shifterDuty.member.last_name)
+        if len(personal_data) == 0:
+            return None
+        one = list(personal_data.keys())[0]
+        if len(personal_data) > 1:
+            for oneK in personal_data.keys():
+                if shifterDuty.member.last_name.lower() in oneK.lower() \
+                        and shifterDuty.member.first_name.lower() in oneK.lower():
+                    one = oneK
+        # Temporary assignment from the LDAP, for the purpose of the render,
+        # NOT TO BE persisted, i.e. do not use shifterDuty.save()!
+        shifterDuty.member.email = personal_data[one]['email']
+        shifterDuty.member.mobile = 'N/A'
+        try:
+            pn = phonenumbers.parse(personal_data[one]['mobile'])
+            shifterDuty.member.mobile = phonenumbers.format_number(pn,
+                                                                   phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+            shifterDuty.member.save()
+        except Exception:
+            pass
+        if type(personal_data[one]['photo']) is not str:
+            import base64
+            shifterDuty.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
+            shifterDuty.member.save()
+
     sortedSlots = list(set(slots))
     sortedSlots.sort(key=takeHourEnd)
     activeSlot = Slot.objects.first()
@@ -130,30 +161,9 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
                     activeSlot = slot
                     activeSlots.append(slot)
                     currentTeam.append(shifter)
-                    # print('Check details for {}'.format(shifter.member.last_name))
-                    personal_data = ldap.search(field='name', text=shifter.member.last_name)
-                    if len(personal_data) == 0:
-                        continue
-                    one = list(personal_data.keys())[0]
-                    if len(personal_data) > 1:
-                        for oneK in personal_data.keys():
-                            if shifter.member.last_name.lower() in oneK.lower() \
-                                    and shifter.member.first_name.lower() in oneK.lower():
-                                one = oneK
-
-                    # Temporary assignment from the LDAP, for the purpose of the render,
-                    # NOT TO BE persisted, i.e. do not use shifter.save()!
-                    shifter.member.email = personal_data[one]['email']
-                    shifter.member.mobile = 'N/A'
-                    try:
-                        pn = phonenumbers.parse(personal_data[one]['mobile'])
-                        shifter.member.mobile = phonenumbers.format_number(pn,
-                                                                           phonenumbers.PhoneNumberFormat.INTERNATIONAL)
-                    except Exception:
-                        pass
-                    if type(personal_data[one]['photo']) is not str:
-                        import base64
-                        shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
+                    if fullUpdate or (shifter.member.email is None and shifter.member.mobile is None):
+                        print('Fetching LDAP update for {}'.format(shifter.member))
+                        updateDetailsFromLDAP(shifter)
 
     return {'today': today,
             'now': now,
@@ -210,7 +220,9 @@ def todays(request):
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
     hourToGo = request.GET.get('hour', None)
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo)
+    fullUpdate = request.GET.get('fullUpdate', None) is not None
+    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
+                                      fullUpdate=fullUpdate)
     context = {'today': activeShift['today'],
                'checkTime': activeShift['today'].time(),
                'activeSlots': activeShift['activeSlots'],
@@ -377,7 +389,9 @@ def ioc_update(request):
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
     hourToGo = request.GET.get('hour', None)
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo)
+    fullUpdate = request.GET.get('fullUpdate', None) is not None
+    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
+                                      fullUpdate=fullUpdate)
     # TODO WIP send a slack webhook announcement to remind that this was called
     fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
     # TODO add separate call for OC updates + separate url

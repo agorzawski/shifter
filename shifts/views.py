@@ -88,14 +88,10 @@ def filter_active_slots(now, scheduled_shifts, slotsToConsider):
 
 
 def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False, fullUpdate=False):
-    print('Use the fullUpdate: ', fullUpdate)
     import members.directory as directory
     ldap = directory.LDAP()
     today = datetime.datetime.now()
     now = today.time()
-    # now = datetime.datetime(2021, 6, 29, 3, 12, 00).time()
-    # TODO fix the date switch when probing the current shift
-    #  but day after like 29/06 at 3:00 should still give ID for one started at 28/06..
     if dayToGo is not None and (slotToGo is not None or hourToGo is not None):
         today = datetime.datetime.strptime(dayToGo, DATE_FORMAT)
         if hourToGo is None and slotToGo is not None:
@@ -251,7 +247,7 @@ def prepare_user(request, member):
     currentMonth = datetime.datetime.now()
     nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    scheduled_shifts = Shift.objects.filter(member=member, revision=revision)
+    scheduled_shifts = Shift.objects.filter(member=member, revision=revision).order_by("-date")
     import shifts.hrcodes as hrc
     shift2codes = hrc.get_date_code_counts(scheduled_shifts)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)

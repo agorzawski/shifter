@@ -99,6 +99,30 @@ else:
     }
 
 
+SERVICE_ACCOUNT_EMAIL = os.getenv('DJANGO_SERVICE_ACCOUNT_EMAIL', 'someServiceAccount@Email')
+SERVICE_ACCOUNT_USER = os.getenv('DJANGO_SERVICE_ACCOUNT_USER', 'someServiceAccount')
+SERVICE_ACCOUNT_PASSWORD = os.getenv('DJANGO_SERVICE_ACCOUNT_PASSWORD')
+
+DEFAULT_FROM_EMAIL = SERVICE_ACCOUNT_EMAIL
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
+
+if DEBUG:
+    # Store all e-mails to file for local testing
+    EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+
+elif SERVICE_ACCOUNT_PASSWORD:
+    EMAIL_HOST = 'some.mailservice'
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = SERVICE_ACCOUNT_EMAIL
+    EMAIL_HOST_PASSWORD = SERVICE_ACCOUNT_PASSWORD
+    EMAIL_USE_TLS = True
+
+else:
+    EMAIL_HOST = 'some.mailservice'
+    EMAIL_PORT = 25
+
+
+
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
@@ -121,6 +145,7 @@ AUTH_USER_MODEL = 'members.Member'
 
 LOGIN_REDIRECT_URL = '/user'
 LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = 'options/login/'
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/

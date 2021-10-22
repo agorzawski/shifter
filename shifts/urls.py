@@ -19,6 +19,4 @@ urlpatterns = [
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),
     path('shift-update', views.shifts_update, name="shift-update"),
     path('shift-update-post', views.shifts_update_post, name="shift-update-post"),
-    path('accounts/', include('django.contrib.auth.urls')),  # new
-    path('options/', include('django.contrib.auth.urls')),
 ]

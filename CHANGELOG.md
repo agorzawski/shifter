@@ -1,5 +1,9 @@
 # ESS OP Shifter Changelog
 
+### v.0.7.0
+- internal cache for members details from LDAP when calling /today or /ioc-update
+- exposed member/team calendar links
+
 ### v.0.6.0
 - shift time codes counts and display (ESS specific)
 - shift import adjustments/fixes

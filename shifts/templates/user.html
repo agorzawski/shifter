@@ -53,6 +53,8 @@
 
           <p><a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>
               <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>
+              <a class="btn btn-warning" href="ical?mid={{member.id}}">iCal link for you </a>
+              <a class="btn btn-warning" href="ical?tid={{member.team.id}}">iCal link for your team </a>
           </p>
       </main>
     </div>

@@ -347,6 +347,32 @@ def prepare_team(request, member=None, team=None, extraContext=None):
 
 
 @require_safe
+def icalendar(request):
+    member = None
+    team = None
+    if request.GET.get('mid'):
+        member = Member.objects.filter(id=request.GET.get('mid')).first()
+    if request.GET.get('tid'):
+        team = Team.objects.filter(id=request.GET.get('tid')).first()
+
+    revision = Revision.objects.filter(valid=True).order_by("-number").first()
+
+    shifts = Shift.objects.filter(member=member, revision=revision)
+    if team is not None:
+        shifts = Shift.objects.filter(member__team=team, revision=revision)
+
+    context = {
+        'campaign': 'Exported Shifts',
+        'shifts': shifts,
+        'member': member,
+        'team': team if not None else member.team,
+    }
+
+    body = render_to_string('icalendar.ics', context)
+    return HttpResponse(body.replace('\n', '\r\n'), content_type='text/calendar')
+
+
+@require_safe
 @login_required
 def icalendar_view(request):
     month = None

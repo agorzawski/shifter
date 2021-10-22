@@ -356,6 +356,8 @@ def icalendar(request):
     shifts = Shift.objects.filter(member=member, revision=revision)
     if team is not None:
         shifts = Shift.objects.filter(member__team=team, revision=revision)
+    if team is None and member is None:
+        shifts = Shift.objects.filter(revision=revision)
 
     context = {
         'campaign': 'Exported Shifts',

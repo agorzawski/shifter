@@ -3,6 +3,8 @@
 ### v.0.7.0
 - internal cache for members details from LDAP when calling /today or /ioc-update
 - exposed member/team calendar links
+- for the case of long breakes between shifts (i.e. missing night shifts) an extended 
+    search (up to 2h prior to the new shift) is included
 
 ### v.0.6.0
 - shift time codes counts and display (ESS specific)

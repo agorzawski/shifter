@@ -102,14 +102,18 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
     slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
-    slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
     slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts, Slot.objects.filter(op=True))
-    slotToBeUsed = None
+    # TODO see if this can be recursive forward for N hours
+    if len(slotsOPWithinScheduled) == 0:
+        nowFull = datetime.datetime.combine(today, now)
+        nowLater = (nowFull + datetime.timedelta(hours=2)).time()  # TODO see if expose that as env setting
+        slotsOPWithinScheduled = filter_active_slots( nowLater, scheduled_shifts, Slot.objects.filter(op=True))
+        if len(slotsOPWithinScheduled):
+            now = nowLater
+    slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
     if len(slotsOPWithinScheduled) == 0:
         slotsOPWithinScheduled = slots
-        # FIXME check when off 24h slots
-    else:
-        slotToBeUsed = slotsOPWithinScheduled[0]
+    slotToBeUsed = slotsOPWithinScheduled[0]
 
     def takeHourEnd(slotToSort):
         return slotToSort.hour_end
@@ -128,8 +132,6 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
                 if shifterDuty.member.last_name.lower() in oneK.lower() \
                         and shifterDuty.member.first_name.lower() in oneK.lower():
                     one = oneK
-        # Temporary assignment from the LDAP, for the purpose of the render,
-        # NOT TO BE persisted, i.e. do not use shifterDuty.save()!
         shifterDuty.member.email = personal_data[one]['email']
         shifterDuty.member.mobile = 'N/A'
         try:

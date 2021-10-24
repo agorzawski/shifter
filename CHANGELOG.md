@@ -6,6 +6,7 @@
 - for the case of long breaks between shifts (i.e. missing night shifts) an extended 
     search (up to 2h prior to the new shift) is included
 - bugfix: users details shown for not authenticated calls
+- added account password reset with the email support
 
 ### v.0.6.0
 - shift time codes counts and display (ESS specific)

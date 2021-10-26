@@ -87,32 +87,64 @@ def filter_active_slots(now, scheduled_shifts, slotsToConsider):
     return slots
 
 
-def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
+def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False, fullUpdate=False):
     import members.directory as directory
     ldap = directory.LDAP()
     today = datetime.datetime.now()
     now = today.time()
-    # now = datetime.datetime(2021, 6, 29, 3, 12, 00).time()
-    # TODO fix the date switch when probing the current shift
-    #  but day after like 29/06 at 3:00 should still give ID for one started at 28/06..
-    if dayToGo is not None and slotToGo is not None:
+    if dayToGo is not None and (slotToGo is not None or hourToGo is not None):
         today = datetime.datetime.strptime(dayToGo, DATE_FORMAT)
-        now = Slot.objects.filter(abbreviation=slotToGo).first().hour_start
+        if hourToGo is None and slotToGo is not None:
+            now = Slot.objects.filter(abbreviation=slotToGo).first().hour_start
+        if hourToGo is not None and slotToGo is None:
+            now = datetime.datetime.strptime(hourToGo, SIMPLE_TIME).time()
 
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
     slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
-    slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
     slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts, Slot.objects.filter(op=True))
-    slotToBeUsed = None
+    # TODO see if this can be recursive forward for N hours
+    if len(slotsOPWithinScheduled) == 0:
+        nowFull = datetime.datetime.combine(today, now)
+        nowLater = (nowFull + datetime.timedelta(hours=2)).time()  # TODO see if expose that as env setting
+        slotsOPWithinScheduled = filter_active_slots( nowLater, scheduled_shifts, Slot.objects.filter(op=True))
+        if len(slotsOPWithinScheduled):
+            now = nowLater
+    slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
     if len(slotsOPWithinScheduled) == 0:
         slotsOPWithinScheduled = slots
-        # FIXME check when off 24h slots
-    else:
-        slotToBeUsed = slotsOPWithinScheduled[0]
+    slotToBeUsed = slotsOPWithinScheduled[0]
 
     def takeHourEnd(slotToSort):
         return slotToSort.hour_end
+
+    def updateDetailsFromLDAP(shifterDuty):
+        if shifterDuty.member.email is not None and shifterDuty.member.mobile is not None:
+            # print(shifterDuty.member, " has all data locally")
+            return None
+
+        personal_data = ldap.search(field='name', text=shifterDuty.member.last_name)
+        if len(personal_data) == 0:
+            return None
+        one = list(personal_data.keys())[0]
+        if len(personal_data) > 1:
+            for oneK in personal_data.keys():
+                if shifterDuty.member.last_name.lower() in oneK.lower() \
+                        and shifterDuty.member.first_name.lower() in oneK.lower():
+                    one = oneK
+        shifterDuty.member.email = personal_data[one]['email']
+        shifterDuty.member.mobile = 'N/A'
+        try:
+            pn = phonenumbers.parse(personal_data[one]['mobile'])
+            shifterDuty.member.mobile = phonenumbers.format_number(pn,
+                                                                   phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+            shifterDuty.member.save()
+        except Exception:
+            pass
+        if type(personal_data[one]['photo']) is not str:
+            import base64
+            shifterDuty.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
+            shifterDuty.member.save()
 
     sortedSlots = list(set(slots))
     sortedSlots.sort(key=takeHourEnd)
@@ -127,32 +159,12 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, onlyOP=False):
                     activeSlot = slot
                     activeSlots.append(slot)
                     currentTeam.append(shifter)
-                    # print('Check details for {}'.format(shifter.member.last_name))
-                    personal_data = ldap.search(field='name', text=shifter.member.last_name)
-                    if len(personal_data) == 0:
-                        continue
-                    one = list(personal_data.keys())[0]
-                    if len(personal_data) > 1:
-                        for oneK in personal_data.keys():
-                            if shifter.member.last_name.lower() in oneK.lower() \
-                                    and shifter.member.first_name.lower() in oneK.lower():
-                                one = oneK
-
-                    # Temporary assignment from the LDAP, for the purpose of the render,
-                    # NOT TO BE persisted, i.e. do not use shifter.save()!
-                    shifter.member.email = personal_data[one]['email']
-                    shifter.member.mobile = 'N/A'
-                    try:
-                        pn = phonenumbers.parse(personal_data[one]['mobile'])
-                        shifter.member.mobile = phonenumbers.format_number(pn,
-                                                                           phonenumbers.PhoneNumberFormat.INTERNATIONAL)
-                    except Exception:
-                        pass
-                    if type(personal_data[one]['photo']) is not str:
-                        import base64
-                        shifter.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
+                    if fullUpdate or (shifter.member.email is None and shifter.member.mobile is None):
+                        print('Fetching LDAP update for {}'.format(shifter.member))
+                        updateDetailsFromLDAP(shifter)
 
     return {'today': today,
+            'now': now,
             'shiftID': prepareShiftId(today, slotToBeUsed),
             'activeSlots': set(activeSlots),
             'activeSlot': slotToBeUsed,
@@ -205,7 +217,10 @@ def dates(request):
 def todays(request):
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo)
+    hourToGo = request.GET.get('hour', None)
+    fullUpdate = request.GET.get('fullUpdate', None) is not None
+    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
+                                      fullUpdate=fullUpdate)
     context = {'today': activeShift['today'],
                'checkTime': activeShift['today'].time(),
                'activeSlots': activeShift['activeSlots'],
@@ -234,7 +249,7 @@ def prepare_user(request, member):
     currentMonth = datetime.datetime.now()
     nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    scheduled_shifts = Shift.objects.filter(member=member, revision=revision)
+    scheduled_shifts = Shift.objects.filter(member=member, revision=revision).order_by("-date")
     import shifts.hrcodes as hrc
     shift2codes = hrc.get_date_code_counts(scheduled_shifts)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
@@ -330,6 +345,34 @@ def prepare_team(request, member=None, team=None, extraContext=None):
 
 
 @require_safe
+def icalendar(request):
+    member = None
+    team = None
+    if request.GET.get('mid'):
+        member = Member.objects.filter(id=request.GET.get('mid')).first()
+    if request.GET.get('tid'):
+        team = Team.objects.filter(id=request.GET.get('tid')).first()
+
+    revision = Revision.objects.filter(valid=True).order_by("-number").first()
+
+    shifts = Shift.objects.filter(member=member, revision=revision)
+    if team is not None:
+        shifts = Shift.objects.filter(member__team=team, revision=revision)
+    if team is None and member is None:
+        shifts = Shift.objects.filter(revision=revision)
+
+    context = {
+        'campaign': 'Exported Shifts',
+        'shifts': shifts,
+        'member': member,
+        'team': team if not None else member.team,
+    }
+
+    body = render_to_string('icalendar.ics', context)
+    return HttpResponse(body.replace('\n', '\r\n'), content_type='text/calendar')
+
+
+@require_safe
 @login_required
 def icalendar_view(request):
     month = None
@@ -371,15 +414,19 @@ def ioc_update(request):
     """
     dayToGo = request.GET.get('date', None)
     slotToGo = request.GET.get('slot', None)
+    hourToGo = request.GET.get('hour', None)
+    fullUpdate = request.GET.get('fullUpdate', None) is not None
+    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
+                                      fullUpdate=fullUpdate)
     # TODO WIP send a slack webhook announcement to remind that this was called
     fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
     # TODO add separate call for OC updates + separate url
     fieldsToUpdate = ['SL', 'OP']
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, onlyOP=True)
     # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
                     '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift['activeSlot'].abbreviation,
-                    '_time': datetime.datetime.now().strftime(SIMPLE_TIME),
+                    '_timeNow': datetime.datetime.now().strftime(SIMPLE_TIME),
+                    '_timeRequested': activeShift['now'],
                     '_PVPrefix': 'NSO:Ops:',
                     'SID': activeShift['shiftID'],
                     }

@@ -20,4 +20,6 @@ urlpatterns = [
     path('planning/', include('shifts.urls')),
     path('', include('shifts.urls')),
     path('admin/', admin.site.urls),
+    path('accounts/', include('django.contrib.auth.urls')),  # new
+    path('options/', include('django.contrib.auth.urls')),
 ]

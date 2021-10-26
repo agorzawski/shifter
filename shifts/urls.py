@@ -11,6 +11,7 @@ urlpatterns = [
     path('team', views.team, name='team'),
     path('t', views.team_simple, name='team-simple'),
     path('calendar.ics', views.icalendar_view, name='calendar'),
+    path('ical', views.icalendar, name='calendar_public'),
     path('dates', views.dates, name='dates'),
     path('phonebook', views.phonebook, name='phonebook'),
     path('phonebook-post', views.phonebook_post, name='phonebook-post'),
@@ -19,6 +20,4 @@ urlpatterns = [
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),
     path('shift-update', views.shifts_update, name="shift-update"),
     path('shift-update-post', views.shifts_update_post, name="shift-update-post"),
-    path('accounts/', include('django.contrib.auth.urls')),  # new
-    path('options/', include('django.contrib.auth.urls')),
 ]

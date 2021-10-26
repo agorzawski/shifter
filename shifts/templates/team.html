@@ -3,8 +3,10 @@
     <div class="col-sm-8 mx-auto">
       <main role="main">
           <h2> Hello {{member.first_name}} {{team}}!</h2>
+          {% if user.is_authenticated %}
           <h4><a data-toggle="collapse" href="#collapseCodesDiv" role="button"
                  aria-expanded="false" aria-controls="collapseCodesDiv">Check tabular shift breakdown</a></h4>
+          {% endif %}
          <h2>Team's calendar</h2>
       </main>
     </div>
@@ -13,6 +15,7 @@
 
 {% include 'calendar.html' %}
 
+{% if user.is_authenticated %}
 <div class="col-sm-8 mx-auto">
   <main role="main">
     <div class="collapse" id="collapseCodesDiv">
@@ -45,5 +48,6 @@
     </div>
   </main>
 </div>
+{% endif %}
 
 {% endblock %}

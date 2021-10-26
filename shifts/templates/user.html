@@ -8,11 +8,14 @@
           <ul>
               <li>In the current revision <small>{{revision}}</small> you are scheduled for {{scheduled_shifts_list|length}} shifts.</li>
               <li>Check out your team  <a href="/t?mid={{member.id}}"> <strong>{{member.team}}</strong> shifts breakdown</a></li>
+              {% if user.is_authenticated %}
               <li><a data-toggle="collapse" href="#collapseCodesDiv" role="button"
                  aria-expanded="false" aria-controls="collapseCodesDiv">
                 Show your specific codes to report (ESS HR)
               </a></li>
+              {% endif %}
           </ul>
+          {% if user.is_authenticated %}
             <div class="collapse" id="collapseCodesDiv">
               <div class="card card-body">
                   <h5>HR CODES TO REPORT</h5>
@@ -50,10 +53,12 @@
               </div>
             </div>
             <br>
-
           <p><a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>
               <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>
+              <a class="btn btn-warning" href="ical?mid={{member.id}}">iCal link for you </a>
+              <a class="btn btn-warning" href="ical?tid={{member.team.id}}">iCal link for your team </a>
           </p>
+          {% endif %}
       </main>
     </div>
 

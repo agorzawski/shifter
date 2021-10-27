@@ -1,5 +1,9 @@
 # ESS OP Shifter Changelog
 
+### v.0.7.1
+- bugfix for the LDAP -> local DB save (difference between SQLite and Postgres)
+- bugfix for the DEBUG flag
+
 ### v.0.7.0
 - internal cache for members details from LDAP when calling /today or /ioc-update
 - exposed member/team calendar links

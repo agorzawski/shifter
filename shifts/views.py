@@ -136,8 +136,11 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
         shifterDuty.member.mobile = 'N/A'
         try:
             pn = phonenumbers.parse(personal_data[one]['mobile'])
-            shifterDuty.member.mobile = phonenumbers.format_number(pn,
-                                                                   phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+            fixed = phonenumbers.format_number(pn, phonenumbers.PhoneNumberFormat.INTERNATIONAL).replace(" ", "")
+            shifterDuty.member.mobile = fixed
+            # TODO fix the rendering in the website
+            # for some reason SqLite allowed to save 16characters in 12 characters field
+            # while postgres threw an exception, however this was used to format here not in the website... to be fixed
             shifterDuty.member.save()
         except Exception:
             pass

@@ -1,7 +1,8 @@
 from django.urls import include, path
 
 from . import views
-app_name='shifter'
+app_name = 'shifter'
+handler404 = 'shifts.views.page_not_found'
 urlpatterns = [
     path('', views.index, name='index'),
     path('planning', views.index_post, name='index-post'),
@@ -21,3 +22,4 @@ urlpatterns = [
     path('shift-update', views.shifts_update, name="shift-update"),
     path('shift-update-post', views.shifts_update_post, name="shift-update-post"),
 ]
+

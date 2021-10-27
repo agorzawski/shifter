@@ -25,6 +25,10 @@ DATE_FORMAT_SLIM = '%Y%m%d'
 MONTH_NAME = '%B'
 
 
+def page_not_found(request, exception):
+    return render(request, "404.html", {})
+
+
 def prepare_default_context(request, contextToAdd):
     """
     providing any of the following will override their default values:

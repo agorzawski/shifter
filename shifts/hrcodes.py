@@ -12,25 +12,39 @@ codes = {'OB1': (time(hour=18, minute=00, second=00),
          }
 
 # TODO think of importing it as external table (not need to re-release it)
+# TODO consider https://pypi.org/project/holidays/ when Sweden is included (not in Nov 2021)
 public_holidays = [
     date(2021, 6, 25),
     date(2021, 11, 6),
+    date(2021, 12, 24),
+    date(2021, 12, 25),
+    date(2021, 12, 26),
+    date(2021, 12, 31),
 
     # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+Holidays+and+additional+days+off+%282022%29+Sweden
+    date(2022, 1, 1),
     date(2022, 1, 6),
     date(2022, 1, 7),
     date(2022, 4, 15),
+    date(2022, 4, 16),
+    date(2022, 4, 17),
     date(2022, 4, 18),
     date(2022, 5, 26),
     date(2022, 5, 27),
     date(2022, 6, 6),
     date(2022, 6, 24),
+    date(2022, 6, 25),
+    date(2022, 12, 24),
+    date(2022, 12, 25),
     date(2022, 12, 26),
+    date(2022, 12, 31),
 ]
 
 
-def get_public_holidays():
-    return [d for d in public_holidays]
+def get_public_holidays(fmt=None):
+    if fmt is None:
+        return [d for d in public_holidays]
+    return [d.strftime(format=fmt) for d in public_holidays]
 
 
 def count_total(counts):

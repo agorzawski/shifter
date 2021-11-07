@@ -16,6 +16,7 @@ from shifts.models import *
 import datetime
 import os
 import phonenumbers
+import shifts.hrcodes as hrc
 
 from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
     SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME, STOP_DEV_MESSAGES
@@ -63,6 +64,7 @@ def prepare_default_context(request, contextToAdd):
         'APP_GIT_TAG': GIT_LAST_TAG,
         'controlRoomPhoneNumber': CONTROL_ROOM_PHONE_NUMBER,
         'wwwWithMoreInfo': WWW_EXTRA_INFO,
+        'publicHolidays': hrc.get_public_holidays(fmt=SIMPLE_DATE)
     }
     for one in contextToAdd.keys():
         context[one] = contextToAdd[one]
@@ -257,7 +259,7 @@ def prepare_user(request, member):
     nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision).order_by("-date")
-    import shifts.hrcodes as hrc
+
     shift2codes = hrc.get_date_code_counts(scheduled_shifts)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     context = {

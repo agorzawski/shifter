@@ -171,6 +171,15 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
                     if fullUpdate or (shifter.member.email is None and shifter.member.mobile is None):
                         print('Fetching LDAP update for {}'.format(shifter.member))
                         updateDetailsFromLDAP(shifter)
+                    try:
+                        shiftID = ShiftID.objects.get(label=prepareShiftId(today, slotToBeUsed))
+                    except ObjectDoesNotExist:
+                        shiftID = ShiftID()
+                        shiftID.label = prepareShiftId(today, slotToBeUsed)
+                        shiftID.date_created = today
+                        shiftID.save()
+                    shifter.shiftID = shiftID
+                    shifter.save()
 
     return {'today': today,
             'now': now,

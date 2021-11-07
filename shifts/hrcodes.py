@@ -1,19 +1,36 @@
-from datetime import datetime, timedelta, time
+from datetime import date, timedelta, time
 from shifts.models import Shift, SIMPLE_DATE, SIMPLE_TIME, DATE_FORMAT
 
 codes = {'OB1': (time(hour=18, minute=00, second=00),
                  time(hour=23, minute=59, second=59)),  # evenings
+
          'OB2': (time(hour=0, minute=00, second=00),
                  time(hour=7, minute=00, second=00)),  # nights
-
-         # 'OB3': (time(hour=7, minute=00, second=00),
-         #         time(hour=23, minute=59, second=59)),  # WEs
-         # 'OB4': (time(hour=7, minute=00, second=00),
-         #         time(hour=23, minute=59, second=59)),   # special holidays
 
          'NWH': (time(hour=7, minute=00, second=00),
                  time(hour=17, minute=59, second=59)),  # nights
          }
+
+# TODO think of importing it as external table (not need to re-release it)
+public_holidays = [
+    date(2021, 6, 25),
+    date(2021, 11, 6),
+
+    # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+Holidays+and+additional+days+off+%282022%29+Sweden
+    date(2022, 1, 6),
+    date(2022, 1, 7),
+    date(2022, 4, 15),
+    date(2022, 4, 18),
+    date(2022, 5, 26),
+    date(2022, 5, 27),
+    date(2022, 6, 6),
+    date(2022, 6, 24),
+    date(2022, 12, 26),
+]
+
+
+def get_public_holidays():
+    return [d for d in public_holidays]
 
 
 def count_total(counts):
@@ -34,14 +51,28 @@ def get_date_code_counts(shifts):
     return result
 
 
+def _check_adjacent_WE(shiftDate, public_holiday):
+    """
+    To cover the holidays but also the adjacent WE (or long WE) around holidays
+    """
+    sDayNb = shiftDate.weekday()
+    if shiftDate == public_holiday:
+        return True
+    if sDayNb >= 5 and abs(shiftDate - public_holiday) < timedelta(days=5):
+        return True
+    return False
+
+
 def get_code_counts(shift: Shift) -> dict:
     counts = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 0}
     duration = shift.end - shift.start
     notAWEOrHoliday = True
-    # TODO if shift in special OB4 return + adjacent WE
-
+    for public_holiday in public_holidays:
+        if _check_adjacent_WE(shift.date, public_holiday):
+            counts['OB4'] = duration.seconds // 3600
+            notAWEOrHoliday = False
     weekno = shift.start.weekday()
-    if weekno >= 5:
+    if weekno >= 5 and notAWEOrHoliday:
         counts['OB3'] = duration.seconds // 3600
         notAWEOrHoliday = False
 

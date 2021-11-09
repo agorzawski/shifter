@@ -2,6 +2,7 @@
 
 ### v.0.7.2
 - missing holidays support (for HR codes and for the calendar display)
+- admin group move to NWH (default) time slot
 
 ### v.0.7.1
 - bugfix for the LDAP -> local DB save (difference between SQLite and Postgres)

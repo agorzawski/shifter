@@ -3,7 +3,7 @@ from django.utils.translation import ngettext
 from django.contrib import messages
 # Register your models here.
 
-from shifts.models import ShifterMessage, Revision, Campaign, Slot, Shift, ShiftRole
+from shifts.models import ShifterMessage, Revision, Campaign, Slot, Shift, ShiftRole, ShiftID
 
 
 @admin.register(ShifterMessage)
@@ -69,6 +69,16 @@ class SlotAdmin(admin.ModelAdmin):
     actions = (move_to_op_TRUE, move_to_op_FALSE)
 
 
+@admin.register(ShiftID)
+class ShiftIDAdmin(admin.ModelAdmin):
+    model = ShiftID
+    list_display = [
+        'label',
+        'date_created'
+        ]
+    ordering = ('-label',)
+
+
 @admin.register(Shift)
 class ShiftAdmin(admin.ModelAdmin):
 
@@ -82,6 +92,18 @@ class ShiftAdmin(admin.ModelAdmin):
         ) % updated, messages.SUCCESS)
         self.description = 'Move selected shifts to the latest revision'
 
+
+    def move_to_default_slot(self, request, queryset):
+        slot = Slot.objects.filter(abbreviation='NWH').first()
+        # TODO consider changing mode to include 'default' field
+        updated = queryset.update(slot=slot)
+        self.message_user(request, ngettext(
+            '%d moved to default slot (NWH).',
+            '%d moved to default slot (NWH)',
+            updated,
+        ) % updated, messages.SUCCESS)
+        self.description = 'Move selected shifts to default slot (NWH)'
+
     model = Shift
     list_display = [
         'date',
@@ -89,11 +111,12 @@ class ShiftAdmin(admin.ModelAdmin):
         '_member',
         'role',
         'revision',
+        'shiftID',
     ]
 
-    list_filter = ('campaign', 'revision', 'csv_upload_tag', 'slot' ,'member__team', 'member__role', 'role', 'member')
+    list_filter = ('campaign', 'revision', 'csv_upload_tag', 'slot', 'member__team', 'member__role', 'role', 'member')
     ordering = ('-date',)
-    actions = (move_to_newest_revision,)
+    actions = (move_to_newest_revision, move_to_default_slot)
 
     def _member(self, object):
         return '{} ({})'.format(object.member.username, object.member.team)

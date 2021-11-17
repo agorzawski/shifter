@@ -63,6 +63,14 @@
             color:'{{shift.slot.color_in_calendar}}',
             },
             {% endfor %}
+            {% for ph in publicHolidays %}
+            {
+            start:'{{ ph }}',
+            end:'{{ ph }}',
+            overlap: false,
+            display: 'background'
+            },
+            {% endfor %}
             ],
           textColor: '#FFFFFF' // regular color
           }

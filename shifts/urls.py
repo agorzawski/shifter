@@ -17,6 +17,7 @@ urlpatterns = [
     path('phonebook', views.phonebook, name='phonebook'),
     path('phonebook-post', views.phonebook_post, name='phonebook-post'),
     path('ioc-update', views.ioc_update, name='ioc-update'),
+    path('shifts', views.shifts, name='shifts'),
     path('shift-upload-csv', views.shifts_upload, name="shift-upload"),
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),
     path('shift-update', views.shifts_update, name="shift-update"),

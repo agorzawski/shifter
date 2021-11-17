@@ -73,6 +73,14 @@ class ShiftRole(models.Model):
         return '{}'.format(self.name)
 
 
+class ShiftID(models.Model):
+    label = models.CharField(max_length=9, )
+    date_created = models.DateTimeField(null=False)
+
+    def __str__(self):
+        return '{}'.format(self.label)
+
+
 class Shift(models.Model):
 
     class Moment(Enum):
@@ -84,6 +92,7 @@ class Shift(models.Model):
     slot = models.ForeignKey(Slot, on_delete=DO_NOTHING)
     member = models.ForeignKey(Member, on_delete=DO_NOTHING)
     revision = models.ForeignKey(Revision, on_delete=DO_NOTHING)
+    shiftID = models.ForeignKey(ShiftID, on_delete=DO_NOTHING, null=True,)
 
     role = models.ForeignKey(ShiftRole, blank=True, null=True, on_delete=DO_NOTHING)
     csv_upload_tag = models.CharField(max_length=200, blank=True, null=True,)

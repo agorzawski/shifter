@@ -8,7 +8,9 @@ services:
     command: /bin/bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
-      DJANGO_DEBUG: "False"
+      DJANGO_DEBUG: "True"
+      DJANGO_LOCAL_DEV: 1
+      SHIFTER_TEST_INSTANCE: 1
 
       DATABASE_ENGINE: django.db.backends.postgresql_psycopg2
       DATABASE_HOST: database

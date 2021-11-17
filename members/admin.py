@@ -28,6 +28,8 @@ class MemberAdmin(UserAdmin):
             'role',
             'team',
             'email',
+            'mobile',
+            'photo',
         )}),
         (_('Permissions'), {'fields': (
             'is_staff',

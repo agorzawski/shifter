@@ -16,6 +16,7 @@ from shifts.models import *
 import datetime
 import os
 import phonenumbers
+import shifts.hrcodes as hrc
 
 from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
     SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME, STOP_DEV_MESSAGES
@@ -63,6 +64,7 @@ def prepare_default_context(request, contextToAdd):
         'APP_GIT_TAG': GIT_LAST_TAG,
         'controlRoomPhoneNumber': CONTROL_ROOM_PHONE_NUMBER,
         'wwwWithMoreInfo': WWW_EXTRA_INFO,
+        'publicHolidays': hrc.get_public_holidays(fmt=SIMPLE_DATE)
     }
     for one in contextToAdd.keys():
         context[one] = contextToAdd[one]
@@ -169,6 +171,16 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
                     if fullUpdate or (shifter.member.email is None and shifter.member.mobile is None):
                         print('Fetching LDAP update for {}'.format(shifter.member))
                         updateDetailsFromLDAP(shifter)
+                    if today < datetime.datetime.now():
+                        try:
+                            shiftID = ShiftID.objects.get(label=prepareShiftId(today, slotToBeUsed))
+                        except ObjectDoesNotExist:
+                            shiftID = ShiftID()
+                            shiftID.label = prepareShiftId(today, slotToBeUsed)
+                            shiftID.date_created = datetime.datetime.combine(today.date(), now)
+                            shiftID.save()
+                        shifter.shiftID = shiftID
+                        shifter.save()
 
     return {'today': today,
             'now': now,
@@ -257,7 +269,7 @@ def prepare_user(request, member):
     nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision).order_by("-date")
-    import shifts.hrcodes as hrc
+
     shift2codes = hrc.get_date_code_counts(scheduled_shifts)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     context = {
@@ -445,6 +457,32 @@ def ioc_update(request):
                 dataToReturn[one] = shifter.member.name
                 dataToReturn[one + "Phone"] = shifter.member.mobile
                 dataToReturn[one + "Email"] = shifter.member.email
+    return JsonResponse(dataToReturn)
+
+
+@require_safe
+def shifts(request):
+    shiftId = request.GET.get('id', None)
+    dataToReturn = {}
+    if shiftId is not None:
+        dataToReturn = {'SID':shiftId, 'status': False}
+        shiftIDs = ShiftID.objects.filter(label=shiftId)
+        if len(shiftIDs):
+            shiftID = shiftIDs.first()
+            previousShiftId = None
+            try:
+                previousShiftId = ShiftID.objects.get(id=shiftID.id - 1).label
+            except ObjectDoesNotExist:
+                pass
+            nextShiftId = None
+            try:
+                nextShiftId = ShiftID.objects.get(id=shiftID.id + 1).label
+            except ObjectDoesNotExist:
+                pass
+            dataToReturn = {'SID': shiftId, 'status': 'True', 'prev': previousShiftId, 'next': nextShiftId}
+    else:
+        shiftIds = ShiftID.objects.all().order_by('-label')
+        dataToReturn = {'ids': [id.label for id in shiftIds]}
     return JsonResponse(dataToReturn)
 
 

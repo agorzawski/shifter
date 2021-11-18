@@ -1,5 +1,8 @@
 # ESS OP Shifter Changelog
 
+### v.0.8.1
+- bugfix
+
 ### v.0.8.0
 - support for ShiftIDs (history, browse)
 

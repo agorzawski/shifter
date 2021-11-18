@@ -92,7 +92,7 @@ class Shift(models.Model):
     slot = models.ForeignKey(Slot, on_delete=DO_NOTHING)
     member = models.ForeignKey(Member, on_delete=DO_NOTHING)
     revision = models.ForeignKey(Revision, on_delete=DO_NOTHING)
-    shiftID = models.ForeignKey(ShiftID, on_delete=DO_NOTHING, null=True,)
+    shiftID = models.ForeignKey(ShiftID, on_delete=DO_NOTHING, null=True, blank=True,)
 
     role = models.ForeignKey(ShiftRole, blank=True, null=True, on_delete=DO_NOTHING)
     csv_upload_tag = models.CharField(max_length=200, blank=True, null=True,)

@@ -1,5 +1,8 @@
 # ESS OP Shifter Changelog
 
+### v.0.8.2
+- admin site style fix (whitenoise&gunicorn)
+
 ### v.0.8.1
 - bugfix
 

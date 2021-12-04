@@ -14,24 +14,33 @@ codes = {'OB1': (time(hour=18, minute=00, second=00),
 # TODO think of importing it as external table (not need to re-release it)
 # TODO consider https://pypi.org/project/holidays/ when Sweden is included (not in Nov 2021)
 public_holidays = [
-    date(2021, 6, 25),
     date(2021, 11, 6),
+
+    # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+Holidays+and+additional+days+off+%282022%29+Sweden
+    date(2022, 1, 6),
+    date(2022, 1, 7),
+
+    date(2022, 5, 26),
+    date(2022, 5, 27),
+
+    date(2022, 6, 6),
+]
+
+# The ones that are counted as OB4
+# From 18:00 on Maundy Thursday and from 07:00 on Whitsun Eve, Midsummer Eve,
+# Christmas Eve and New Year's Eve until midnight before the first weekday after the holiday.
+public_holidays_special = [
+    date(2021, 6, 25),
     date(2021, 12, 24),
     date(2021, 12, 25),
     date(2021, 12, 26),
     date(2021, 12, 31),
 
-    # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+Holidays+and+additional+days+off+%282022%29+Sweden
     date(2022, 1, 1),
-    date(2022, 1, 6),
-    date(2022, 1, 7),
     date(2022, 4, 15),
     date(2022, 4, 16),
     date(2022, 4, 17),
     date(2022, 4, 18),
-    date(2022, 5, 26),
-    date(2022, 5, 27),
-    date(2022, 6, 6),
     date(2022, 6, 24),
     date(2022, 6, 25),
     date(2022, 12, 24),
@@ -42,9 +51,11 @@ public_holidays = [
 
 
 def get_public_holidays(fmt=None):
+    ph = public_holidays_special + public_holidays
+    ph.sort()
     if fmt is None:
-        return [d for d in public_holidays]
-    return [d.strftime(format=fmt) for d in public_holidays]
+        return [d for d in ph]
+    return [d.strftime(format=fmt) for d in ph]
 
 
 def count_total(counts):
@@ -81,7 +92,7 @@ def get_code_counts(shift: Shift) -> dict:
     counts = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 0}
     duration = shift.end - shift.start
     notAWEOrHoliday = True
-    for public_holiday in public_holidays:
+    for public_holiday in public_holidays_special:
         if _check_adjacent_WE(shift.date, public_holiday):
             counts['OB4'] = duration.seconds // 3600
             notAWEOrHoliday = False

@@ -48,62 +48,55 @@ class HRCodes(TestCase):
 
     def test_codes_simple(self):
         shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
-                       fancy_date=datetime.date(2021, 8, 26))
+                          fancy_date=datetime.date(2021, 8, 26))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_AM)
 
     def test_codes_incl_late_evening(self):
         shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
-                       fancy_date=datetime.date(2021, 8, 23))
+                          fancy_date=datetime.date(2021, 8, 23))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_PM)
 
     def test_codes_overnight(self):
         shift = get_shift(slot=Slot.objects.get(abbreviation='NG'),
-                       fancy_date=datetime.date(2021, 8, 26))
+                          fancy_date=datetime.date(2021, 8, 26))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_NG)
 
     def test_codes_WE(self):
         shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
-                       fancy_date=datetime.date(2021, 8, 28))
+                          fancy_date=datetime.date(2021, 8, 28))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_WE)
 
-    def test_codes_BankHoliday(self): # on bank holiday
+    def test_codes_BankHoliday(self):  # on bank holiday
         shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
-                       fancy_date=datetime.date(2021, 11, 6))
+                          fancy_date=datetime.date(2021, 6, 25))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_BH)
 
-    def test_codes_BankHoliday_AdjWE(self): # a WE after bank holiday
+    def test_codes_BankHoliday_AdjWE(self):  # a WE after bank holiday
         shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
-                       fancy_date=datetime.date(2021, 11, 7))
+                          fancy_date=datetime.date(2021, 6, 27))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_BH)
 
-    def test_codes_BankHoliday_AdjLongWE(self): # bank holiday and bridge and WE
-        print('====')
-        shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
-                       fancy_date=datetime.date(2022, 5, 29))
-        h = hrc.get_code_counts(shift)
-        self.compare(h, HOURS_BH)
-
-    def test_codes_Not_BankHoliday(self): # a shift a day AFTER  bank holiday
+    def test_codes_Not_BankHoliday(self):  # a shift a day AFTER  bank holiday
         shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
-                       fancy_date=datetime.date(2022, 4, 19))
+                          fancy_date=datetime.date(2022, 4, 19))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_AM)
 
-    def test_codes_Not_BankHoliday2(self): # a two shift a day AFTER  bank holiday
+    def test_codes_Not_BankHoliday2(self):  # a two shift a day AFTER  bank holiday
         shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
-                       fancy_date=datetime.date(2022, 4, 20))
+                          fancy_date=datetime.date(2022, 4, 20))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_AM)
 
-    def test_codes_Not_BankHolidayXmasEve(self): # a two shift a day AFTER  bank holiday
+    def test_codes_Not_BankHolidayXmasEve(self):  # a two shift a day AFTER  bank holiday
         shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
-                       fancy_date=datetime.date(2022, 12, 24))
+                          fancy_date=datetime.date(2022, 12, 24))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_BH)
 

@@ -3,7 +3,7 @@
     <div class="col-sm-8 mx-auto">
       <main role="main">
         <h1> {% load static %}
-      <span class="badge badge-primary"><img src="{% static 'img/phonebook.png' %}" height="25" alt=""/> {{PHONEBOOK_NAME}} </span></h1>
+      <span class="badge badge-light"><img src="{% static 'img/phonebook.png' %}" height="25" alt=""/> {{PHONEBOOK_NAME}} </span></h1>
 
         <form class="form-inline my-2 my-lg-0" action="{% url "shifter:phonebook-post" %}" method="POST" enctype="multipart/form-data">
        {% csrf_token  %}

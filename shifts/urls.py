@@ -1,6 +1,7 @@
 from django.urls import include, path
 
 from . import views
+
 app_name = 'shifter'
 handler404 = 'shifts.views.page_not_found'
 urlpatterns = [
@@ -22,5 +23,7 @@ urlpatterns = [
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),
     path('shift-update', views.shifts_update, name="shift-update"),
     path('shift-update-post', views.shifts_update_post, name="shift-update-post"),
+    path('cars', views.cars, name="cars"),
+    path('cars-post', views.cars_post, name="cars-post"),
+    path('cars-post-close', views.cars_post_close, name="cars-post-close"),
 ]
-

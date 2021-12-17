@@ -13,6 +13,8 @@ from django.db import IntegrityError
 import members.models
 from members.models import Team
 from shifts.models import *
+from cars.models import *
+from cars.forms import VehicleBookingForm, VehicleBookingFormClosing
 import datetime
 import os
 import phonenumbers
@@ -20,10 +22,6 @@ import shifts.hrcodes as hrc
 
 from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
     SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME, STOP_DEV_MESSAGES
-
-DATE_FORMAT = '%Y-%m-%d'
-DATE_FORMAT_SLIM = '%Y%m%d'
-MONTH_NAME = '%B'
 
 
 def page_not_found(request, exception):
@@ -113,7 +111,7 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
     if len(slotsOPWithinScheduled) == 0:
         nowFull = datetime.datetime.combine(today, now)
         nowLater = (nowFull + datetime.timedelta(hours=2)).time()  # TODO see if expose that as env setting
-        slotsOPWithinScheduled = filter_active_slots( nowLater, scheduled_shifts, Slot.objects.filter(op=True))
+        slotsOPWithinScheduled = filter_active_slots(nowLater, scheduled_shifts, Slot.objects.filter(op=True))
         if len(slotsOPWithinScheduled):
             now = nowLater
     slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
@@ -359,7 +357,7 @@ def prepare_team(request, member=None, team=None, extraContext=None):
     }
     if isinstance(extraContext, dict):
         for one in extraContext.keys():
-            context[one]=extraContext[one]
+            context[one] = extraContext[one]
     return render(request, 'team.html', prepare_default_context(request, context))
 
 
@@ -443,7 +441,8 @@ def ioc_update(request):
     fieldsToUpdate = ['SL', 'OP']
     # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
-                    '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift['activeSlot'].abbreviation,
+                    '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift[
+                        'activeSlot'].abbreviation,
                     '_timeNow': datetime.datetime.now().strftime(SIMPLE_TIME),
                     '_timeRequested': activeShift['now'],
                     '_PVPrefix': 'NSO:Ops:',
@@ -465,7 +464,7 @@ def shifts(request):
     shiftId = request.GET.get('id', None)
     dataToReturn = {}
     if shiftId is not None:
-        dataToReturn = {'SID':shiftId, 'status': False}
+        dataToReturn = {'SID': shiftId, 'status': False}
         shiftIDs = ShiftID.objects.filter(label=shiftId)
         if len(shiftIDs):
             shiftID = shiftIDs.first()
@@ -685,7 +684,7 @@ def phonebook_post(request):
     }
     invalid = []
     for one in tmp:
-        if one['mobile'] == 'N/A' or len(one['email']) == 0 :
+        if one['mobile'] == 'N/A' or len(one['email']) == 0:
             invalid.append(one)
             continue
         one['valid'] = True
@@ -693,3 +692,80 @@ def phonebook_post(request):
     for one in invalid:
         context['result'].append(one)
     return render(request, 'phonebook.html', prepare_default_context(request, context))
+
+
+@login_required
+@require_safe
+def cars(request):
+    form = None
+    bookNew = request.GET.get('new', False)
+    if bookNew:
+        form = VehicleBookingForm({'member': request.user,
+                                   'use_start': datetime.datetime.now().strftime(DATE_FORMAT_FULL),
+                                   'use_end': datetime.datetime.now().strftime(DATE_FORMAT_FULL)})
+    activeBooking = None
+    bookingId = request.GET.get('close', None)
+    if bookingId is not None:
+        try:
+            activeBooking = VehicleBooking.objects.get(id=bookingId)
+        except Exception as e:
+            messages.error(request, 'Wrong booking ID')
+            return page_not_found(request, exception=e)
+        if activeBooking.member != request.user and not request.user.is_staff:
+            messages.error(request, 'You cannot close the booking that is not yours!')
+            return page_not_found(request, exception=None)
+        form = VehicleBookingFormClosing()
+
+    context = {
+        'form': form,
+        'activeBooking': activeBooking,
+        'carbookings': VehicleBooking.objects.all().order_by('-use_start'),
+    }
+    return render(request, 'cars.html', prepare_default_context(request, context))
+
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_protect
+def cars_post(request):
+
+    form = VehicleBookingForm(request.POST)
+    if form.is_valid():
+        post = form.save(commit=False)
+        post.booking_created = datetime.datetime.now()  # timezone.now()
+        post.booked_by = request.user
+        if post.member != request.user and not request.user.is_staff:
+            messages.error(request, 'You can only book for yourself! Contact OPS team to book for someone else!')
+            return page_not_found(request, exception=None)
+        post.save()
+        message = "Booking for {} on {}, is added!".format(post.member.first_name, post.use_start)
+        messages.success(request, message)
+
+    context = {
+        'carbookings': VehicleBooking.objects.all().order_by('-use_start'),
+    }
+    return render(request, 'cars.html', prepare_default_context(request, context))
+
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_protect
+def cars_post_close(request):
+    print(request.POST)
+    form = VehicleBookingFormClosing(request.POST)
+    idToUse = request.POST['activeBookingId']
+    if form.is_valid():
+        post = form.save(commit=False)
+        activeBooking = VehicleBooking.objects.get(id=idToUse)
+        activeBooking.booking_finished = datetime.datetime.now()
+        activeBooking.after_comment = post.after_comment
+        activeBooking.state = VehicleBooking.BookingState.RETURNED
+        activeBooking.finished_by = request.user
+        activeBooking.save()
+        message = "Booking for {} on {}, is now closed!".format(activeBooking.member.first_name, activeBooking.use_start)
+        messages.success(request, message)
+
+    context = {
+        'carbookings': VehicleBooking.objects.all().order_by('-use_start'),
+    }
+    return render(request, 'cars.html', prepare_default_context(request, context))

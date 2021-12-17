@@ -1,0 +1,59 @@
+{% extends 'template_main.html'%}
+{% load crispy_forms_tags %}
+{% block 'body' %}
+    <div class="col-sm-8 mx-auto">
+      <main role="main">
+        <h1> {% load static %}
+      <span class="badge badge-light"><img src="{% static 'img/car.png' %}" height="25" alt=""/> Vehicle booking portal </span></h1>
+
+        {% if user.is_authenticated and form is not None %}
+          <h2 class="alert-heading">Booking</h2>
+          {%if activeBooking is not None %}
+            <h3>{{activeBooking}}</h3>
+            <h4>Closing comments:</h4>
+            <form action="{% url "shifter:cars-post-close" %}" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="activeBookingId" value="{{activeBooking.id}}" />
+          {%else%}
+            <form action="{% url "shifter:cars-post" %}" method="POST" enctype="multipart/form-data">
+          {%endif%}
+            {% csrf_token %}
+            {{ form | crispy }}
+            <input class="btn btn-success" type="submit" value="Submit">
+        </form>
+        {% endif %}
+
+         <hr/>
+          <h2>Last bookings <a class="btn btn-outline-success" href="/cars?new=true"> <img src="{% static 'img/car.png' %}" height="20" alt=""/> New booking </a></h2>
+        <table class="table table-striped" >
+                  <thead>
+                    <tr>
+                      <th scope="col">Member</th>
+                      <th scope="col">Vehicle</th>
+                      <th scope="col">Use start</th>
+                      <th scope="col">Use end</th>
+                      <th scope="col">Initial comments</th>
+                      <th scope="col">Closing comments</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+        {% for carbooking in carbookings %}
+            <tr><td><strong>{{carbooking.member}} <br> ({{carbooking.member.team}})</strong></td>
+                <td> <strong>{{carbooking.vehicle}}</strong></td>
+                <td>{{carbooking.use_start}}</td>
+                <td>{{carbooking.use_end}}</td>
+                <td> <small>{{carbooking.booking_created}}/{{carbooking.booked_by}} </small><br>{{carbooking.initial_comment}}</td>
+                <td>
+                    {%if carbooking.state == 'R' %}<small> <span class="badge badge-secondary">{{carbooking.state}}</span>  {{carbooking.booking_finished}} /{{carbooking.finished_by}}</small><br>{{carbooking.after_comment}}
+                    {% else %} <a class="btn btn-outline-success" href="/cars?close={{carbooking.id}}"> <img src="{% static 'img/car.png' %}" height="20" alt=""/> End booking </a> {%endif%}
+                </td>
+            </tr>
+        {% endfor %}
+                  </tbody>
+        </table>
+<!--        <div style="clear:both;"></div>-->
+        <hr/>
+
+        <h5>Control Room Phone Number: <a class="btn btn-outline-primary" href="tel:{{controlRoomPhoneNumber}}"><strong>{{controlRoomPhoneNumber}}</strong></a></h5>
+      </main>
+    </div>
+{% endblock %}

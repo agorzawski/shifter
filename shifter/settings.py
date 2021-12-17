@@ -34,7 +34,8 @@ ALLOWED_HOSTS = list(filter(None, os.getenv('DJANGO_ALLOWED_HOSTS',"").split(','
 INSTALLED_APPS = [
     'members.apps.MembersConfig',
     'shifts.apps.ShiftsConfig',
-
+    'cars.apps.CarsConfig',
+    'crispy_forms',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -74,6 +75,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'shifter.wsgi.application'
 
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases

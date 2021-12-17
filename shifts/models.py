@@ -8,7 +8,10 @@ from enum import Enum
 
 SIMPLE_DATE = "%Y-%m-%d"
 SIMPLE_TIME = "%H:%M:%S"
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATE_FORMAT_FULL = "%Y-%m-%d %H:%M:%S"
+DATE_FORMAT = '%Y-%m-%d'
+DATE_FORMAT_SLIM = '%Y%m%d'
+MONTH_NAME = '%B'
 
 
 class ShifterMessage(models.Model):
@@ -113,11 +116,11 @@ class Shift(models.Model):
 
     @cached_property
     def shift_start(self) -> str:
-        return self.get_proper_times(self.Moment.START).strftime(DATE_FORMAT)
+        return self.get_proper_times(self.Moment.START).strftime(DATE_FORMAT_FULL)
 
     @cached_property
     def shift_end(self) -> str:
-        return self.get_proper_times(self.Moment.END).strftime(DATE_FORMAT)
+        return self.get_proper_times(self.Moment.END).strftime(DATE_FORMAT_FULL)
 
     def get_proper_times(self, moment) -> datetime:
         timeToUse = self.slot.hour_start

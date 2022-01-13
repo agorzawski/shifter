@@ -113,12 +113,19 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
     if len(slotsOPWithinScheduled) == 0:
         nowFull = datetime.datetime.combine(today, now)
         nowLater = (nowFull + datetime.timedelta(hours=2)).time()  # TODO see if expose that as env setting
-        slotsOPWithinScheduled = filter_active_slots( nowLater, scheduled_shifts, Slot.objects.filter(op=True))
+        slotsOPWithinScheduled = filter_active_slots(nowLater, scheduled_shifts, Slot.objects.filter(op=True))
         if len(slotsOPWithinScheduled):
             now = nowLater
     slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
     if len(slotsOPWithinScheduled) == 0:
         slotsOPWithinScheduled = slots
+    if len(slotsOPWithinScheduled) == 0 :
+        return {'today': today,
+                'now': now,
+                'shiftID': prepareShiftId(today, []),
+                'activeSlots': [],
+                'activeSlot': None,
+                'currentTeam': []}
     slotToBeUsed = slotsOPWithinScheduled[0]
 
     def takeHourEnd(slotToSort):
@@ -359,7 +366,7 @@ def prepare_team(request, member=None, team=None, extraContext=None):
     }
     if isinstance(extraContext, dict):
         for one in extraContext.keys():
-            context[one]=extraContext[one]
+            context[one] = extraContext[one]
     return render(request, 'team.html', prepare_default_context(request, context))
 
 
@@ -443,7 +450,8 @@ def ioc_update(request):
     fieldsToUpdate = ['SL', 'OP']
     # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
-                    '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift['activeSlot'].abbreviation,
+                    '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift[
+                        'activeSlot'].abbreviation,
                     '_timeNow': datetime.datetime.now().strftime(SIMPLE_TIME),
                     '_timeRequested': activeShift['now'],
                     '_PVPrefix': 'NSO:Ops:',
@@ -465,7 +473,7 @@ def shifts(request):
     shiftId = request.GET.get('id', None)
     dataToReturn = {}
     if shiftId is not None:
-        dataToReturn = {'SID':shiftId, 'status': False}
+        dataToReturn = {'SID': shiftId, 'status': False}
         shiftIDs = ShiftID.objects.filter(label=shiftId)
         if len(shiftIDs):
             shiftID = shiftIDs.first()
@@ -685,7 +693,7 @@ def phonebook_post(request):
     }
     invalid = []
     for one in tmp:
-        if one['mobile'] == 'N/A' or len(one['email']) == 0 :
+        if one['mobile'] == 'N/A' or len(one['email']) == 0:
             invalid.append(one)
             continue
         one['valid'] = True

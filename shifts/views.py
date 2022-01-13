@@ -117,6 +117,13 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
     slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
     if len(slotsOPWithinScheduled) == 0:
         slotsOPWithinScheduled = slots
+    if len(slotsOPWithinScheduled) == 0 :
+        return {'today': today,
+                'now': now,
+                'shiftID': prepareShiftId(today, []),
+                'activeSlots': [],
+                'activeSlot': None,
+                'currentTeam': []}
     slotToBeUsed = slotsOPWithinScheduled[0]
 
     def takeHourEnd(slotToSort):

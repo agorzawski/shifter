@@ -18,13 +18,14 @@ class AssetBooking(admin.ModelAdmin):
         'booking_finished',
         'after_comment'
     ]
-    list_filter = ('state', 'asset', 'member__team')
+    list_filter = ('state', 'asset__asset_type', 'asset', 'member__team')
 
 
 @admin.register(Asset)
 class AssetAdmin(admin.ModelAdmin):
     model = Asset
     list_display = ['name', 'asset_type']
+    list_filter = ('asset_type', )
 
 
 @admin.register(AssetType)

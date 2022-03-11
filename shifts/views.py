@@ -13,8 +13,8 @@ from django.db import IntegrityError
 import members.models
 from members.models import Team
 from shifts.models import *
-from cars.models import *
-from cars.forms import VehicleBookingForm, VehicleBookingFormClosing
+from assets.models import *
+from assets.forms import AssetBookingForm, AssetBookingFormClosing
 import datetime
 import os
 import phonenumbers
@@ -703,40 +703,40 @@ def phonebook_post(request):
 
 @login_required
 @require_safe
-def cars(request):
+def assets(request):
     form = None
     bookNew = request.GET.get('new', False)
     if bookNew:
-        form = VehicleBookingForm({'member': request.user,
-                                   'use_start': datetime.datetime.now().strftime(DATE_FORMAT_FULL),
-                                   'use_end': datetime.datetime.now().strftime(DATE_FORMAT_FULL)})
+        form = AssetBookingForm({'member': request.user,
+                                 'use_start': datetime.datetime.now().strftime(DATE_FORMAT_FULL),
+                                 'use_end': datetime.datetime.now().strftime(DATE_FORMAT_FULL)})
     activeBooking = None
     bookingId = request.GET.get('close', None)
     if bookingId is not None:
         try:
-            activeBooking = VehicleBooking.objects.get(id=bookingId)
+            activeBooking = AssetBooking.objects.get(id=bookingId)
         except Exception as e:
             messages.error(request, 'Wrong booking ID')
             return page_not_found(request, exception=e)
         if activeBooking.member != request.user and not request.user.is_staff:
             messages.error(request, 'You cannot close the booking that is not yours!')
             return page_not_found(request, exception=None)
-        form = VehicleBookingFormClosing()
+        form = AssetBookingFormClosing()
 
     context = {
         'form': form,
         'activeBooking': activeBooking,
-        'carbookings': VehicleBooking.objects.all().order_by('-use_start'),
+        'assetbookings': AssetBooking.objects.all().order_by('-use_start'),
     }
-    return render(request, 'cars.html', prepare_default_context(request, context))
+    return render(request, 'assets.html', prepare_default_context(request, context))
 
 
 @login_required
 @require_http_methods(["POST"])
 @csrf_protect
-def cars_post(request):
+def assets_post(request):
 
-    form = VehicleBookingForm(request.POST)
+    form = AssetBookingForm(request.POST)
     if form.is_valid():
         post = form.save(commit=False)
         post.booking_created = datetime.datetime.now()  # timezone.now()
@@ -749,30 +749,30 @@ def cars_post(request):
         messages.success(request, message)
 
     context = {
-        'carbookings': VehicleBooking.objects.all().order_by('-use_start'),
+        'assetbookings': AssetBooking.objects.all().order_by('-use_start'),
     }
-    return render(request, 'cars.html', prepare_default_context(request, context))
+    return render(request, 'assets.html', prepare_default_context(request, context))
 
 
 @login_required
 @require_http_methods(["POST"])
 @csrf_protect
-def cars_post_close(request):
+def assets_post_close(request):
     print(request.POST)
-    form = VehicleBookingFormClosing(request.POST)
+    form = AssetBookingFormClosing(request.POST)
     idToUse = request.POST['activeBookingId']
     if form.is_valid():
         post = form.save(commit=False)
-        activeBooking = VehicleBooking.objects.get(id=idToUse)
+        activeBooking = AssetBooking.objects.get(id=idToUse)
         activeBooking.booking_finished = datetime.datetime.now()
         activeBooking.after_comment = post.after_comment
-        activeBooking.state = VehicleBooking.BookingState.RETURNED
+        activeBooking.state = AssetBooking.BookingState.RETURNED
         activeBooking.finished_by = request.user
         activeBooking.save()
         message = "Booking for {} on {}, is now closed!".format(activeBooking.member.first_name, activeBooking.use_start)
         messages.success(request, message)
 
     context = {
-        'carbookings': VehicleBooking.objects.all().order_by('-use_start'),
+        'assetbookings': AssetBooking.objects.all().order_by('-use_start'),
     }
-    return render(request, 'cars.html', prepare_default_context(request, context))
+    return render(request, 'assets.html', prepare_default_context(request, context))

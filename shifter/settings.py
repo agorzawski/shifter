@@ -34,7 +34,7 @@ ALLOWED_HOSTS = list(filter(None, os.getenv('DJANGO_ALLOWED_HOSTS',"").split(','
 INSTALLED_APPS = [
     'members.apps.MembersConfig',
     'shifts.apps.ShiftsConfig',
-    'cars.apps.CarsConfig',
+    'assets.apps.CarsConfig',
     'crispy_forms',
     'django.contrib.admin',
     'django.contrib.auth',

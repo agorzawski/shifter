@@ -7,7 +7,6 @@ import datetime
 
 def prepareShiftId(today, activeSlot):
     shiftMap = {0: 'A', 1: 'B', 2: 'C', -1: 'X'}
-    # TODO consider extracting that as config
     opSlots = Slot.objects.filter(op=True).order_by('hour_start')
     number = -1
     for idx, item in enumerate(opSlots):
@@ -27,9 +26,11 @@ def filter_active_slots(now, scheduled_shifts, slotsToConsider):
     return slots
 
 
-def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False, fullUpdate=False):
-    import members.directory as directory
-    ldap = directory.LDAP()
+def prepare_active_crew(dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False, fullUpdate=False, useLDAP=True):
+    ldap = None
+    if fullUpdate:
+        import members.directory as directory
+        ldap = directory.LDAP()
     today = datetime.datetime.now()
     now = today.time()
     if dayToGo is not None and (slotToGo is not None or hourToGo is not None):
@@ -53,7 +54,7 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
     slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
     if len(slotsOPWithinScheduled) == 0:
         slotsOPWithinScheduled = slots
-    if len(slotsOPWithinScheduled) == 0 :
+    if len(slotsOPWithinScheduled) == 0:
         return {'today': today,
                 'now': now,
                 'shiftID': prepareShiftId(today, []),
@@ -65,12 +66,13 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
     def takeHourEnd(slotToSort):
         return slotToSort.hour_end
 
-    def updateDetailsFromLDAP(shifterDuty):
+    def updateDetailsFromLDAP(shifterDuty, useLDAP=True):
         if shifterDuty.member.email is not None and shifterDuty.member.mobile is not None:
             # print(shifterDuty.member, " has all data locally")
             return None
-
-        personal_data = ldap.search(field='name', text=shifterDuty.member.last_name)
+        personal_data = []
+        if useLDAP:
+            personal_data = ldap.search(field='name', text=shifterDuty.member.last_name)
         if len(personal_data) == 0:
             return None
         one = list(personal_data.keys())[0]
@@ -110,8 +112,9 @@ def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onl
                     activeSlots.append(slot)
                     currentTeam.append(shifter)
                     if fullUpdate or (shifter.member.email is None and shifter.member.mobile is None):
-                        print('Fetching LDAP update for {}'.format(shifter.member))
-                        updateDetailsFromLDAP(shifter)
+                        if useLDAP:
+                            print('Fetching LDAP update for {}'.format(shifter.member))
+                        updateDetailsFromLDAP(shifter, useLDAP=useLDAP)
                     if today < datetime.datetime.now():
                         try:
                             shiftID = ShiftID.objects.get(label=prepareShiftId(today, slotToBeUsed))
@@ -139,7 +142,7 @@ def prepare_for_JSON(activeShift):
     # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
                     '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift[
-                        'activeSlot'].abbreviation,
+                    'activeSlot'].abbreviation,
                     '_timeNow': datetime.datetime.now().strftime(SIMPLE_TIME),
                     '_timeRequested': activeShift['now'],
                     '_PVPrefix': 'NSO:Ops:',

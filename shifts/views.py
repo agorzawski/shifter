@@ -73,8 +73,7 @@ def todays(request):
     slotToGo = request.GET.get('slot', None)
     hourToGo = request.GET.get('hour', None)
     fullUpdate = request.GET.get('fullUpdate', None) is not None
-    activeShift = prepare_active_crew(request,
-                                      dayToGo=dayToGo,
+    activeShift = prepare_active_crew(dayToGo=dayToGo,
                                       slotToGo=slotToGo,
                                       hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
@@ -214,7 +213,7 @@ def ioc_update(request):
     slotToGo = request.GET.get('slot', None)
     hourToGo = request.GET.get('hour', None)
     fullUpdate = request.GET.get('fullUpdate', None) is not None
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
+    activeShift = prepare_active_crew(dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
     return JsonResponse(prepare_for_JSON(activeShift))
 

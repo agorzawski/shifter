@@ -19,15 +19,13 @@ testCases = {
     # Funny & weird outside slots
     # last occurred shift same day
     "case6": {"date": "2022-05-04", "slots": ("NWH",), "hour": "18:11:11", "SID": "20220504A"},
-    # 2h to the upcoming
+    # <2h to the upcoming
     "case7": {"date": "2022-05-04", "slots": ("NWH",), "hour": "7:11:11", "SID": "20220504A"},
     # Last logged/occurred shift
-    "case7b": {"date": "2022-05-04", "slots": ("NWH",), "hour": "7:11:11", "SID": "20220503B"},
+    "case7b": {"date": "2022-05-04", "slots": ("NWH",), "hour": "5:11:11", "SID": "20220503B"},
     # multiple op slots selected
     "case8": {"date": "2022-05-04", "slots": ("NWH", "AM", "PM"), "hour": "9:11:11", "SID": "20220504A"},
     "case9": {"date": "2022-05-04", "slots": ("NWH", "AM", "PM"), "hour": "15:11:11", "SID": "20220504B"},
-
-
 }
 
 
@@ -87,21 +85,29 @@ class ActiveShift(TestCase):
         memberOffice.save()
         # prepare some simple schedule
         # adhoc matching the dates from the testCasesDefined above
+        shiftID1 = ShiftID()
+        shiftID1.label = '20220501A'
+        shiftID1.date_created = datetime.datetime(2022, 5, 1, 7, 00, 00)
+        shiftID1.save()
+        shiftID2 = ShiftID()
+        shiftID2.label = '20220501B'
+        shiftID2.date_created = datetime.datetime(2022, 5, 1, 14, 14, 00)
+        shiftID2.save()
         allShifts = (
             # 24h coverage with NWH ovelaping
-            (member1, AM, datetime.date(2022, 5, 1)),
-            (member1op, AM, datetime.date(2022, 5, 1)),
-            (member2, PM, datetime.date(2022, 5, 1)),
-            (member2op, PM, datetime.date(2022, 5, 1)),
-            (member3, NG, datetime.date(2022, 5, 1)),
-            (member3op, NG, datetime.date(2022, 5, 1)),
-            (memberOffice, NWH, datetime.date(2022, 5, 1)),
+            (member1, AM, datetime.date(2022, 5, 1), shiftID1),
+            (member1op, AM, datetime.date(2022, 5, 1), shiftID1),
+            (member2, PM, datetime.date(2022, 5, 1), shiftID2),
+            (member2op, PM, datetime.date(2022, 5, 1), shiftID2),
+            (member3, NG, datetime.date(2022, 5, 1), None),
+            (member3op, NG, datetime.date(2022, 5, 1), None),
+            (memberOffice, NWH, datetime.date(2022, 5, 1), None),
             # AM/PM with NWH overlaping
-            (member1, AM, datetime.date(2022, 5, 3)),
-            (member2, PM, datetime.date(2022, 5, 3)),
-            (memberOffice, NWH, datetime.date(2022, 5, 3)),
+            (member1, AM, datetime.date(2022, 5, 3), None),
+            (member2, PM, datetime.date(2022, 5, 3), None),
+            (memberOffice, NWH, datetime.date(2022, 5, 3), None),
             # just NWH
-            (memberOffice, NWH, datetime.date(2022, 5, 4)),
+            (memberOffice, NWH, datetime.date(2022, 5, 4), None),
         )
         create_shifts(slotsMembersDates=allShifts, campaign=campaign, revision=revision)
 
@@ -141,18 +147,19 @@ class ActiveShift(TestCase):
     def test_mixed_NWH_and_AM_PM_with_OP_TRUE_case2(self):
         self.check(testCases["case9"])
 
-    def check(self, X):
-        print("====================================")
-        print(X)
+    def check(self, X, verbose=True):
         for opSlot in X["slots"]:
             slot = Slot.objects.get(abbreviation=opSlot)
             slot.op = True
             slot.save()
         r = prepare_active_crew(dayToGo=X["date"], hourToGo=X["hour"], useLDAP=False)
-        print("------------------------------------")
-        print(r)
-        print(prepare_for_JSON(r))
-        print("------------------------------------")
+        if verbose:
+            print("====================================")
+            print(X)
+            print("------------------------------------")
+            print(r)
+            print(prepare_for_JSON(r))
+            print("------------------------------------")
         self.assertEqual(X["SID"], r['shiftID'])
 
 
@@ -164,4 +171,6 @@ def create_shifts(slotsMembersDates=None, campaign=None, revision=None):
         shift.campaign = campaign
         shift.revision = revision
         shift.date = one[2]  # datetime.date(2022, 5, 1)
+        if one[3] is not None:
+            shift.shiftID = one[3]
         shift.save()

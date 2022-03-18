@@ -3,6 +3,7 @@ from shifts.models import DATE_FORMAT_SLIM, DATE_FORMAT, SIMPLE_TIME
 from django.core.exceptions import ObjectDoesNotExist
 import phonenumbers
 import datetime
+from shifter.settings import NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES
 
 
 def prepareShiftId(today, activeSlot):
@@ -12,6 +13,9 @@ def prepareShiftId(today, activeSlot):
     for idx, item in enumerate(opSlots):
         if item == activeSlot:
             number = idx
+    print("\n ==> ", today, "|", today.hour, "|", activeSlot, "\n")
+    # if today.hour < 6:
+    #     today = today + datetime.timedelta(days=-1)
     return today.strftime(DATE_FORMAT_SLIM) + shiftMap[number]
 
 
@@ -28,7 +32,7 @@ def filter_active_slots(now, scheduled_shifts, slotsToConsider):
 
 def prepare_active_crew(dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False, fullUpdate=False, useLDAP=True):
     ldap = None
-    if fullUpdate:
+    if fullUpdate and useLDAP:
         import members.directory as directory
         ldap = directory.LDAP()
     today = datetime.datetime.now()
@@ -40,18 +44,27 @@ def prepare_active_crew(dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False
         if hourToGo is not None and slotToGo is None:
             now = datetime.datetime.strptime(hourToGo, SIMPLE_TIME).time()
 
+    print("## ->", today)
+    print("## ->", now)
+
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
     slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
     slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts, Slot.objects.filter(op=True))
-    # TODO see if this can be recursive forward for N hours
+    lastCompletedShiftBeforeTodayNow = Shift.objects.filter(revision=revision).filter(date__lte=today)\
+        .filter(shiftID__isnull=False).order_by('shiftID').first()
+
+    print("---->", lastCompletedShiftBeforeTodayNow)
     if len(slotsOPWithinScheduled) == 0:
         nowFull = datetime.datetime.combine(today, now)
-        nowLater = (nowFull + datetime.timedelta(hours=2)).time()  # TODO see if expose that as env setting
+        nowLater = (nowFull + datetime.timedelta(hours=NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES)).time()
         slotsOPWithinScheduled = filter_active_slots(nowLater, scheduled_shifts, Slot.objects.filter(op=True))
         if len(slotsOPWithinScheduled):
             now = nowLater
     slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
+
+    print("---->", slots)
+
     if len(slotsOPWithinScheduled) == 0:
         slotsOPWithinScheduled = slots
     if len(slotsOPWithinScheduled) == 0:
@@ -87,7 +100,6 @@ def prepare_active_crew(dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False
             pn = phonenumbers.parse(personal_data[one]['mobile'])
             fixed = phonenumbers.format_number(pn, phonenumbers.PhoneNumberFormat.INTERNATIONAL).replace(" ", "")
             shifterDuty.member.mobile = fixed
-            # TODO fix the rendering in the website
             # for some reason SqLite allowed to save 16characters in 12 characters field
             # while postgres threw an exception, however this was used to format here not in the website... to be fixed
             shifterDuty.member.save()
@@ -134,15 +146,24 @@ def prepare_active_crew(dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False
             'currentTeam': currentTeam}
 
 
+# def prepare_last_active_shift():
+#     today = datetime.datetime.now()
+#     now = today.time()
+#     return {'today': today,
+#             'now': now,
+#             'shiftID': prepareShiftId(today, slotToBeUsed),
+#             'activeSlots': set(activeSlots),
+#             'activeSlot': slotToBeUsed,
+#             'currentTeam': currentTeam}
+
+
 def prepare_for_JSON(activeShift):
     # TODO WIP send a slack webhook announcement to remind that this was called
-    fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
-    # TODO add separate call for OC updates + separate url
+    # fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
     fieldsToUpdate = ['SL', 'OP']
-    # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
                     '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift[
-                    'activeSlot'].abbreviation,
+                        'activeSlot'].abbreviation,
                     '_timeNow': datetime.datetime.now().strftime(SIMPLE_TIME),
                     '_timeRequested': activeShift['now'],
                     '_PVPrefix': 'NSO:Ops:',

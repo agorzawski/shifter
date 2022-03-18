@@ -28,8 +28,7 @@ def page_not_found(request, exception):
 @require_safe
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
-    revision = revisions.first()
-    return prepare_main_page(request, revisions, revision)
+    return prepare_main_page(request, revisions)
 
 
 @require_http_methods(["POST"])
@@ -39,10 +38,12 @@ def index_post(request):
     revision = Revision.objects.filter(number=request.POST['revision']).first()
     # TODO implement filter on campaigns
     filtered_campaigns = None
-    return prepare_main_page(request, revisions, revision, filtered_campaigns=filtered_campaigns)
+    return prepare_main_page(request, revisions, revision=revision, filtered_campaigns=filtered_campaigns)
 
 
-def prepare_main_page(request, revisions, revision, filtered_campaigns=None):
+def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None):
+    if revision is None:
+        revision = revisions.first()
     scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
                                                                         'member__role__priority')
     scheduled_campaigns = Campaign.objects.filter(revision=revision)

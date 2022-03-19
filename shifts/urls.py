@@ -15,6 +15,7 @@ urlpatterns = [
     path('calendar.ics', views.icalendar_view, name='calendar'),
     path('ical', views.icalendar, name='calendar_public'),
     path('dates', views.dates, name='dates'),
+    path('slots-update', views.dates_slots_update, name='slots-update-post'),
     path('phonebook', views.phonebook, name='phonebook'),
     path('phonebook-post', views.phonebook_post, name='phonebook-post'),
     path('ioc-update', views.ioc_update, name='ioc-update'),

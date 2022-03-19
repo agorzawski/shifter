@@ -4,7 +4,7 @@
     <div class="col-sm-8 mx-auto">
       <main role="main">
 
-      <div class="float-none" style="padding:40px;text-align:center;" >
+      <div class="float-left" style="padding:40px;text-align:center;" >
         <h1> <span class="badge badge-primary"> Defined campaigns and their dates </span></h1>
         {% for c in campaigns %}
           <p> <span class="badge badge-primary">{{c.name}}</span> for <strog>{{c.date_start}}</strog> - <strong>{{c.date_end}}</strong> <small>(revision {{c.revision}})</small> </p>
@@ -13,31 +13,42 @@
 
         <hr>
         <div class="float-none" style="padding:40px;text-align:center;" >
+
+        <form action="{% url "shifter:slots-update-post" %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+        {% csrf_token %}
+          <h1>
+            <span class="badge badge-info"> Defined day slots </span>
+            <button class="btn btn-info" {%if not request.user.is_staff %} disabled {%endif%} >Update Slots OP </button></h1>
+        {% for c in slots %}
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="{{c.abbreviation}}" name="{{c.abbreviation}}" {% if c.op%}checked{%endif%} {%if not request.user.is_staff %} disabled {%endif%}>
+            <label class="form-check-label">
+              <span class="badge badge-info">{{c.name}} ({{c.abbreviation}})</span> for <strong>{{c.hour_start}}</strong> - <strong>{{c.hour_end}}</strong>
+            </label>
+          </div>
+          {% endfor%}
+        </form>
+        </div>
+
+         <hr>
+        <div class="float-left" style="padding:40px;text-align:center;" >
         <h1> <span class="badge badge-secondary"> Teams </span></h1>
         {% for c in teams %}
           <p> <a href="/t?id={{c.id}}"> {{c.name}} </a></p>
         {% endfor%}
         </div>
 
-        <hr>
-        <div class="float-none" style="padding:40px;text-align:center;" >
-        <h1> <span class="badge badge-info"> Defined day slots </span></h1>
-        {% for c in slots %}
-          <p> <span class="badge badge-info">{{c.name}} ({{c.abbreviation}})</span> for <strong>{{c.hour_start}}</strong> - <strong>{{c.hour_end}}</strong> </p>
-        {% endfor%}
-        </div>
 
-        <hr>
-        <div class="float-none" style="padding:40px;text-align:center;" >
+        <div class="float-left" style="padding:40px;text-align:center;" >
         <h1> <span class="badge badge-secondary"> Shift roles </span></h1>
         {% for c in shiftroles %}
           <p>{{c.name}}  <span class="badge badge-secondary">{{c.abbreviation}}</span> </p>
         {% endfor%}
         </div>
 
-        <hr>
-        <div class="float-none" style="padding:40px;text-align:center;">
-        <h1> <span class="badge badge-secondary"> Member assigned roles </span></h1>
+
+        <div class="float-left" style="padding:40px;text-align:center;">
+        <h1> <span class="badge badge-secondary"> Member roles </span></h1>
         {% for c in memberroles %}
           <p>{{c.name}}  <span class="badge badge-secondary">{{c.abbreviation}}</span> </p>
         {% endfor%}

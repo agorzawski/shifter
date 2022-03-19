@@ -19,7 +19,7 @@ import datetime
 import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
-
+from shifter.settings import DEFAULT_SHIFT_SLOT
 
 def page_not_found(request, exception):
     return render(request, "404.html", {})
@@ -61,11 +61,32 @@ def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None
 def dates(request):
     context = {
         'campaigns': Campaign.objects.all(),
-        'slots': Slot.objects.all(),
+        'slots': Slot.objects.all().order_by('hour_start'),
         'shiftroles': ShiftRole.objects.all(),
         'memberroles': members.models.Role.objects.all(),
     }
     return render(request, 'dates.html', prepare_default_context(request, context))
+
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_protect
+def dates_slots_update(request):
+    count = 0
+    for slot in Slot.objects.all():
+        slot.op = False
+        toUpdate = request.POST.get(slot.abbreviation, None)
+        if toUpdate is not None:
+            slot.op = True
+            count = + 1
+            messages.success(request, "Slot {} is operational now!".format(slot))
+        slot.save()
+    if count == 0:
+        s = Slot.objects.filter(abbreviation=DEFAULT_SHIFT_SLOT).first()
+        s.op = True
+        s.save()
+        messages.success(request, "There must be at leasst one slot set to operational, setting default {} ".format(s))
+    return HttpResponseRedirect(reverse("shifter:dates"))
 
 
 @require_safe

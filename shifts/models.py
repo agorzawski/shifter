@@ -58,6 +58,7 @@ class Campaign(models.Model):
 class Slot(models.Model):
     name = models.CharField(max_length=200)
     abbreviation = models.CharField(max_length=10, default='AM')
+    id_code = models.CharField(max_length=1, default='A')
     hour_start = models.TimeField(blank=False)
     hour_end = models.TimeField(blank=False)
     color_in_calendar = models.CharField(max_length=7, default='#0000FF')

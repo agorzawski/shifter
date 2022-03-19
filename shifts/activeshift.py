@@ -1,32 +1,29 @@
 from shifts.models import Slot, Revision, Shift, ShiftID
 from shifts.models import DATE_FORMAT_SLIM, DATE_FORMAT, SIMPLE_TIME
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
+
 import phonenumbers
 import datetime
-from shifter.settings import NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES
+from shifter.settings import NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES, DEFAULT_SHIFT_SLOT
 
 
-def prepareShiftId(today, activeSlot):
-    shiftMap = {0: 'A', 1: 'B', 2: 'C', -1: 'X'}
-    opSlots = Slot.objects.filter(op=True).order_by('hour_start')
-    number = -1
-    for idx, item in enumerate(opSlots):
-        if item == activeSlot:
-            number = idx
-    print("\n ==> ", today, "|", today.hour, "|", activeSlot, "\n")
-    # if today.hour < 6:
-    #     today = today + datetime.timedelta(days=-1)
-    return today.strftime(DATE_FORMAT_SLIM) + shiftMap[number]
+def prepare_ShiftID(today, now, activeSlot, error=False):
+    if error or activeSlot is None:
+        return today.strftime(DATE_FORMAT_SLIM)+"Err"
+    return today.strftime(DATE_FORMAT_SLIM) + activeSlot.id_code
 
 
-def filter_active_slots(now, scheduled_shifts, slotsToConsider):
+def filter_active_slots(now, scheduled_shifts):
+    return filter_for_hour(now, [shifter.slot for shifter in scheduled_shifts])
+
+
+def filter_for_hour(now, slotsToConsider):
     slots = []
     for slot in slotsToConsider:
         if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
                 or slot.hour_start <= now < slot.hour_end:
-            for shifter in scheduled_shifts:
-                if shifter.slot == slot:
-                    slots.append(slot)
+            slots.append(slot)
     return slots
 
 
@@ -44,75 +41,55 @@ def prepare_active_crew(dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False
         if hourToGo is not None and slotToGo is None:
             now = datetime.datetime.strptime(hourToGo, SIMPLE_TIME).time()
 
-    print("## ->", today)
-    print("## ->", now)
+    nowFull = datetime.datetime.combine(today, now)
+
+    availableSlots = None  # NOT USED!, refactoring WIP
+    # availableSlots = filter_for_hour(now, Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True))
+    # print("->> For given moment ({}), the recognised slots: ".format(now), availableSlots)
 
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
-    slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
-    slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts, Slot.objects.filter(op=True))
-    lastCompletedShiftBeforeTodayNow = Shift.objects.filter(revision=revision).filter(date__lte=today)\
-        .filter(shiftID__isnull=False).order_by('shiftID').first()
+    scheduled_shifts = Shift.objects.filter(revision=revision) \
+        .filter(Q(date=today) & Q(slot__op=True))  # |
+    # Q(date=today + datetime.timedelta(days=-1)))
+    # first find on EXACT time for OP slots
+    slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts)
+    print('-> 1st OP SLOTS -> ', slotsOPWithinScheduled)
 
-    print("---->", lastCompletedShiftBeforeTodayNow)
+    # second find on EXACT time - NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES
     if len(slotsOPWithinScheduled) == 0:
-        nowFull = datetime.datetime.combine(today, now)
         nowLater = (nowFull + datetime.timedelta(hours=NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES)).time()
-        slotsOPWithinScheduled = filter_active_slots(nowLater, scheduled_shifts, Slot.objects.filter(op=True))
+        slotsOPWithinScheduled = filter_active_slots(nowLater, scheduled_shifts)
         if len(slotsOPWithinScheduled):
             now = nowLater
-    slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
+        print('-> 2nd try (2h later) OP SLOTS -> ', slotsOPWithinScheduled)
 
-    print("---->", slots)
+    # retrigger for the search (in case now got updated)
+    slots = filter_active_slots(now, scheduled_shifts)
+    print("-> SLOTS ALL ->", slots)
 
+    # return if still no result found
     if len(slotsOPWithinScheduled) == 0:
-        slotsOPWithinScheduled = slots
-    if len(slotsOPWithinScheduled) == 0:
+        lastCompletedShiftBeforeTodayNow = Shift.objects \
+            .filter(revision=revision) \
+            .filter(Q(shiftID__isnull=False) & Q(shiftID__date_created__lte=nowFull)) \
+            .order_by('-shiftID__date_created').first()
+        print("-> LAST SID found ->", lastCompletedShiftBeforeTodayNow.shiftID)
         return {'today': today,
                 'now': now,
-                'shiftID': prepareShiftId(today, []),
+                'shiftID': lastCompletedShiftBeforeTodayNow.shiftID.label\
+                if lastCompletedShiftBeforeTodayNow is not None\
+                else prepare_ShiftID(today, now, None, error=True),
                 'activeSlots': [],
                 'activeSlot': None,
                 'currentTeam': []}
+
+    # for a final slot find the details
     slotToBeUsed = slotsOPWithinScheduled[0]
-
-    def takeHourEnd(slotToSort):
-        return slotToSort.hour_end
-
-    def updateDetailsFromLDAP(shifterDuty, useLDAP=True):
-        if shifterDuty.member.email is not None and shifterDuty.member.mobile is not None:
-            # print(shifterDuty.member, " has all data locally")
-            return None
-        personal_data = []
-        if useLDAP:
-            personal_data = ldap.search(field='name', text=shifterDuty.member.last_name)
-        if len(personal_data) == 0:
-            return None
-        one = list(personal_data.keys())[0]
-        if len(personal_data) > 1:
-            for oneK in personal_data.keys():
-                if shifterDuty.member.last_name.lower() in oneK.lower() \
-                        and shifterDuty.member.first_name.lower() in oneK.lower():
-                    one = oneK
-        shifterDuty.member.email = personal_data[one]['email']
-        shifterDuty.member.mobile = 'N/A'
-        try:
-            pn = phonenumbers.parse(personal_data[one]['mobile'])
-            fixed = phonenumbers.format_number(pn, phonenumbers.PhoneNumberFormat.INTERNATIONAL).replace(" ", "")
-            shifterDuty.member.mobile = fixed
-            # for some reason SqLite allowed to save 16characters in 12 characters field
-            # while postgres threw an exception, however this was used to format here not in the website... to be fixed
-            shifterDuty.member.save()
-        except Exception:
-            pass
-        if type(personal_data[one]['photo']) is not str:
-            import base64
-            shifterDuty.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
-            shifterDuty.member.save()
-
+    print('-> FOUND SLOT TO BE USED -> ', slotToBeUsed)
+    print('-> ---------')
+    # actual shift details finding based on the SLOT and date (today)
     sortedSlots = list(set(slots))
-    sortedSlots.sort(key=takeHourEnd)
-    activeSlot = Slot.objects.first()
+    sortedSlots.sort(key=lambda slotToSort: slotToSort.hour_end)
     activeSlots = []
     currentTeam = []
     for slot in sortedSlots:
@@ -120,46 +97,69 @@ def prepare_active_crew(dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False
                 or slot.hour_start <= now < slot.hour_end:
             for shifter in scheduled_shifts:
                 if shifter.slot == slot:
-                    activeSlot = slot
                     activeSlots.append(slot)
                     currentTeam.append(shifter)
-                    if fullUpdate or (shifter.member.email is None and shifter.member.mobile is None):
-                        if useLDAP:
-                            print('Fetching LDAP update for {}'.format(shifter.member))
-                        updateDetailsFromLDAP(shifter, useLDAP=useLDAP)
-                    if today < datetime.datetime.now():
-                        try:
-                            shiftID = ShiftID.objects.get(label=prepareShiftId(today, slotToBeUsed))
-                        except ObjectDoesNotExist:
-                            shiftID = ShiftID()
-                            shiftID.label = prepareShiftId(today, slotToBeUsed)
-                            shiftID.date_created = datetime.datetime.combine(today.date(), now)
-                            shiftID.save()
-                        shifter.shiftID = shiftID
-                        shifter.save()
+                    update_shifter_details(shifter, today, now, slotToBeUsed, ldap,
+                                           fullUpdate=fullUpdate, useLDAP=useLDAP)
 
     return {'today': today,
             'now': now,
-            'shiftID': prepareShiftId(today, slotToBeUsed),
+            'shiftID': prepare_ShiftID(today, now, slotToBeUsed),
             'activeSlots': set(activeSlots),
             'activeSlot': slotToBeUsed,
             'currentTeam': currentTeam}
 
 
-# def prepare_last_active_shift():
-#     today = datetime.datetime.now()
-#     now = today.time()
-#     return {'today': today,
-#             'now': now,
-#             'shiftID': prepareShiftId(today, slotToBeUsed),
-#             'activeSlots': set(activeSlots),
-#             'activeSlot': slotToBeUsed,
-#             'currentTeam': currentTeam}
+def update_shifter_details(shifter, today, now, slotToBeUsed, ldap, fullUpdate=False, useLDAP=True):
+    if fullUpdate or (shifter.member.email is None and shifter.member.mobile is None):
+        if useLDAP:
+            print('Fetching LDAP update for {}'.format(shifter.member))
+        update_details_from_LDAP(shifter, ldap, useLDAP=useLDAP)
+    if today < datetime.datetime.now():
+        try:
+            shiftID = ShiftID.objects.get(label=prepare_ShiftID(today, now, slotToBeUsed))
+        except ObjectDoesNotExist:
+            shiftID = ShiftID()
+            shiftID.label = prepare_ShiftID(today, now, slotToBeUsed)
+            shiftID.date_created = datetime.datetime.combine(today.date(), now)
+            shiftID.save()
+        shifter.shiftID = shiftID
+        shifter.save()
+
+
+def update_details_from_LDAP(shifterDuty, ldap, useLDAP=True):
+    if shifterDuty.member.email is not None and shifterDuty.member.mobile is not None:
+        return None
+    personal_data = []
+    if useLDAP:
+        personal_data = ldap.search(field='name', text=shifterDuty.member.last_name)
+    if len(personal_data) == 0:
+        return None
+    one = list(personal_data.keys())[0]
+    if len(personal_data) > 1:
+        for oneK in personal_data.keys():
+            if shifterDuty.member.last_name.lower() in oneK.lower() \
+                    and shifterDuty.member.first_name.lower() in oneK.lower():
+                one = oneK
+    shifterDuty.member.email = personal_data[one]['email']
+    shifterDuty.member.mobile = 'N/A'
+    try:
+        pn = phonenumbers.parse(personal_data[one]['mobile'])
+        fixed = phonenumbers.format_number(pn, phonenumbers.PhoneNumberFormat.INTERNATIONAL).replace(" ", "")
+        shifterDuty.member.mobile = fixed
+        # for some reason SqLite allowed to save 16characters in 12 characters field
+        # while postgres threw an exception, however this was used to format here not in the website... to be fixed
+        shifterDuty.member.save()
+    except Exception:
+        pass
+    if type(personal_data[one]['photo']) is not str:
+        import base64
+        shifterDuty.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
+        shifterDuty.member.save()
 
 
 def prepare_for_JSON(activeShift):
     # TODO WIP send a slack webhook announcement to remind that this was called
-    # fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
     fieldsToUpdate = ['SL', 'OP']
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
                     '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift[

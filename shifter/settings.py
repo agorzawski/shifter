@@ -16,7 +16,6 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
@@ -26,8 +25,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', "False") == "True" or os.getenv('DJANGO_DEBUG', "False") == "1"
 
-ALLOWED_HOSTS = list(filter(None, os.getenv('DJANGO_ALLOWED_HOSTS',"").split(',')))
-
+ALLOWED_HOSTS = list(filter(None, os.getenv('DJANGO_ALLOWED_HOSTS', "").split(',')))
 
 # Application definition
 
@@ -100,7 +98,6 @@ else:
         }
     }
 
-
 SERVICE_ACCOUNT_EMAIL = os.getenv('DJANGO_SERVICE_ACCOUNT_EMAIL', 'noreply@ess.eu')
 SERVICE_ACCOUNT_USER = os.getenv('DJANGO_SERVICE_ACCOUNT_USER', 'noreply')
 SERVICE_ACCOUNT_PASSWORD = os.getenv('DJANGO_SERVICE_ACCOUNT_PASSWORD')
@@ -121,8 +118,6 @@ elif SERVICE_ACCOUNT_PASSWORD:
 else:
     EMAIL_HOST = 'smtp-relay.esss.lu.se'
     EMAIL_PORT = 25
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -161,7 +156,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
@@ -175,6 +169,9 @@ APP_REPO_ICON = os.getenv('APP_REPO_ICON', 'https://github.githubassets.com/favi
 CONTROL_ROOM_PHONE_NUMBER = os.getenv('CONTROL_ROOM_PHONE_NUMBER', 'No number provided.')
 WWW_EXTRA_INFO = os.getenv('WWW_EXTRA_INFO', '')
 PHONEBOOK_NAME = os.getenv('PHONEBOOK_NAME', 'Phonebook')
+
+NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES = os.getenv('NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES', 2)
+DEFAULT_SHIFT_SLOT = os.getenv('DEFAULT_SHIFT_SLOT', 'NWH')  # requires one NormalWorkingHours
 
 SHIFTER_TEST_INSTANCE = os.getenv("SHIFTER_TEST_INSTANCE", 'False').lower() in ('true', '1', 't')
 SHIFTER_PRODUCTION_INSTANCE = os.getenv('SHIFTER_PRODUCTION_INSTANCE', '')

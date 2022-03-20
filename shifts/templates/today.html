@@ -1,18 +1,19 @@
 {% extends 'template_main.html'%}
 {% block 'body' %}
 
-    <div class="col-sm-8 mx-auto">
+<div class="col-sm-8 mx-auto" xmlns="http://www.w3.org/1999/html">
 
       <main role="main">
         <h1> <span class="badge badge-light"> {{currentTeam.0.campaign}} </span></h1>
-        <h3>{{today.date}} / SID: <strong>{{shiftID}}</strong></h3>
-        <h3>The following active slots are found for now: {{checkTime}} </h3>
+        <h3>{{today.date}} {{today.time}} / SID: <strong>{{shiftID}}</strong></h3>
+<!--        <h3>The following active slots are found for now: {{checkTime}} </h3>-->
+        {% if activeSlot == None %} <h3><span class="badge badge-warning">Requested data is OUTSIDE scheduled shifts, showing the last one registered before the requested date!</span></h3> {%endif%}
         <h5>Control Room Phone Number: <a class="btn btn-outline-primary" href="tel:{{controlRoomPhoneNumber}}"><strong>{{controlRoomPhoneNumber}}</strong></a></h5>
         <h5>More information: <a class="btn btn-outline-primary" href="{{wwwWithMoreInfo}}">{{wwwWithMoreInfo}}</a></h5>
         <hr>
         {% for slot in activeSlots %}
         <div>
-          <h1><strong> {{slot}} </strong> </h1>
+          <h1>   <span class="badge badge-{% if activeSlot == slot %}dark{%else%}light{% endif %}">  <strong> {{slot}} </strong> </span>  </h1>
           <hr>
         {% for shifter in currentTeam %}
         {% if shifter.slot == slot %}

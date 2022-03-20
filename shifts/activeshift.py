@@ -73,14 +73,16 @@ def prepare_active_crew(dayToGo=None,
             .filter(Q(shiftID__isnull=False) & Q(shiftID__date_created__lte=nowFull)) \
             .order_by('-shiftID__date_created').first()
         # print("-> LAST SID found ->", lastCompletedShiftBeforeTodayNow.shiftID)
+        lastShiftTeam = [s for s in Shift.objects.filter(shiftID=lastCompletedShiftBeforeTodayNow.shiftID)]
         return {'today': today,
                 'now': now,
                 'shiftID': lastCompletedShiftBeforeTodayNow.shiftID.label\
                 if lastCompletedShiftBeforeTodayNow is not None\
                 else prepare_ShiftID(today, now, None, error=True),
-                'activeSlots': [],
+                'activeSlots': [lastShiftTeam[0].slot if len(lastShiftTeam) else None],
                 'activeSlot': None,
-                'currentTeam': []}
+                'currentTeam': lastShiftTeam
+                }
 
     # for a final slot find the details
     slotToBeUsed = slotsOPWithinScheduled[0]
@@ -121,7 +123,8 @@ def update_shifter_details(shifter, today, now, slotToBeUsed, ldap, fullUpdate=F
             shiftID.label = prepare_ShiftID(today, now, slotToBeUsed)
             shiftID.date_created = datetime.datetime.combine(today.date(), now)
             shiftID.save()
-        shifter.shiftID = shiftID
+        if shifter.shiftID is None:
+            shifter.shiftID = shiftID
         shifter.save()
 
 

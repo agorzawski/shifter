@@ -101,6 +101,7 @@ def todays(request):
                                       fullUpdate=fullUpdate)
     context = {'today': activeShift['today'],
                'checkTime': activeShift['today'].time(),
+               'activeSlot': activeShift['activeSlot'],
                'activeSlots': activeShift['activeSlots'],
                'currentTeam': activeShift['currentTeam'],
                'shiftID': activeShift['shiftID'], }

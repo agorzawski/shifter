@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
-from django.db.models import Q, Count
+
 from django.template.loader import render_to_string
 from django.urls import reverse
 import django.contrib.messages as messages
@@ -13,188 +13,22 @@ from django.db import IntegrityError
 import members.models
 from members.models import Team
 from shifts.models import *
+from assets.models import *
+from assets.forms import AssetBookingForm, AssetBookingFormClosing
 import datetime
-import os
 import phonenumbers
-import shifts.hrcodes as hrc
-
-from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
-    SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME, STOP_DEV_MESSAGES
-
-DATE_FORMAT = '%Y-%m-%d'
-DATE_FORMAT_SLIM = '%Y%m%d'
-MONTH_NAME = '%B'
-
+from shifts.activeshift import prepare_active_crew, prepare_for_JSON
+from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
+from shifter.settings import DEFAULT_SHIFT_SLOT
 
 def page_not_found(request, exception):
     return render(request, "404.html", {})
 
 
-def prepare_default_context(request, contextToAdd):
-    """
-    providing any of the following will override their default values:
-    @defaultDate   now
-    @latest_revision  last created with valid status
-    @APP_NAME   name of the APP displayed in the upper left corner
-    """
-    date = datetime.datetime.now().date()
-    latest_revision = Revision.objects.filter(valid=True).order_by('-number').first()
-    stream = os.popen('git describe --tags')
-    GIT_LAST_TAG = stream.read()
-    if SHIFTER_TEST_INSTANCE and not STOP_DEV_MESSAGES:
-        messages.info(request,
-                      '<h4> <span class="badge bg-danger">ATTENTION!</span> </h4> \
-                       <strong>This is a DEVELOPMENT instance</strong>. <br>\
-                       In order to find current schedules, please refer to <a href="{}">the production instance</a>'
-                      .format(SHIFTER_PRODUCTION_INSTANCE), )
-    for oneShifterMessages in ShifterMessage.objects.filter(valid=True).order_by('-number'):
-        messages.warning(request, oneShifterMessages.description)
-    context = {
-        'logged_user': request.user.is_authenticated,
-        'defaultDate': date.strftime(DATE_FORMAT),
-        'slots': Slot.objects.all().order_by('hour_start'),
-        'teams': Team.objects.all().order_by('name'),
-        'latest_revision': latest_revision,
-        'displayed_revision': latest_revision,
-        'APP_NAME': MAIN_PAGE_HOME_BUTTON,
-        'APP_REPO': APP_REPO,
-        'APP_REPO_ICON': APP_REPO_ICON,
-        'PHONEBOOK_NAME': PHONEBOOK_NAME,
-        'SHIFTER_TEST_INSTANCE': SHIFTER_TEST_INSTANCE,
-        'APP_GIT_TAG': GIT_LAST_TAG,
-        'controlRoomPhoneNumber': CONTROL_ROOM_PHONE_NUMBER,
-        'wwwWithMoreInfo': WWW_EXTRA_INFO,
-        'publicHolidays': hrc.get_public_holidays(fmt=SIMPLE_DATE)
-    }
-    for one in contextToAdd.keys():
-        context[one] = contextToAdd[one]
-    return context
-
-
-def prepareShiftId(today, activeSlot):
-    shiftMap = {0: 'A', 1: 'B', 2: 'C', -1: 'X'}
-    # TODO consider extracting that as config
-    opSlots = Slot.objects.filter(op=True).order_by('hour_start')
-    number = -1
-    for idx, item in enumerate(opSlots):
-        if item == activeSlot:
-            number = idx
-    return today.strftime(DATE_FORMAT_SLIM) + shiftMap[number]
-
-
-def filter_active_slots(now, scheduled_shifts, slotsToConsider):
-    slots = []
-    for slot in slotsToConsider:
-        if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
-                or slot.hour_start <= now < slot.hour_end:
-            for shifter in scheduled_shifts:
-                if shifter.slot == slot:
-                    slots.append(slot)
-    return slots
-
-
-def prepare_active_crew(request, dayToGo=None, slotToGo=None, hourToGo=None, onlyOP=False, fullUpdate=False):
-    import members.directory as directory
-    ldap = directory.LDAP()
-    today = datetime.datetime.now()
-    now = today.time()
-    if dayToGo is not None and (slotToGo is not None or hourToGo is not None):
-        today = datetime.datetime.strptime(dayToGo, DATE_FORMAT)
-        if hourToGo is None and slotToGo is not None:
-            now = Slot.objects.filter(abbreviation=slotToGo).first().hour_start
-        if hourToGo is not None and slotToGo is None:
-            now = datetime.datetime.strptime(hourToGo, SIMPLE_TIME).time()
-
-    revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    scheduled_shifts = Shift.objects.filter(date=today).filter(revision=revision)
-    slotsToConsider = Slot.objects.all() if not onlyOP else Slot.objects.filter(op=True)
-    slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts, Slot.objects.filter(op=True))
-    # TODO see if this can be recursive forward for N hours
-    if len(slotsOPWithinScheduled) == 0:
-        nowFull = datetime.datetime.combine(today, now)
-        nowLater = (nowFull + datetime.timedelta(hours=2)).time()  # TODO see if expose that as env setting
-        slotsOPWithinScheduled = filter_active_slots( nowLater, scheduled_shifts, Slot.objects.filter(op=True))
-        if len(slotsOPWithinScheduled):
-            now = nowLater
-    slots = filter_active_slots(now, scheduled_shifts, slotsToConsider)
-    if len(slotsOPWithinScheduled) == 0:
-        slotsOPWithinScheduled = slots
-    slotToBeUsed = slotsOPWithinScheduled[0]
-
-    def takeHourEnd(slotToSort):
-        return slotToSort.hour_end
-
-    def updateDetailsFromLDAP(shifterDuty):
-        if shifterDuty.member.email is not None and shifterDuty.member.mobile is not None:
-            # print(shifterDuty.member, " has all data locally")
-            return None
-
-        personal_data = ldap.search(field='name', text=shifterDuty.member.last_name)
-        if len(personal_data) == 0:
-            return None
-        one = list(personal_data.keys())[0]
-        if len(personal_data) > 1:
-            for oneK in personal_data.keys():
-                if shifterDuty.member.last_name.lower() in oneK.lower() \
-                        and shifterDuty.member.first_name.lower() in oneK.lower():
-                    one = oneK
-        shifterDuty.member.email = personal_data[one]['email']
-        shifterDuty.member.mobile = 'N/A'
-        try:
-            pn = phonenumbers.parse(personal_data[one]['mobile'])
-            fixed = phonenumbers.format_number(pn, phonenumbers.PhoneNumberFormat.INTERNATIONAL).replace(" ", "")
-            shifterDuty.member.mobile = fixed
-            # TODO fix the rendering in the website
-            # for some reason SqLite allowed to save 16characters in 12 characters field
-            # while postgres threw an exception, however this was used to format here not in the website... to be fixed
-            shifterDuty.member.save()
-        except Exception:
-            pass
-        if type(personal_data[one]['photo']) is not str:
-            import base64
-            shifterDuty.member.photo = base64.b64encode(personal_data[one]['photo']).decode("utf-8")
-            shifterDuty.member.save()
-
-    sortedSlots = list(set(slots))
-    sortedSlots.sort(key=takeHourEnd)
-    activeSlot = Slot.objects.first()
-    activeSlots = []
-    currentTeam = []
-    for slot in sortedSlots:
-        if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
-                or slot.hour_start <= now < slot.hour_end:
-            for shifter in scheduled_shifts:
-                if shifter.slot == slot:
-                    activeSlot = slot
-                    activeSlots.append(slot)
-                    currentTeam.append(shifter)
-                    if fullUpdate or (shifter.member.email is None and shifter.member.mobile is None):
-                        print('Fetching LDAP update for {}'.format(shifter.member))
-                        updateDetailsFromLDAP(shifter)
-                    if today < datetime.datetime.now():
-                        try:
-                            shiftID = ShiftID.objects.get(label=prepareShiftId(today, slotToBeUsed))
-                        except ObjectDoesNotExist:
-                            shiftID = ShiftID()
-                            shiftID.label = prepareShiftId(today, slotToBeUsed)
-                            shiftID.date_created = datetime.datetime.combine(today.date(), now)
-                            shiftID.save()
-                        shifter.shiftID = shiftID
-                        shifter.save()
-
-    return {'today': today,
-            'now': now,
-            'shiftID': prepareShiftId(today, slotToBeUsed),
-            'activeSlots': set(activeSlots),
-            'activeSlot': slotToBeUsed,
-            'currentTeam': currentTeam}
-
-
 @require_safe
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
-    revision = revisions.first()
-    return prepare_main_page(request, revisions, revision)
+    return prepare_main_page(request, revisions)
 
 
 @require_http_methods(["POST"])
@@ -204,10 +38,12 @@ def index_post(request):
     revision = Revision.objects.filter(number=request.POST['revision']).first()
     # TODO implement filter on campaigns
     filtered_campaigns = None
-    return prepare_main_page(request, revisions, revision, filtered_campaigns=filtered_campaigns)
+    return prepare_main_page(request, revisions, revision=revision, filtered_campaigns=filtered_campaigns)
 
 
-def prepare_main_page(request, revisions, revision, filtered_campaigns=None):
+def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None):
+    if revision is None:
+        revision = revisions.first()
     scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
                                                                         'member__role__priority')
     scheduled_campaigns = Campaign.objects.filter(revision=revision)
@@ -225,11 +61,32 @@ def prepare_main_page(request, revisions, revision, filtered_campaigns=None):
 def dates(request):
     context = {
         'campaigns': Campaign.objects.all(),
-        'slots': Slot.objects.all(),
+        'slots': Slot.objects.all().order_by('hour_start'),
         'shiftroles': ShiftRole.objects.all(),
         'memberroles': members.models.Role.objects.all(),
     }
     return render(request, 'dates.html', prepare_default_context(request, context))
+
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_protect
+def dates_slots_update(request):
+    count = 0
+    for slot in Slot.objects.all():
+        slot.op = False
+        toUpdate = request.POST.get(slot.abbreviation, None)
+        if toUpdate is not None:
+            slot.op = True
+            count = + 1
+            messages.success(request, "Slot {} is operational now!".format(slot))
+        slot.save()
+    if count == 0:
+        s = Slot.objects.filter(abbreviation=DEFAULT_SHIFT_SLOT).first()
+        s.op = True
+        s.save()
+        messages.success(request, "There must be at leasst one slot set to operational, setting default {} ".format(s))
+    return HttpResponseRedirect(reverse("shifter:dates"))
 
 
 @require_safe
@@ -238,10 +95,13 @@ def todays(request):
     slotToGo = request.GET.get('slot', None)
     hourToGo = request.GET.get('hour', None)
     fullUpdate = request.GET.get('fullUpdate', None) is not None
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
+    activeShift = prepare_active_crew(dayToGo=dayToGo,
+                                      slotToGo=slotToGo,
+                                      hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
     context = {'today': activeShift['today'],
                'checkTime': activeShift['today'].time(),
+               'activeSlot': activeShift['activeSlot'],
                'activeSlots': activeShift['activeSlots'],
                'currentTeam': activeShift['currentTeam'],
                'shiftID': activeShift['shiftID'], }
@@ -252,115 +112,56 @@ def todays(request):
 @login_required
 def user(request):
     member = request.user
-    return prepare_user(request, member)
+    return render(request, 'user.html', prepare_default_context(request,
+                                                                prepare_user_context(member)))
 
 
 @require_safe
 def user_simple(request):
     if request.GET.get('id', None) is not None:
         member = Member.objects.filter(id=request.GET.get('id')).first()
-        return prepare_user(request, member)
+        return render(request, 'user.html', prepare_default_context(request,
+                                                                    prepare_user_context(member)))
     messages.info(request, 'Unauthorized access. Returning back to the main page!')
     return HttpResponseRedirect(reverse("shifter:index"))
-
-
-def prepare_user(request, member):
-    currentMonth = datetime.datetime.now()
-    nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
-    revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    scheduled_shifts = Shift.objects.filter(member=member, revision=revision).order_by("-date")
-
-    shift2codes = hrc.get_date_code_counts(scheduled_shifts)
-    scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
-    context = {
-        'member': member,
-        'currentmonth': currentMonth.strftime(MONTH_NAME),
-        'nextmonth': nextMonth.strftime(MONTH_NAME),
-        'scheduled_shifts_list': scheduled_shifts,
-        'scheduled_campaigns_list': scheduled_campaigns,
-        'hrcodes': shift2codes,
-        'hrcodes_summary': hrc.count_total(shift2codes)
-    }
-    return render(request, 'user.html', prepare_default_context(request, context))
-
-
-def get_shift_summary(m, validSlots, revision, currentMonth) -> tuple:
-    scheduled_shifts = Shift.objects.filter(member=m,
-                                            revision=revision,
-                                            date__year=currentMonth.year,
-                                            date__month=currentMonth.month)
-
-    differentSlots = Shift.objects.filter(member=m,
-                                          revision=revision,
-                                          date__year=currentMonth.year,
-                                          date__month=currentMonth.month) \
-        .values('slot__abbreviation') \
-        .annotate(total=Count('slot'))
-
-    result = {a['slot__abbreviation']: a['total'] for a in differentSlots}
-    return len(scheduled_shifts), result
 
 
 @require_safe
 @login_required
 def team(request):
     member = request.user
-    return prepare_team(request, member, extraContext={'browsable': True})
+    context = {'browsable': True}
+    return render(request, 'team.html',
+                  prepare_default_context(request,
+                                          prepare_team_context(request,
+                                                               member=member,
+                                                               team=None,
+                                                               extraContext=context)))
 
 
 @require_safe
 def team_simple(request):
     if request.GET.get('mid', None) is not None:
         member = Member.objects.filter(id=request.GET.get('mid')).first()
-        return prepare_team(request, member=member, extraContext={'browsable': False})
+        context = {'browsable': False}
+        return render(request, 'team.html',
+                      prepare_default_context(request,
+                                              prepare_team_context(request,
+                                                                   member=member,
+                                                                   team=None,
+                                                                   extraContext=context)))
     if request.GET.get('id', None) is not None:
         team = Team.objects.filter(id=request.GET.get('id')).first()
-        return prepare_team(request, team=team, extraContext={'browsable': False})
+        extra_context = {'browsable': False}
+        return render(request, 'team.html',
+                      prepare_default_context(request,
+                                              prepare_team_context(request,
+                                                                   member=None,
+                                                                   team=team,
+                                                                   extraContext=extra_context)))
 
     messages.info(request, 'Unauthorized access. Returning back to the main page!')
     return HttpResponseRedirect(reverse("shifter:index"))
-
-
-def prepare_team(request, member=None, team=None, extraContext=None):
-    currentMonth = datetime.datetime.now()
-    if request.GET.get('date'):
-        currentMonth = datetime.datetime.strptime(request.GET['date'], SIMPLE_DATE)
-    nextMonth = currentMonth + datetime.timedelta(31)  # banking rounding
-    lastMonth = currentMonth - datetime.timedelta(31)
-    revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    if team is None and Member is not None:
-        team = member.team
-    teamMembers = Member.objects.filter(team=team)
-    scheduled_shifts = Shift.objects.filter(member__team=team, revision=revision)
-    scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
-    # TODO get this outside the main code, maybe another flag in the Slot? TBC
-    slotLookUp = ['NWH', 'PM', 'AM', 'EV', 'NG', 'LMS', 'LES', 'D', 'A']
-    validSlots = Slot.objects.filter(abbreviation__in=slotLookUp).order_by('hour_start')
-    teamMembersSummary = []
-    for m in teamMembers:
-        l, result = get_shift_summary(m, validSlots, revision, currentMonth)
-        memberSummary = [m, l]
-        for oneSlot in validSlots:
-            memberSummary.append(result.get(oneSlot.abbreviation, '--'))
-        teamMembersSummary.append(memberSummary)
-
-    context = {
-        'member': member,
-        'team': team,
-        'teamMembers': teamMembersSummary,
-        'validSlots': validSlots,
-        'currentmonth_label': currentMonth.strftime(MONTH_NAME),
-        'nextmonth': nextMonth.strftime(SIMPLE_DATE),
-        'lastmonth': lastMonth.strftime(SIMPLE_DATE),
-        'nextmonth_label': nextMonth.strftime(MONTH_NAME),
-        'lastmonth_label': lastMonth.strftime(MONTH_NAME),
-        'scheduled_shifts_list': scheduled_shifts,
-        'scheduled_campaigns_list': scheduled_campaigns,
-    }
-    if isinstance(extraContext, dict):
-        for one in extraContext.keys():
-            context[one]=extraContext[one]
-    return render(request, 'team.html', prepare_default_context(request, context))
 
 
 @require_safe
@@ -435,29 +236,9 @@ def ioc_update(request):
     slotToGo = request.GET.get('slot', None)
     hourToGo = request.GET.get('hour', None)
     fullUpdate = request.GET.get('fullUpdate', None) is not None
-    activeShift = prepare_active_crew(request, dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
+    activeShift = prepare_active_crew(dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
-    # TODO WIP send a slack webhook announcement to remind that this was called
-    fieldsToUpdate = ['SL', 'OP', 'OCC', 'OC', 'OCE', 'OCPSS']
-    # TODO add separate call for OC updates + separate url
-    fieldsToUpdate = ['SL', 'OP']
-    # TODO maybe define a sort of config file to avoid having it hardcoded here, for now not crutial
-    dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
-                    '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift['activeSlot'].abbreviation,
-                    '_timeNow': datetime.datetime.now().strftime(SIMPLE_TIME),
-                    '_timeRequested': activeShift['now'],
-                    '_PVPrefix': 'NSO:Ops:',
-                    'SID': activeShift['shiftID'],
-                    }
-    for one in fieldsToUpdate:
-        dataToReturn[one] = "N/A"
-    for one in fieldsToUpdate:
-        for shifter in activeShift['currentTeam']:
-            if one in shifter.member.role.abbreviation and shifter.role is None:  # no extra role in the same shift
-                dataToReturn[one] = shifter.member.name
-                dataToReturn[one + "Phone"] = shifter.member.mobile
-                dataToReturn[one + "Email"] = shifter.member.email
-    return JsonResponse(dataToReturn)
+    return JsonResponse(prepare_for_JSON(activeShift))
 
 
 @require_safe
@@ -465,7 +246,7 @@ def shifts(request):
     shiftId = request.GET.get('id', None)
     dataToReturn = {}
     if shiftId is not None:
-        dataToReturn = {'SID':shiftId, 'status': False}
+        dataToReturn = {'SID': shiftId, 'status': False}
         shiftIDs = ShiftID.objects.filter(label=shiftId)
         if len(shiftIDs):
             shiftID = shiftIDs.first()
@@ -685,7 +466,7 @@ def phonebook_post(request):
     }
     invalid = []
     for one in tmp:
-        if one['mobile'] == 'N/A' or len(one['email']) == 0 :
+        if one['mobile'] == 'N/A' or len(one['email']) == 0:
             invalid.append(one)
             continue
         one['valid'] = True
@@ -693,3 +474,80 @@ def phonebook_post(request):
     for one in invalid:
         context['result'].append(one)
     return render(request, 'phonebook.html', prepare_default_context(request, context))
+
+
+@login_required
+@require_safe
+def assets(request):
+    form = None
+    bookNew = request.GET.get('new', False)
+    if bookNew:
+        form = AssetBookingForm({'member': request.user,
+                                 'use_start': datetime.datetime.now().strftime(DATE_FORMAT_FULL),
+                                 'use_end': datetime.datetime.now().strftime(DATE_FORMAT_FULL)})
+    activeBooking = None
+    bookingId = request.GET.get('close', None)
+    if bookingId is not None:
+        try:
+            activeBooking = AssetBooking.objects.get(id=bookingId)
+        except Exception as e:
+            messages.error(request, 'Wrong booking ID')
+            return page_not_found(request, exception=e)
+        if activeBooking.member != request.user and not request.user.is_staff:
+            messages.error(request, 'You cannot close the booking that is not yours!')
+            return page_not_found(request, exception=None)
+        form = AssetBookingFormClosing()
+
+    context = {
+        'form': form,
+        'activeBooking': activeBooking,
+        'assetbookings': AssetBooking.objects.all().order_by('-use_start'),
+    }
+    return render(request, 'assets.html', prepare_default_context(request, context))
+
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_protect
+def assets_post(request):
+    form = AssetBookingForm(request.POST)
+    if form.is_valid():
+        post = form.save(commit=False)
+        post.booking_created = datetime.datetime.now()  # timezone.now()
+        post.booked_by = request.user
+        if post.member != request.user and not request.user.is_staff:
+            messages.error(request, 'You can only book for yourself! Contact OPS team to book for someone else!')
+            return page_not_found(request, exception=None)
+        post.save()
+        message = "Booking for {} on {}, is added!".format(post.member.first_name, post.use_start)
+        messages.success(request, message)
+
+    context = {
+        'assetbookings': AssetBooking.objects.all().order_by('-use_start'),
+    }
+    return render(request, 'assets.html', prepare_default_context(request, context))
+
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_protect
+def assets_post_close(request):
+    print(request.POST)
+    form = AssetBookingFormClosing(request.POST)
+    idToUse = request.POST['activeBookingId']
+    if form.is_valid():
+        post = form.save(commit=False)
+        activeBooking = AssetBooking.objects.get(id=idToUse)
+        activeBooking.booking_finished = datetime.datetime.now()
+        activeBooking.after_comment = post.after_comment
+        activeBooking.state = AssetBooking.BookingState.RETURNED
+        activeBooking.finished_by = request.user
+        activeBooking.save()
+        message = "Booking for {} on {}, is now closed!".format(activeBooking.member.first_name,
+                                                                activeBooking.use_start)
+        messages.success(request, message)
+
+    context = {
+        'assetbookings': AssetBooking.objects.all().order_by('-use_start'),
+    }
+    return render(request, 'assets.html', prepare_default_context(request, context))

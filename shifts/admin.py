@@ -62,6 +62,7 @@ class SlotAdmin(admin.ModelAdmin):
     list_display = [
         'name',
         'abbreviation',
+        'id_code',
         'op',
         'hour_start',
         'hour_end',

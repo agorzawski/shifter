@@ -10,6 +10,8 @@ class MemberAdmin(UserAdmin):
     model = Member
     list_display = [
         '_nameAll',
+        'is_staff',
+        'is_superuser',
         'team',
         'role',
         'email',

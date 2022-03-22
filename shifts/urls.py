@@ -1,6 +1,7 @@
 from django.urls import include, path
 
 from . import views
+
 app_name = 'shifter'
 handler404 = 'shifts.views.page_not_found'
 urlpatterns = [
@@ -14,6 +15,7 @@ urlpatterns = [
     path('calendar.ics', views.icalendar_view, name='calendar'),
     path('ical', views.icalendar, name='calendar_public'),
     path('dates', views.dates, name='dates'),
+    path('slots-update', views.dates_slots_update, name='slots-update-post'),
     path('phonebook', views.phonebook, name='phonebook'),
     path('phonebook-post', views.phonebook_post, name='phonebook-post'),
     path('ioc-update', views.ioc_update, name='ioc-update'),
@@ -22,5 +24,7 @@ urlpatterns = [
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),
     path('shift-update', views.shifts_update, name="shift-update"),
     path('shift-update-post', views.shifts_update_post, name="shift-update-post"),
+    path('assets', views.assets, name="assets"),
+    path('assets-post', views.assets_post, name="assets-post"),
+    path('assets-post-close', views.assets_post_close, name="assets-post-close"),
 ]
-

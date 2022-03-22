@@ -8,7 +8,10 @@ from enum import Enum
 
 SIMPLE_DATE = "%Y-%m-%d"
 SIMPLE_TIME = "%H:%M:%S"
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATE_FORMAT_FULL = "%Y-%m-%d %H:%M:%S"
+DATE_FORMAT = '%Y-%m-%d'
+DATE_FORMAT_SLIM = '%Y%m%d'
+MONTH_NAME = '%B'
 
 
 class ShifterMessage(models.Model):
@@ -55,6 +58,7 @@ class Campaign(models.Model):
 class Slot(models.Model):
     name = models.CharField(max_length=200)
     abbreviation = models.CharField(max_length=10, default='AM')
+    id_code = models.CharField(max_length=1, default='A')
     hour_start = models.TimeField(blank=False)
     hour_end = models.TimeField(blank=False)
     color_in_calendar = models.CharField(max_length=7, default='#0000FF')
@@ -113,11 +117,11 @@ class Shift(models.Model):
 
     @cached_property
     def shift_start(self) -> str:
-        return self.get_proper_times(self.Moment.START).strftime(DATE_FORMAT)
+        return self.get_proper_times(self.Moment.START).strftime(DATE_FORMAT_FULL)
 
     @cached_property
     def shift_end(self) -> str:
-        return self.get_proper_times(self.Moment.END).strftime(DATE_FORMAT)
+        return self.get_proper_times(self.Moment.END).strftime(DATE_FORMAT_FULL)
 
     def get_proper_times(self, moment) -> datetime:
         timeToUse = self.slot.hour_start

@@ -1,5 +1,17 @@
 # ESS OP Shifter Changelog
 
+### v.0.9.0
+- Simple OP Asset Management (ACCOP-225)
+    - log of use,
+    - different asset types, 
+    - check in/check out.
+- Improved the test coverage on the logical parts of the tool (HRCodes/ActiveShift/ShiftID)
+    - Functional code splits, simplification and refactoring
+    - Fixed 'default' ShiftID reported
+- Admin pages refit (additional filters)
+- Domain objects page revisited (admin/environment)
+    - Predefined shift pattern switch
+
 ### v.0.8.2
 - admin site style fix (whitenoise&gunicorn)
 

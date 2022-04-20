@@ -2,6 +2,7 @@ from shifts.models import Slot, Revision, Shift, ShiftID
 from shifts.models import DATE_FORMAT_SLIM, DATE_FORMAT, SIMPLE_TIME
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+import pytz
 
 import phonenumbers
 import datetime
@@ -31,7 +32,8 @@ def prepare_active_crew(dayToGo=None,
                         slotToGo=None,
                         hourToGo=None,
                         fullUpdate=False,
-                        useLDAP=True,):
+                        useLDAP=True,
+                        verbose=False):
     ldap = None
     if fullUpdate and useLDAP:
         import members.directory as directory
@@ -46,13 +48,15 @@ def prepare_active_crew(dayToGo=None,
             now = datetime.datetime.strptime(hourToGo, SIMPLE_TIME).time()
 
     nowFull = datetime.datetime.combine(today, now)
-
+    if verbose:
+        print("\n =======\n Searching for ", nowFull)
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(revision=revision) \
                                     .filter(Q(date=today) & Q(slot__op=True))
     # first find on EXACT time for OP slots
     slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts)
-    # print('-> 1st OP SLOTS -> ', slotsOPWithinScheduled)
+    if verbose:
+        print('\n-> 1st OP SLOTS -> ', slotsOPWithinScheduled)
 
     # second find on EXACT time - NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES
     if len(slotsOPWithinScheduled) == 0:
@@ -62,10 +66,10 @@ def prepare_active_crew(dayToGo=None,
             now = nowLater
         # print('-> 2nd try (2h later) OP SLOTS -> ', slotsOPWithinScheduled)
 
-    # retrigger for the search (in case now got updated)
+    # retrigger for the search (in case 'now' got updated)
     slots = filter_active_slots(now, scheduled_shifts)
-    # print("-> SLOTS ALL ->", slots)
-
+    if verbose:
+        print("-> SLOTS ALL ->", slots)
     # return if still no result found
     if len(slotsOPWithinScheduled) == 0:
         lastCompletedShiftBeforeTodayNow = Shift.objects \
@@ -86,7 +90,14 @@ def prepare_active_crew(dayToGo=None,
 
     # for a final slot find the details
     slotToBeUsed = slotsOPWithinScheduled[0]
-    # print('-> FOUND SLOT TO BE USED -> ', slotToBeUsed)
+    if verbose:
+        print('-> FOUND SLOT TO BE USED -> ', slotToBeUsed)
+
+    # final correction for the date if 0:00 - end of night shift
+    if slotToBeUsed.hour_start > slotToBeUsed.hour_end > now:
+        today = today + datetime.timedelta(days=-1)
+        nowFull = nowFull + datetime.timedelta(days=-1)
+
     # actual shift details finding based on the SLOT and date (today)
     sortedSlots = list(set(slots))
     sortedSlots.sort(key=lambda slotToSort: slotToSort.hour_end)
@@ -121,7 +132,7 @@ def update_shifter_details(shifter, today, now, slotToBeUsed, ldap, fullUpdate=F
         except ObjectDoesNotExist:
             shiftID = ShiftID()
             shiftID.label = prepare_ShiftID(today, now, slotToBeUsed)
-            shiftID.date_created = datetime.datetime.combine(today.date(), now)
+            shiftID.date_created = datetime.datetime.combine(today.date(), now)  # FIXME tzinfo=pytz.UTC?
             shiftID.save()
         if shifter.shiftID is None:
             shifter.shiftID = shiftID

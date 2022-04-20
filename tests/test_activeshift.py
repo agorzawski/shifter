@@ -4,9 +4,10 @@ from members.models import Role
 from shifts.models import *
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON, filter_active_slots, filter_for_hour
 
+import pytz
+
 
 class ActiveShift(TestCase):
-
     testCases = {
         # the sample schedule is setup at each test.
         # normal working hours
@@ -20,6 +21,15 @@ class ActiveShift(TestCase):
         "caseInAMOverlapPM": {"date": "2022-05-01", "slots": ("AM", "PM", "NG"), "hour": "14:11:11",
                               "SID": "20220501A"},
         ######
+        # some longer schedules:
+        "casePreA": {"date": "2022-05-10", "slots": ("AM", "PM", "NG", "NWH"), "hour": "15:11:11", "SID": "20220510B"},
+        "caseA": {"date": "2022-05-10", "slots": ("AM", "PM", "NG"), "hour": "22:11:11", "SID": "20220510C"},
+        "caseA2": {"date": "2022-05-11", "slots": ("AM", "PM", "NG"), "hour": "01:11:11", "SID": "20220510C"},
+        "caseB": {"date": "2022-05-11", "slots": ("AM", "PM", "NG"), "hour": "22:11:11", "SID": "20220511C"},
+        "caseB2": {"date": "2022-05-12", "slots": ("AM", "PM", "NG"), "hour": "01:11:11", "SID": "20220511C"},
+        "caseC": {"date": "2022-05-12", "slots": ("AM", "PM", "NG"), "hour": "23:11:11", "SID": "20220512C"},
+
+        ######
         # Funny & weird outside slots
         # last occurred shift same day
         "case6": {"date": "2022-04-30", "slots": ("NWH",), "hour": "18:11:11", "SID": "20220430A"},
@@ -30,7 +40,8 @@ class ActiveShift(TestCase):
         # multiple op slots selected
         "case1": {"date": "2022-05-03", "slots": ("NWH", "AM", "PM"), "hour": "9:11:11", "SID": "20220503A"},
         "case2": {"date": "2022-05-03", "slots": ("NWH", "AM", "PM"), "hour": "15:11:11", "SID": "20220503B"},
-        "noOP": {"date": "2022-05-04", "slots": (), "hour": "13:11:11", "SID": "20220504A"},
+        "case3": {"date": "2022-05-03", "slots": ("NWH", "AM", "PM"), "hour": "14:11:11", "SID": "20220503A"},
+        "noOP": {"date": "2022-05-12", "slots": (), "hour": "18:11:11", "SID": "20220512A"},
 
     }
 
@@ -51,7 +62,8 @@ class ActiveShift(TestCase):
         shiftID0, shiftID1, shiftID2 = create_test_shiftIDs()
         AM, PM, NG, NWH = create_four_test_slots()
         campaign, revision = create_test_campaign_revision()
-        testShifts = (
+        a10, b10, c10, a11, b11, c11, a12 = create_test_shiftIDs_multiple()
+        testShifts = (  # The TEST schedule
             # standalone correct NWH shift
             (member1, NWH, datetime.date(2022, 4, 30), shiftID0),
             # 24h coverage with NWH overlapping
@@ -68,6 +80,19 @@ class ActiveShift(TestCase):
             (memberOffice, NWH, datetime.date(2022, 5, 3), None),
             # just NWH
             (memberOffice, NWH, datetime.date(2022, 5, 4), None),
+            # more than one 24h round with some ppl scheduled NWH
+            (member1, AM, datetime.date(2022, 5, 10), a10),
+            (member2, PM, datetime.date(2022, 5, 10), b10),
+            (member3, NG, datetime.date(2022, 5, 10), c10),
+            (memberOffice, NWH, datetime.date(2022, 5, 10), None),
+            (member1, AM, datetime.date(2022, 5, 11), a11),
+            (member2, PM, datetime.date(2022, 5, 11), b11),
+            (member3, NG, datetime.date(2022, 5, 11), c11),
+            (memberOffice, NWH, datetime.date(2022, 5, 11), None),
+            (member1, AM, datetime.date(2022, 5, 12), a12),
+            (member2, PM, datetime.date(2022, 5, 12), None),
+            (member3, NG, datetime.date(2022, 5, 12), None),
+            (memberOffice, NWH, datetime.date(2022, 5, 12), None),
         )
         create_test_shifts(slotsMembersDates=testShifts, campaign=campaign, revision=revision)
 
@@ -109,14 +134,31 @@ class ActiveShift(TestCase):
     def test_mixed_NWH_and_AM_PM_with_OP_TRUE_case2(self):
         self.check(self.testCases["case2"])
 
-    # FIXME This case is implicitly solved by the 'last created' shift'
-    # def test_mixed_NWH_and_AM_PM_with_OP_FALSE(self):
-    #     self.check(self.testCases["noOP"])
+    def test_mixed_NWH_and_AM_PM_with_OP_TRUE_case3(self):
+        self.check(self.testCases["case3"])
+
+    def test_mixed_NWH_and_AM_PM_with_OP_FALSE(self):
+        self.check(self.testCases["noOP"])
+
+    def test_longer_schedules_casePreA(self):
+        self.check(self.testCases["casePreA"])
+
+    def test_longer_schedules_caseA(self):
+        self.check(self.testCases["caseA"])
+
+    def test_longer_schedules_caseA2(self):
+        self.check(self.testCases["caseA2"])
+
+    def test_longer_schedules_caseB(self):
+        self.check(self.testCases["caseB"])
+
+    def test_longer_schedules_caseB2(self):
+        self.check(self.testCases["caseB2"])
 
     def check(self, target, updateOPSlots=True, verbose=False):
         if updateOPSlots:
             update_test_slots(target["slots"])
-        result = prepare_active_crew(dayToGo=target["date"], hourToGo=target["hour"], useLDAP=False)
+        result = prepare_active_crew(dayToGo=target["date"], hourToGo=target["hour"], useLDAP=False, verbose=verbose)
         if verbose:
             print("============== TEST CASE ================")
             print(target)
@@ -172,10 +214,10 @@ def create_test_member(username, firstname, role):
 
 
 def create_test_campaign_revision():
-    revision = Revision(date_start=datetime.datetime(2020, 12, 30, 12, 00, 00), valid=True)
+    revision = Revision(date_start=datetime.datetime(2020, 12, 30, 12, 00, 00, tzinfo=pytz.UTC), valid=True)
     revision.save()
-    campaign = Campaign(name='test', date_start=datetime.datetime(2020, 12, 31, 12, 00, 00),
-                        date_end=datetime.datetime(2020, 12, 31, 23, 00, 00))
+    campaign = Campaign(name='test', date_start=datetime.datetime(2020, 12, 31, 12, 00, 00, tzinfo=pytz.UTC),
+                        date_end=datetime.datetime(2020, 12, 31, 23, 00, 00, tzinfo=pytz.UTC))
     campaign.save()
     return campaign, revision
 
@@ -201,13 +243,31 @@ def create_four_test_slots():
 
 
 def create_test_shiftIDs():
-    shiftID0 = ShiftID(label='20220430A', date_created=datetime.datetime(2022, 4, 30, 7, 00, 00))
+    shiftID0 = ShiftID(label='20220430A', date_created=datetime.datetime(2022, 4, 30, 7, 00, 00, tzinfo=pytz.UTC))
     shiftID0.save()
-    shiftID1 = ShiftID(label='20220501A', date_created=datetime.datetime(2022, 5, 1, 7, 00, 00))
+    shiftID1 = ShiftID(label='20220501A', date_created=datetime.datetime(2022, 5, 1, 7, 00, 00, tzinfo=pytz.UTC))
     shiftID1.save()
-    shiftID2 = ShiftID(label='20220501B', date_created=datetime.datetime(2022, 5, 1, 14, 14, 00))
+    shiftID2 = ShiftID(label='20220501B', date_created=datetime.datetime(2022, 5, 1, 14, 14, 00, tzinfo=pytz.UTC))
     shiftID2.save()
     return shiftID0, shiftID1, shiftID2
+
+
+def create_test_shiftIDs_multiple():
+    a10 = ShiftID(label='20220510A', date_created=datetime.datetime(2022, 5, 10, 7, 00, 00, tzinfo=pytz.UTC))
+    a10.save()
+    b10 = ShiftID(label='20220510B', date_created=datetime.datetime(2022, 5, 10, 14, 30, 00, tzinfo=pytz.UTC))
+    b10.save()
+    c10 = ShiftID(label='20220510C', date_created=datetime.datetime(2022, 5, 10, 22, 14, 00, tzinfo=pytz.UTC))
+    c10.save()
+    a11 = ShiftID(label='20220511A', date_created=datetime.datetime(2022, 5, 11, 7, 00, 00, tzinfo=pytz.UTC))
+    a11.save()
+    b11 = ShiftID(label='20220511B', date_created=datetime.datetime(2022, 5, 11, 14, 30, 00, tzinfo=pytz.UTC))
+    b11.save()
+    c11 = ShiftID(label='20220511C', date_created=datetime.datetime(2022, 5, 11, 22, 14, 00, tzinfo=pytz.UTC))
+    c11.save()
+    a12 = ShiftID(label='20220512A', date_created=datetime.datetime(2022, 5, 12, 7, 00, 00, tzinfo=pytz.UTC))
+    a12.save()
+    return a10, b10, c10, a11, b11, c11, a12,
 
 
 def create_two_test_roles():

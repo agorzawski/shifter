@@ -64,6 +64,7 @@ def dates(request):
         'slots': Slot.objects.all().order_by('hour_start'),
         'shiftroles': ShiftRole.objects.all(),
         'memberroles': members.models.Role.objects.all(),
+        'assets': Asset.objects.all()
     }
     return render(request, 'dates.html', prepare_default_context(request, context))
 
@@ -481,6 +482,11 @@ def phonebook_post(request):
 def assets(request):
     form = None
     bookNew = request.GET.get('new', False)
+    typeFilter = request.GET.get('typeId', False)
+    try:
+        typeFilter = int(typeFilter)
+    except:
+        typeFilter = False
     if bookNew:
         form = AssetBookingForm({'member': request.user,
                                  'use_start': datetime.datetime.now().strftime(DATE_FORMAT_FULL),
@@ -497,11 +503,15 @@ def assets(request):
             messages.error(request, 'You cannot close the booking that is not yours!')
             return page_not_found(request, exception=None)
         form = AssetBookingFormClosing()
-
+    bookings = AssetBooking.objects.all().order_by('-use_start')
+    if typeFilter:
+        bookings = AssetBooking.objects.filter(asset__asset_type_id=typeFilter).order_by('-use_start')
     context = {
         'form': form,
+        'assetFilter': typeFilter,
         'activeBooking': activeBooking,
-        'assetbookings': AssetBooking.objects.all().order_by('-use_start'),
+        'assetTypes': AssetType.objects.all(),
+        'assetBookings': bookings,
     }
     return render(request, 'assets.html', prepare_default_context(request, context))
 

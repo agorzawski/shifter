@@ -53,6 +53,16 @@
           <p>{{c.name}}  <span class="badge badge-secondary">{{c.abbreviation}}</span> </p>
         {% endfor%}
         </div>
+
+
+        <div class="float-left" style="padding:40px;text-align:center;">
+        <h1> <span class="badge badge-secondary"> Available Assets </span></h1>
+        {% for a in assets %}
+          <p><span class="badge badge-secondary">{{a.asset_type}}</span> {{a.name}}</p>
+        {% endfor%}
+        </div>
+
+
       </main>
     </div>
 

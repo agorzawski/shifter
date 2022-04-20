@@ -43,7 +43,8 @@
       </li>
       <li class="nav-item">
         <a class="nav-link" href='/assets'> {% load static %}
-      <img src="{% static 'img/asset.png' %}" height="20" alt=""/> Assets</a>
+      <img src="{% static 'img/asset.png' %}" height="20" alt=""/> Assets {% if not logged_user %} {% load static %}
+      <img src="{% static 'img/padlock.png' %}" height="20" alt=""><span class="badge bg-success">Login required</span> {%endif%}</a>
       </li>
       <li class="nav-item" >
         <a class="nav-link" href='/user' > My Shifts {% if not logged_user %} {% load static %}

@@ -8,7 +8,7 @@ STATUS:CONFIRMED
 DTSTAMP:{{ s.created|utc|date:"Ymd\THis\Z" }}
 DTSTART:{{ s.start|utc|date:"Ymd\THis\Z" }}
 DTEND:{{ s.end|utc|date:"Ymd\THis\Z" }}
-SUMMARY:{{s.member}} as {% if shift.role != null %}{{s.role}} ({{s.member.role}}){%else%}{{s.member.role}}{%endif%}
-LOCATION:ESS/LCR
+SUMMARY:{{s.member}} {% if s.role != null %}{%else%}as {{s.member.role}}{%endif%}
+LOCATION: {% if s.role != null %} {{s.role}} {%else%} ESS/ Main Control Room {%endif%}
 END:VEVENT
 {% endfor %}END:VCALENDAR

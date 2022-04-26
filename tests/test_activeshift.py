@@ -2,7 +2,7 @@ from django.test import TestCase
 
 from members.models import Role
 from shifts.models import *
-from shifts.activeshift import prepare_active_crew, prepare_for_JSON, filter_active_slots, filter_for_hour
+from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 
 import pytz
 
@@ -28,6 +28,7 @@ class ActiveShift(TestCase):
         "caseB": {"date": "2022-05-11", "slots": ("AM", "PM", "NG"), "hour": "22:11:11", "SID": "20220511C"},
         "caseB2": {"date": "2022-05-12", "slots": ("AM", "PM", "NG"), "hour": "01:11:11", "SID": "20220511C"},
         "caseC": {"date": "2022-05-12", "slots": ("AM", "PM", "NG"), "hour": "23:11:11", "SID": "20220512C"},
+        "caseC2": {"date": "2022-05-13", "slots": ("AM", "PM", "NG"), "hour": "02:11:11", "SID": "20220512C"},
 
         ######
         # Funny & weird outside slots
@@ -114,10 +115,8 @@ class ActiveShift(TestCase):
     def test_EV_before_midnight_with_code_C(self):
         self.check(self.testCases["caseInNG1"])
 
-    # FIXME This case is implicitly solved by the 'last created' shift' of the day before
-    # with the caveat that EV shift will be initiated before midnight
-    # def test_EV_after_midnight_with_code_C(self):
-    #     self.check(self.testCases["caseInNG2"])
+    def test_EV_after_midnight_with_code_C(self):
+        self.check(self.testCases["caseInNG2"])
 
     def test_after_NWH(self):
         self.check(self.testCases["case6"])
@@ -155,6 +154,12 @@ class ActiveShift(TestCase):
     def test_longer_schedules_caseB2(self):
         self.check(self.testCases["caseB2"])
 
+    def test_longer_schedules_caseC(self):
+        self.check(self.testCases["caseC"])
+
+    def test_longer_schedules_caseC2(self):
+        self.check(self.testCases["caseC2"])
+
     def check(self, target, updateOPSlots=True, verbose=False):
         if updateOPSlots:
             update_test_slots(target["slots"])
@@ -176,12 +181,26 @@ class FilterChecks(TestCase):
 
     def test_filter_for_hour(self):
         update_test_slots(["NWH"])
-        filteredSlots = filter_for_hour(datetime.time(16, 29, 0), Slot.objects.filter(op=True))
+        now = datetime.time(16, 29, 0)
+        consider = Slot.objects.filter(op=True)
+        slots = []
+        for slot in consider:
+            if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
+                    or slot.hour_start <= now < slot.hour_end:
+                slots.append(slot)
+        filteredSlots = slots
         self.assertEqual(1, len(filteredSlots))
 
     def test_filter_for_hour_overlap(self):
         update_test_slots(["AM", "NWH"])
-        filteredSlots = filter_for_hour(datetime.time(11, 29, 0), Slot.objects.filter(op=True))
+        now = datetime.time(11, 29, 0)
+        consider = Slot.objects.filter(op=True)
+        slots = []
+        for slot in consider:
+            if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
+                    or slot.hour_start <= now < slot.hour_end:
+                slots.append(slot)
+        filteredSlots = slots
         self.assertEqual(2, len(filteredSlots))
 
 

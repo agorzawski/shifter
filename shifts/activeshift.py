@@ -5,7 +5,7 @@ from django.db.models import Q
 
 import phonenumbers
 import datetime
-from shifter.settings import NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES, DEFAULT_SHIFT_SLOT
+from shifter.settings import NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES
 
 
 def prepare_ShiftID(today, now, activeSlot, error=False):
@@ -15,12 +15,9 @@ def prepare_ShiftID(today, now, activeSlot, error=False):
 
 
 def filter_active_slots(now, scheduled_shifts):
-    return filter_for_hour(now, [shifter.slot for shifter in scheduled_shifts])
-
-
-def filter_for_hour(now, slotsToConsider):
+    consider = [shifter.slot for shifter in scheduled_shifts]
     slots = []
-    for slot in slotsToConsider:
+    for slot in consider:
         if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
                 or slot.hour_start <= now < slot.hour_end:
             slots.append(slot)
@@ -31,7 +28,8 @@ def prepare_active_crew(dayToGo=None,
                         slotToGo=None,
                         hourToGo=None,
                         fullUpdate=False,
-                        useLDAP=True,):
+                        useLDAP=True,
+                        verbose=False):
     ldap = None
     if fullUpdate and useLDAP:
         import members.directory as directory
@@ -46,13 +44,21 @@ def prepare_active_crew(dayToGo=None,
             now = datetime.datetime.strptime(hourToGo, SIMPLE_TIME).time()
 
     nowFull = datetime.datetime.combine(today, now)
-
+    if verbose:
+        print("\n =======\n Searching for ", nowFull)
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(revision=revision) \
                                     .filter(Q(date=today) & Q(slot__op=True))
+
+    if Slot.objects.all().order_by("hour_start").first().hour_start > now:
+        todayX = today + datetime.timedelta(days=-1)
+        scheduled_shifts = Shift.objects.filter(revision=revision) \
+                            .filter(Q(date=todayX) & Q(slot__op=True))
+
     # first find on EXACT time for OP slots
     slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts)
-    # print('-> 1st OP SLOTS -> ', slotsOPWithinScheduled)
+    if verbose:
+        print('\n-> 1st OP SLOTS -> ', slotsOPWithinScheduled)
 
     # second find on EXACT time - NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES
     if len(slotsOPWithinScheduled) == 0:
@@ -62,10 +68,10 @@ def prepare_active_crew(dayToGo=None,
             now = nowLater
         # print('-> 2nd try (2h later) OP SLOTS -> ', slotsOPWithinScheduled)
 
-    # retrigger for the search (in case now got updated)
+    # retrigger for the search (in case 'now' got updated)
     slots = filter_active_slots(now, scheduled_shifts)
-    # print("-> SLOTS ALL ->", slots)
-
+    if verbose:
+        print("-> SLOTS ALL ->", slots)
     # return if still no result found
     if len(slotsOPWithinScheduled) == 0:
         lastCompletedShiftBeforeTodayNow = Shift.objects \
@@ -86,7 +92,14 @@ def prepare_active_crew(dayToGo=None,
 
     # for a final slot find the details
     slotToBeUsed = slotsOPWithinScheduled[0]
-    # print('-> FOUND SLOT TO BE USED -> ', slotToBeUsed)
+    if verbose:
+        print('-> FOUND SLOT TO BE USED -> ', slotToBeUsed)
+
+    # final correction for the date if 0:00 - end of night shift
+    if slotToBeUsed.hour_start > slotToBeUsed.hour_end > now:
+        today = today + datetime.timedelta(days=-1)
+        nowFull = nowFull + datetime.timedelta(days=-1)
+
     # actual shift details finding based on the SLOT and date (today)
     sortedSlots = list(set(slots))
     sortedSlots.sort(key=lambda slotToSort: slotToSort.hour_end)
@@ -121,7 +134,7 @@ def update_shifter_details(shifter, today, now, slotToBeUsed, ldap, fullUpdate=F
         except ObjectDoesNotExist:
             shiftID = ShiftID()
             shiftID.label = prepare_ShiftID(today, now, slotToBeUsed)
-            shiftID.date_created = datetime.datetime.combine(today.date(), now)
+            shiftID.date_created = datetime.datetime.combine(today.date(), now)  # FIXME tzinfo=pytz.UTC?
             shiftID.save()
         if shifter.shiftID is None:
             shifter.shiftID = shiftID

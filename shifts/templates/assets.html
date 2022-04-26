@@ -23,7 +23,14 @@
         {% endif %}
 
          <hr/>
-          <h2>Last bookings <a class="btn btn-outline-success" href="/assets?new=true"> <img src="{% static 'img/asset.png' %}" height="20" alt=""/> New booking </a></h2>
+          <h2>Last bookings <a class="btn btn-success" href="/assets?new=true"> <img src="{% static 'img/asset.png' %}" height="20" alt=""/> New booking </a></h2>
+
+          <a class="btn btn{% if assetFilter %}-outline{%endif%}-primary" href="/assets"> <img src="{% static 'img/asset.png' %}" height="20" alt=""/>
+                Show All </a>
+          {%for assetType in assetTypes %}
+            <a class="btn btn{%if assetFilter != assetType.id%}-outline{%endif%}-primary" href="/assets?typeId={{assetType.id}}"> <img src="{% static 'img/asset.png' %}" height="20" alt=""/>
+                {{assetType}} </a>
+          {%endfor%}
         <table class="table table-striped" >
                   <thead>
                     <tr>
@@ -36,7 +43,7 @@
                     </tr>
                   </thead>
                   <tbody>
-        {% for assetbooking in assetbookings %}
+        {% for assetbooking in assetBookings %}
             <tr><td><strong>{{assetbooking.member}} <br> ({{assetbooking.member.team}})</strong></td>
                 <td> <strong>{{assetbooking.asset}}</strong></td>
                 <td>{{assetbooking.use_start}}</td>

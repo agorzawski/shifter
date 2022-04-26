@@ -52,11 +52,14 @@
                 </table>
               </div>
             </div>
-            <br>
-          <p><a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>
+          <p>
+              <h5>Dynamic links (one can subscribe with any calendar app):</h5>
+          <a class="btn btn-warning" href="ical?mid={{member.id}}">iCal link for you <strong>{{member}}</strong> </a>
+              <a class="btn btn-warning" href="ical?tid={{member.team.id}}">iCal link for your team <strong>{{member.team}}</strong> </a>
+              <h5>Static links (once downloaded remain fixed):</h5>
+              <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>
               <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>
-              <a class="btn btn-warning" href="ical?mid={{member.id}}">iCal link for you </a>
-              <a class="btn btn-warning" href="ical?tid={{member.team.id}}">iCal link for your team </a>
+
           </p>
           {% endif %}
       </main>

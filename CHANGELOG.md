@@ -1,5 +1,10 @@
 # ESS OP Shifter Changelog
 
+### v.0.9.1
+- Asset page display/filter improvement (ACCOP-276)
+- Fixed iCal links and its content (locations)
+- bug fixes (more tests to ShiftID)
+
 ### v.0.9.0
 - Simple OP Asset Management (ACCOP-225)
     - log of use,

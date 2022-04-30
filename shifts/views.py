@@ -44,14 +44,16 @@ def index_post(request):
 def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None):
     if revision is None:
         revision = revisions.first()
-    scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
-                                                                        'member__role__priority')
-    scheduled_campaigns = Campaign.objects.filter(revision=revision)
+    someDate = datetime.datetime.now() + datetime.timedelta(days=-30)
+    scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(date_end__gt=someDate)
+    scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
+                            .order_by('date', 'slot__hour_start', 'member__role__priority')
     context = {
         'revisions': revisions,
         'displayed_revision': revision,
         'scheduled_shifts_list': scheduled_shifts,
         'filtered_campaigns': filtered_campaigns,
+        'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_campaigns_list': scheduled_campaigns,
     }
     return render(request, 'index.html', prepare_default_context(request, context))

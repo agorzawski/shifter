@@ -111,20 +111,14 @@ def todays(request):
 
 @require_safe
 @login_required
-def user(request):
-    member = request.user
+def user(request, u=None, rid=None):
+    if u is None:
+        member = request.user
+    else:
+        member = Member.objects.filter(id=u).first()
     return render(request, 'user.html', prepare_default_context(request,
-                                                                prepare_user_context(member)))
-
-
-@require_safe
-def user_simple(request):
-    if request.GET.get('id', None) is not None:
-        member = Member.objects.filter(id=request.GET.get('id')).first()
-        return render(request, 'user.html', prepare_default_context(request,
-                                                                    prepare_user_context(member)))
-    messages.info(request, 'Unauthorized access. Returning back to the main page!')
-    return HttpResponseRedirect(reverse("shifter:index"))
+                                                                prepare_user_context(member,
+                                                                                     revisionNext=rid)))
 
 
 @require_safe

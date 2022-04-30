@@ -1,4 +1,30 @@
 {% extends 'template_main.html'%}
+
+{% block 'extra_menu_item' %}
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <strong>Display options<small> Revision:{{displayed_revision}}</small></strong>
+        </a>
+        <form class="dropdown-menu p-4" action="{% url "shifter:index-post" %}" method="POST" enctype="multipart/form-data" >
+          {% csrf_token %}
+          <div class="form-group">
+          <label>Displayed campaigns:</label>
+          {% for c in scheduled_campaigns_list %}
+          <br><input class="form-check-input" type="checkbox" name="campaign{{c.id}}" id="campaign{{c.id}}" value="{{c.id}}" checked disabled>
+          <label class="form-check-label" for="campaign{{c.id}}">{{c}}</label>
+          {% endfor %}
+          </div>
+
+          <div class="dropdown-divider"></div>
+          <div class="form-group">
+          <div class="form-check ">
+          </div>
+          </div>
+          <button type="submit" class="btn btn-primary" {%if not logged_user %} disabled {%endif%}>Apply</button>
+        </form>
+      </li>
+{% endblock %}
+
 {% block 'body' %}
     <div class="col-sm-8 mx-auto">
       <main role="main">

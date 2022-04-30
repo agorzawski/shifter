@@ -9,9 +9,12 @@ urlpatterns = [
     path('planning', views.index_post, name='index-post'),
     path('today', views.todays, name='today'),
     path('user', views.user, name='user'),
-    path('u', views.user_simple, name='user-simple'),
+    path('user/rev/<int:rid>', views.user, name='user'),
+    path('user/<int:u>', views.user, name='user'),
+    path('user/<int:u>/rev/<int:rid>', views.user, name='user'),
+
     path('team', views.team, name='team'),
-    path('t', views.team_simple, name='team-simple'),
+    path('t', views.team_simple, name='team-simple'),  # FIXME add/id/remove?
     path('calendar.ics', views.icalendar_view, name='calendar'),
     path('ical', views.icalendar, name='calendar_public'),
     path('dates', views.dates, name='dates'),

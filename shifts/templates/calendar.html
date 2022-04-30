@@ -58,7 +58,7 @@
             title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
             start:'{{ shift.shift_start }}',
             end:'{{ shift.shift_end }}',
-            url:'/u?id={{shift.member.id}}',
+            url:'/user/{{shift.member.id}}',
             {% if 'ShiftLeader' in shift.member.role.name %} textColor: '#E9E72D',{% endif %}
             color:'{{shift.slot.color_in_calendar}}',
             },
@@ -69,6 +69,17 @@
             end:'{{ ph }}',
             overlap: false,
             display: 'background'
+            },
+            {% endfor %}
+            {% for shift in future_scheduled_shifts %}
+            {
+            id: {{forloop.counter}}, //shifts are sorted with roles
+            title: '{{shift.member.first_name}} as {% if shift.role != null %}{{shift.role}} ({{shift.member.role}}){%else%}{{shift.member.role}}{%endif%}',
+            start:'{{ shift.shift_start }}',
+            end:'{{ shift.shift_end }}',
+
+            {% if 'ShiftLeader' in shift.member.role.name %} textColor: '#E9E72D',{% endif %}
+            color:'#FF0000',
             },
             {% endfor %}
             ],

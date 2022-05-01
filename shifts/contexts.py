@@ -72,6 +72,7 @@ def prepare_user_context(member, revisionNext=None):
         'scheduled_campaigns_list': scheduled_campaigns,
         'future_scheduled_shifts': future_scheduled_shifts,
         'newer_revisions': newer_revisions,
+        'campaigns': Campaign.objects.filter(revision=revision),
         'hrcodes': shift2codes,
         'hrcodes_summary': count_total(shift2codes)
     }
@@ -128,6 +129,7 @@ def prepare_team_context(request, member=None, team=None, extraContext=None):
         'lastmonth': lastMonth.strftime(SIMPLE_DATE),
         'nextmonth_label': nextMonth.strftime(MONTH_NAME),
         'lastmonth_label': lastMonth.strftime(MONTH_NAME),
+        'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
     }

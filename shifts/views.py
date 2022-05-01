@@ -21,6 +21,7 @@ from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 
+
 def page_not_found(request, exception):
     return render(request, "404.html", {})
 
@@ -36,23 +37,25 @@ def index(request):
 def index_post(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
     revision = Revision.objects.filter(number=request.POST['revision']).first()
-    # TODO implement filter on campaigns
-    filtered_campaigns = None
-    return prepare_main_page(request, revisions, revision=revision, filtered_campaigns=filtered_campaigns)
+    filtered_campaigns = [int(i) for i in request.POST.getlist('campaign[]')]
+    return prepare_main_page(request, revisions, revision=revision,
+                             filtered_campaigns=filtered_campaigns)
 
 
 def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None):
     if revision is None:
         revision = revisions.first()
-    someDate = datetime.datetime.now() + datetime.timedelta(days=-30)
+    someDate = datetime.datetime.now() + datetime.timedelta(days=-61)  # default - always last two months
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(date_end__gt=someDate)
+    if filtered_campaigns is not None:
+        scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=filtered_campaigns)
+
     scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
                             .order_by('date', 'slot__hour_start', 'member__role__priority')
     context = {
         'revisions': revisions,
         'displayed_revision': revision,
         'scheduled_shifts_list': scheduled_shifts,
-        'filtered_campaigns': filtered_campaigns,
         'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_campaigns_list': scheduled_campaigns,
     }

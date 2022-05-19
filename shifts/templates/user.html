@@ -84,7 +84,18 @@
               <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>
 
           </p>
+          <hr>
+          <h5>Some inconsistencies</h5>
+          <h6>Daily shift issues:</h6>
+          {% for one in dailyViolations%}
+            <p><span class="badge badge-warning">{{one.0}}</span> - <span class="badge badge-warning">{{one.1}} </span></p>
+          {%endfor%}
+          <h6>Weekly shift issues:</h6>
+          {% for one in weeklyViolations%}
+            <p><span class="badge badge-warning">{{one.0}}</span> - <span class="badge badge-warning">{{one.1}} </span></p>
+          {%endfor%}
           {% endif %}
+          <hr>
       </main>
     </div>
 

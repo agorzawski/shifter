@@ -60,6 +60,12 @@ def setup_schedule():
         (member2, PM, datetime.date(2022, 5, 12), None),
         (member3, NG, datetime.date(2022, 5, 12), None),
         (memberOffice, NWH, datetime.date(2022, 5, 12), None),
+        (member2, AM, datetime.date(2022, 5, 13), None),
+        (member3, NWH, datetime.date(2022, 5, 13), None),
+
+        (member2, AM, datetime.date(2022, 5, 14), None),
+        (member2, AM, datetime.date(2022, 5, 15), None),
+        (member2, AM, datetime.date(2022, 5, 16), None),
     )
     return testShifts, campaign, revision
 

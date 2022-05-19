@@ -20,6 +20,7 @@ import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
+from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 
 
 def page_not_found(request, exception):
@@ -118,16 +119,25 @@ def todays(request):
 @login_required
 def user(request):
     member = request.user
-    return render(request, 'user.html', prepare_default_context(request,
-                                                                prepare_user_context(member)))
+    ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
+    dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
+    weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
+    contex = prepare_user_context(member)
+    contex['dailyViolations'] = dailyViolations
+    contex['weeklyViolations'] = weeklyViolations
+    return render(request, 'user.html', prepare_default_context(request, contex))
 
 
 @require_safe
 def user_simple(request):
     if request.GET.get('id', None) is not None:
         member = Member.objects.filter(id=request.GET.get('id')).first()
-        return render(request, 'user.html', prepare_default_context(request,
-                                                                    prepare_user_context(member)))
+        ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(
+            member=member)
+        dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
+        contex = prepare_user_context(member)
+        contex['dailyViolations'] = dailyViolations
+        return render(request, 'user.html', prepare_default_context(request, contex))
     messages.info(request, 'Unauthorized access. Returning back to the main page!')
     return HttpResponseRedirect(reverse("shifter:index"))
 

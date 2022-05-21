@@ -20,6 +20,7 @@ import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
+from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 
 
 def page_not_found(request, exception):
@@ -121,9 +122,14 @@ def user(request, u=None, rid=None):
         member = request.user
     else:
         member = Member.objects.filter(id=u).first()
-    return render(request, 'user.html', prepare_default_context(request,
-                                                                prepare_user_context(member,
-                                                                                     revisionNext=rid)))
+    ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
+    dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
+    weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
+    contex = prepare_user_context(member, revisionNext=rid)
+    contex['dailyViolations'] = dailyViolations
+    contex['weeklyViolations'] = weeklyViolations
+
+    return render(request, 'user.html', prepare_default_context(request, contex))
 
 
 @require_safe

@@ -145,7 +145,7 @@ def update_details_from_LDAP(shifterDuty, ldap, useLDAP=True):
     if shifterDuty.member.email is not None and shifterDuty.member.mobile is not None:
         return None
     personal_data = []
-    if useLDAP:
+    if useLDAP and ldap is not None:
         personal_data = ldap.search(field='name', text=shifterDuty.member.last_name)
     if len(personal_data) == 0:
         return None

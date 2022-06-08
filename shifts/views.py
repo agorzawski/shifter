@@ -39,11 +39,12 @@ def index_post(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
     revision = Revision.objects.filter(number=request.POST['revision']).first()
     filtered_campaigns = [int(i) for i in request.POST.getlist('campaign[]')]
+    all_roles = request.POST.get('all_roles', None) is not None
     return prepare_main_page(request, revisions, revision=revision,
-                             filtered_campaigns=filtered_campaigns)
+                             filtered_campaigns=filtered_campaigns, all_roles=all_roles)
 
 
-def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None):
+def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None, all_roles=False):
     if revision is None:
         revision = revisions.first()
     someDate = datetime.datetime.now() + datetime.timedelta(days=-61)  # default - always last two months
@@ -52,13 +53,19 @@ def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None
         scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=filtered_campaigns)
 
     scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
+                            .filter(role=None)\
                             .order_by('date', 'slot__hour_start', 'member__role__priority')
+    if all_roles:
+        scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
+                                .order_by('date', 'slot__hour_start', 'member__role__priority')
+
     context = {
         'revisions': revisions,
         'displayed_revision': revision,
         'scheduled_shifts_list': scheduled_shifts,
         'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_campaigns_list': scheduled_campaigns,
+        'all_roles': all_roles
     }
     return render(request, 'index.html', prepare_default_context(request, context))
 

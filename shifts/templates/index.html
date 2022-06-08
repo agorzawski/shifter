@@ -30,8 +30,14 @@
           {% endfor %}
           </div>
 
+        <div class="dropdown-divider"></div>
+          <div class="form-group">
+          <input class="form-check-input" type="checkbox" name="all_roles" id="all_roles" value="all"
+           {% if all_roles %} checked {% endif %} >
+            Display additional roles assigned to the specific shift, e.g. <strong>Office</strong>. <br>
+          </div>
 
-
+          <div class="dropdown-divider"></div>
           <button type="submit" class="btn btn-primary" {%if not logged_user %} disabled {%endif%}>Apply</button>
         </form>
       </li>

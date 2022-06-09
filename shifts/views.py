@@ -20,6 +20,8 @@ import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
+from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
+
 
 def page_not_found(request, exception):
     return render(request, "404.html", {})
@@ -36,23 +38,34 @@ def index(request):
 def index_post(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
     revision = Revision.objects.filter(number=request.POST['revision']).first()
-    # TODO implement filter on campaigns
-    filtered_campaigns = None
-    return prepare_main_page(request, revisions, revision=revision, filtered_campaigns=filtered_campaigns)
+    filtered_campaigns = [int(i) for i in request.POST.getlist('campaign[]')]
+    all_roles = request.POST.get('all_roles', None) is not None
+    return prepare_main_page(request, revisions, revision=revision,
+                             filtered_campaigns=filtered_campaigns, all_roles=all_roles)
 
 
-def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None):
+def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None, all_roles=False):
     if revision is None:
         revision = revisions.first()
-    scheduled_shifts = Shift.objects.filter(revision=revision).order_by('date', 'slot__hour_start',
-                                                                        'member__role__priority')
-    scheduled_campaigns = Campaign.objects.filter(revision=revision)
+    someDate = datetime.datetime.now() + datetime.timedelta(days=-61)  # default - always last two months
+    scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(date_end__gt=someDate)
+    if filtered_campaigns is not None:
+        scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=filtered_campaigns)
+
+    scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
+                            .filter(role=None)\
+                            .order_by('date', 'slot__hour_start', 'member__role__priority')
+    if all_roles:
+        scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
+                                .order_by('date', 'slot__hour_start', 'member__role__priority')
+
     context = {
         'revisions': revisions,
         'displayed_revision': revision,
         'scheduled_shifts_list': scheduled_shifts,
-        'filtered_campaigns': filtered_campaigns,
+        'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_campaigns_list': scheduled_campaigns,
+        'all_roles': all_roles
     }
     return render(request, 'index.html', prepare_default_context(request, context))
 
@@ -113,16 +126,25 @@ def todays(request):
 @login_required
 def user(request):
     member = request.user
-    return render(request, 'user.html', prepare_default_context(request,
-                                                                prepare_user_context(member)))
+    ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
+    dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
+    weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
+    contex = prepare_user_context(member)
+    contex['dailyViolations'] = dailyViolations
+    contex['weeklyViolations'] = weeklyViolations
+    return render(request, 'user.html', prepare_default_context(request, contex))
 
 
 @require_safe
 def user_simple(request):
     if request.GET.get('id', None) is not None:
         member = Member.objects.filter(id=request.GET.get('id')).first()
-        return render(request, 'user.html', prepare_default_context(request,
-                                                                    prepare_user_context(member)))
+        ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(
+            member=member)
+        dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
+        contex = prepare_user_context(member)
+        contex['dailyViolations'] = dailyViolations
+        return render(request, 'user.html', prepare_default_context(request, contex))
     messages.info(request, 'Unauthorized access. Returning back to the main page!')
     return HttpResponseRedirect(reverse("shifter:index"))
 

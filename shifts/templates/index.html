@@ -7,15 +7,7 @@
         </a>
         <form class="dropdown-menu p-4" action="{% url "shifter:index-post" %}" method="POST" enctype="multipart/form-data" >
           {% csrf_token %}
-          <div class="form-group">
-          <label>Displayed campaigns:</label>
-          {% for c in scheduled_campaigns_list %}
-          <br><input class="form-check-input" type="checkbox" name="campaign{{c.id}}" id="campaign{{c.id}}" value="{{c.id}}" checked disabled>
-          <label class="form-check-label" for="campaign{{c.id}}">{{c}}</label>
-          {% endfor %}
-          </div>
 
-          <div class="dropdown-divider"></div>
           <div class="form-group">
           <div class="form-check ">
           <label>Displayed revision (only valid): </label>
@@ -26,7 +18,26 @@
           </select>
           </div>
           </div>
+          <div class="dropdown-divider"></div>
 
+          <div class="form-group">
+          <label>Displayed campaigns:</label>
+          {% for c in campaigns %}
+          <br><input class="form-check-input" type="checkbox" name="campaign[]" id="campaign{{c.id}}" value="{{c.id}}"
+                     {%if c in scheduled_campaigns_list%} checked {%endif%} >
+            <label class="form-check-label" for="campaign{{c.id}}">{{c}}<br>
+            <small><strong>{{c.date_start}} - {{c.date_end}}</strong></small></label>
+          {% endfor %}
+          </div>
+
+        <div class="dropdown-divider"></div>
+          <div class="form-group">
+          <input class="form-check-input" type="checkbox" name="all_roles" id="all_roles" value="all"
+           {% if all_roles %} checked {% endif %} >
+            Display additional roles assigned to the specific shift, e.g. <strong>Office</strong>. <br>
+          </div>
+
+          <div class="dropdown-divider"></div>
           <button type="submit" class="btn btn-primary" {%if not logged_user %} disabled {%endif%}>Apply</button>
         </form>
       </li>

@@ -40,7 +40,9 @@
             <select name='revision' id='revision' class="custom-select" required>
               <option value="">Revision assignment</option>
                 {% for rev in revisions %}
-                    <option value="{{rev.number}}">{{rev}} (validity: {{rev.valid}}) </option>
+                    <option value="{{rev.number}}"
+                            {% if rev == latest_revision %}selected="selected"{%endif%}>
+                        {{rev}} (validity: {{rev.valid}}) </option>
                 {% endfor %}
             </select>
             <div class="invalid-feedback">Example invalid custom select feedback</div>
@@ -48,7 +50,7 @@
 
       <div class="form-group">
             <select name='role' id='role' class="custom-select" >
-              <option value="-1">Role assignment</option>
+              <option value="-1">Role assignment (don't change if use default)</option>
                 {% for r in roles %}
                     <option value="{{r.id}}">{{r.name}} </option>
                 {% endfor %}

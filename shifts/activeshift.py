@@ -5,7 +5,7 @@ from django.db.models import Q
 
 import phonenumbers
 import datetime
-from shifter.settings import NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES
+from shifter.settings import NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES, DEFAULT_SHIFT_SLOT, DEFAULT_SHIFTER_TO_JSON
 
 
 def prepare_ShiftID(today, now, activeSlot, error=False):
@@ -15,7 +15,11 @@ def prepare_ShiftID(today, now, activeSlot, error=False):
 
 
 def filter_active_slots(now, scheduled_shifts):
-    consider = [shifter.slot for shifter in scheduled_shifts]
+    scheduled_shifts_slots_ids = [i['slot'] for i in scheduled_shifts.values('slot').distinct()]
+    default_slot = Slot.objects.get(abbreviation=DEFAULT_SHIFT_SLOT)
+    if default_slot.id in scheduled_shifts_slots_ids and len(scheduled_shifts_slots_ids) > 1:
+        scheduled_shifts_slots_ids.remove(default_slot.id)
+    consider = [shifter.slot for shifter in scheduled_shifts if shifter.slot not in scheduled_shifts_slots_ids]
     slots = []
     for slot in consider:
         if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
@@ -173,8 +177,6 @@ def update_details_from_LDAP(shifterDuty, ldap, useLDAP=True):
 
 
 def prepare_for_JSON(activeShift):
-    # TODO WIP send a slack webhook announcement to remind that this was called
-    fieldsToUpdate = ['SL', 'OP']
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
                     '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift[
                         'activeSlot'].abbreviation,
@@ -183,13 +185,13 @@ def prepare_for_JSON(activeShift):
                     '_PVPrefix': 'NSO:Ops:',
                     'SID': activeShift['shiftID'],
                     }
-    for one in fieldsToUpdate:
-        dataToReturn[one] = "N/A"
-    for one in fieldsToUpdate:
+    for oneRole in DEFAULT_SHIFTER_TO_JSON:
+        dataToReturn[oneRole] = "N/A"
+    for oneRole in DEFAULT_SHIFTER_TO_JSON:
         for shifter in activeShift['currentTeam']:
-            if one in shifter.member.role.abbreviation and shifter.role is None:  # no extra role in the same shift
-                dataToReturn[one] = shifter.member.name
-                dataToReturn[one + "Phone"] = shifter.member.mobile
-                dataToReturn[one + "Email"] = shifter.member.email
+            if oneRole in shifter.member.role.abbreviation and shifter.role is None:  # no extra role in the same shift
+                dataToReturn[oneRole] = shifter.member.name
+                dataToReturn[oneRole + "Phone"] = shifter.member.mobile if shifter.member.mobile is not None else ''
+                dataToReturn[oneRole + "Email"] = shifter.member.email if shifter.member.email is not None else ''
 
     return dataToReturn

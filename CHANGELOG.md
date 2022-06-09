@@ -1,5 +1,16 @@
 # ESS OP Shifter Changelog
 
+### v.0.9.2
+- Daily/weekly break limits highlighted in the user page,
+- Additional filter for the off-control room roles, i.e. office assignments not displayed by default for the general overview, not affecting individual/team views,
+- Performance fix to fetch only last campaigns' shifts within the last revision (main calendar refresh, not affecting individual/team views)
+- Filter/display menu bar reworked,
+- Few bugs fixed: 
+  - Ldap provider,  
+  - Upload new schedules with default revision,
+  - ShiftID bug: NWH excluded when another shifts scheduled (sometimes wrong ID when morning, afternoon and normal working hours overlap),
+  - Active shift JSON returns roles configured via os setting, not hardcoded. Extended by  default to StudyLeader, 
+
 ### v.0.9.1
 - Asset page display/filter improvement (ACCOP-276)
 - Fixed iCal links and its content (locations)

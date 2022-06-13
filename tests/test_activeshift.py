@@ -17,7 +17,7 @@ class ActiveShift(TestCase):
         "caseInNG2": {"date": "2022-05-02", "slots": ("AM", "PM", "NG"), "hour": "3:11:11", "SID": "20220501C"},
         "caseInAMPM": {"date": "2022-05-01", "slots": ("AM", "PM", "NG"), "hour": "13:41:11", "SID": "20220501A"},
         "caseInAMOverlapPM": {"date": "2022-05-01", "slots": ("AM", "PM", "NG"), "hour": "14:11:11",
-                              "SID": "20220501A"},
+                              "SID": "20220501B"},
         ######
         # some longer schedules:
         "casePreA": {"date": "2022-05-10", "slots": ("AM", "PM", "NG", "NWH"), "hour": "15:11:11", "SID": "20220510B"},
@@ -39,7 +39,7 @@ class ActiveShift(TestCase):
         # multiple op slots selected
         "case1": {"date": "2022-05-03", "slots": ("NWH", "AM", "PM"), "hour": "9:11:11", "SID": "20220503A"},
         "case2": {"date": "2022-05-03", "slots": ("NWH", "AM", "PM"), "hour": "15:11:11", "SID": "20220503B"},
-        "case3": {"date": "2022-05-03", "slots": ("NWH", "AM", "PM"), "hour": "14:11:11", "SID": "20220503A"},
+        "case3": {"date": "2022-05-03", "slots": ("NWH", "AM", "PM"), "hour": "14:11:11", "SID": "20220503B"},
         "noOP": {"date": "2022-05-12", "slots": (), "hour": "18:11:11", "SID": "20220512A"},
 
     }

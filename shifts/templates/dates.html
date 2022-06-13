@@ -18,12 +18,12 @@
         {% csrf_token %}
           <h1>
             <span class="badge badge-info"> Defined day slots </span>
-            <button class="btn btn-info" {%if not request.user.is_staff %} disabled {%endif%} >Update Slots OP </button></h1>
+            <button class="btn btn-info" {%if not request.user.is_staff %} disabled {%endif%} >Update Slots OP </button></h1><h4><span class="badge badge-primary"> DefaultShiftSlot </span></h4>
         {% for c in slots %}
           <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" id="{{c.abbreviation}}" name="{{c.abbreviation}}" {% if c.op%}checked{%endif%} {%if not request.user.is_staff %} disabled {%endif%}>
             <label class="form-check-label">
-              <span class="badge badge-info">{{c.name}} ({{c.abbreviation}})</span> for <strong>{{c.hour_start}}</strong> - <strong>{{c.hour_end}}</strong>
+              <span class="badge badge-{%if c == DEFAULT_SHIFT_SLOT%}primary{%else%}info{%endif%}">{{c.name}} ({{c.abbreviation}})</span> for <strong>{{c.hour_start}}</strong> - <strong>{{c.hour_end}}</strong>
             </label>
           </div>
           {% endfor%}

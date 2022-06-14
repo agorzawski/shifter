@@ -8,7 +8,7 @@ import os
 import datetime
 
 from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
-    SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME, STOP_DEV_MESSAGES
+    SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME, STOP_DEV_MESSAGES, DEFAULT_SHIFT_SLOT
 
 
 def prepare_default_context(request, contextToAdd):
@@ -44,6 +44,7 @@ def prepare_default_context(request, contextToAdd):
         'SHIFTER_TEST_INSTANCE': SHIFTER_TEST_INSTANCE,
         'APP_GIT_TAG': GIT_LAST_TAG,
         'controlRoomPhoneNumber': CONTROL_ROOM_PHONE_NUMBER,
+        'DEFAULT_SHIFT_SLOT': Slot.objects.get(abbreviation=DEFAULT_SHIFT_SLOT),
         'wwwWithMoreInfo': WWW_EXTRA_INFO,
         'publicHolidays': get_public_holidays(fmt=SIMPLE_DATE)
     }

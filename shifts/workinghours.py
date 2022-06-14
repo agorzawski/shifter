@@ -8,6 +8,7 @@ def find_daily_rest_time_violation(scheduled_shifts, minimum_rest_time_in_hours=
     """
     toReturn = []
     ss = list(scheduled_shifts)
+    ss.sort(key=lambda s: s.start)
     for earlier, later in zip(ss[:-1], ss[1:]):
         if DEFAULT_SHIFT_SLOT in later.slot.abbreviation:
             continue
@@ -23,7 +24,7 @@ def find_weekly_rest_time_violation(scheduled_shifts, minimum_rest_time=36) -> l
     streak = []
     toReturn = []
     ss = list(scheduled_shifts)
-
+    ss.sort(key=lambda s: s.start)
     for i, one in enumerate(ss[:-1]):
         if ss[i+1].start - one.end < timedelta(hours=24):
             streak.append(one)

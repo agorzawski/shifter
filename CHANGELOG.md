@@ -1,5 +1,8 @@
 # ESS OP Shifter Changelog
 
+### v.0.9.3
+- Bug removal on sorting the shifts for active shift/work time calcs.
+
 ### v.0.9.2
 - Daily/weekly break limits highlighted in the user page,
 - Additional filter for the off-control room roles, i.e. office assignments not displayed by default for the general overview, not affecting individual/team views,

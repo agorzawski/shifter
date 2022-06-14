@@ -19,12 +19,13 @@ def filter_active_slots(now, scheduled_shifts):
     default_slot = Slot.objects.get(abbreviation=DEFAULT_SHIFT_SLOT)
     if default_slot.id in scheduled_shifts_slots_ids and len(scheduled_shifts_slots_ids) > 1:
         scheduled_shifts_slots_ids.remove(default_slot.id)
-    consider = [shifter.slot for shifter in scheduled_shifts if shifter.slot not in scheduled_shifts_slots_ids]
+    consider = [shifter.slot for shifter in scheduled_shifts if shifter.slot.id in scheduled_shifts_slots_ids]
     slots = []
     for slot in consider:
         if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
                 or slot.hour_start <= now < slot.hour_end:
             slots.append(slot)
+    slots.sort(key=lambda s: s.hour_start, reverse=True)
     return slots
 
 

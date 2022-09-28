@@ -20,7 +20,7 @@ import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
-from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
+from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
 
 
 def page_not_found(request, exception):
@@ -287,6 +287,31 @@ def shifts(request):
     else:
         shiftIds = ShiftID.objects.all().order_by('-label')
         dataToReturn = {'ids': [id.label for id in shiftIds]}
+    return JsonResponse(dataToReturn)
+
+
+@require_safe
+def scheduled_work_time(request):
+    rev = Revision.objects.filter(valid=True).order_by("-number")[0]
+    startDate = None
+    endDate = None
+    try:
+        if request.GET.get('start', None) is not None:
+            startDate = datetime.datetime.strptime(request.GET.get('start'), DATE_FORMAT)
+        if request.GET.get('end', None) is not None:
+            endDate = datetime.datetime.strptime(request.GET.get('end'), DATE_FORMAT)
+        if request.GET.get('rev', None) is not None:
+            revId=int(request.GET.get('rev'))
+            rev = Revision.objects.filter(valid=True).filter(number=revId)[0]
+    except ValueError:
+        pass
+    scheduled_shifts = Shift.objects.filter(revision=rev)\
+                                    .filter(member__role__abbreviation='SL') \
+                                    .order_by('date', 'slot__hour_start', 'member__role__priority')
+    if startDate is not None and endDate is not None:
+        scheduled_shifts = scheduled_shifts.filter(date__gte=startDate) \
+                                            .filter(date__lte=endDate)
+    dataToReturn = find_working_hours(scheduled_shifts, startDate=startDate, endDate=endDate)
     return JsonResponse(dataToReturn)
 
 

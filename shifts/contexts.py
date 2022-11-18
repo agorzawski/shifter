@@ -46,7 +46,6 @@ def prepare_default_context(request, contextToAdd):
         'controlRoomPhoneNumber': CONTROL_ROOM_PHONE_NUMBER,
         'DEFAULT_SHIFT_SLOT': Slot.objects.get(abbreviation=DEFAULT_SHIFT_SLOT),
         'wwwWithMoreInfo': WWW_EXTRA_INFO,
-        'publicHolidays': get_public_holidays(fmt=SIMPLE_DATE)
     }
     for one in contextToAdd.keys():
         context[one] = contextToAdd[one]

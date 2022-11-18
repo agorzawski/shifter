@@ -1,10 +1,11 @@
 {% extends 'template_main.html'%}
+{% load static %}
 {% block 'extra_menu_item' %}
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <strong>Display options<small> Revision:{{displayed_revision}}</small></strong>
         </a>
-        <form class="dropdown-menu p-4" action="{% url "shifter:index-post" %}" method="POST" enctype="multipart/form-data" >
+        <form class="dropdown-menu p-4">
           {% csrf_token %}
           <div class="form-group">
           <label>Displayed campaigns:</label>
@@ -24,7 +25,7 @@
 {% block 'body' %}
     <div class="col-sm-8 mx-auto">
       <main role="main">
-          <h1> <span class="badge badge-light">Hello {{member.first_name}} {{team}}! </span></h1>
+          <h1> <span class="badge badge-light">Hello {{member.first_name}} <team_id data-id="{{ team.id }}">{{team}}!</team_id></span></h1>
           {% if user.is_authenticated %}
           <h4><a data-toggle="collapse" href="#collapseCodesDiv" role="button"
                  aria-expanded="false" aria-controls="collapseCodesDiv">Check tabular shift breakdown</a></h4>
@@ -34,8 +35,8 @@
     </div>
 
 <br>
-
-{% include 'calendar.html' %}
+{% url 'ajax.get_team_events' as the_url %}
+{% include 'calendar.html' with event_source=the_url %}
 
 {% if user.is_authenticated %}
 <div class="col-sm-8 mx-auto">
@@ -72,4 +73,8 @@
 </div>
 {% endif %}
 
+{% endblock %}
+
+{%  block js %}
+<script type="text/javascript" src="{% static 'js/calendar_script.min.js' %}"></script>
 {% endblock %}

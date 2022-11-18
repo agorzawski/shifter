@@ -3,6 +3,7 @@ from django.db.models import DO_NOTHING
 
 from members.models import Member
 from django.utils.functional import cached_property
+from django.shortcuts import reverse
 import datetime
 from enum import Enum
 
@@ -106,6 +107,29 @@ class Shift(models.Model):
 
     def __str__(self):
         return '{} {} {}'.format(self.member, self.date, self.slot)
+
+    def get_shift_title(self) -> str:
+        title = f"{self.member.first_name} as "
+        if self.role:
+            title += f"{self.role} ({self.member.role})"
+        else:
+            title += f"{self.member.role}"
+
+        return title
+
+    def get_shift_as_json_event(self) -> dict:
+        event = {'id': self.id,
+                 'title': self.get_shift_title(),
+                 'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
+                 'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
+                 'url': reverse('shifter:user-simple') + f'?id={self.member.id}',
+                 'color': self.slot.color_in_calendar,
+                 }
+
+        if 'ShiftLeader' in self.member.role.name:
+            event['textColor'] = '#E9E72D'
+
+        return event
 
     @cached_property
     def start(self) -> datetime:

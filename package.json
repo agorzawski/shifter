@@ -1,0 +1,25 @@
+{
+  "name": "op-shift-schedule",
+  "version": "1.0.0",
+  "description": "A simple system for displaying (Web server) and for managing/scheduling shifts, including: - members, roles, teams, - campaigns, time slots,  - assigned shifts.",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.esss.lu.se:cedriclombard/op-shift-schedule.git"
+  },
+  "author": "C. Lombard",
+  "license": "ISC",
+  "devDependencies": {
+    "bootstrap": "^4.6.0",
+    "jquery": "^3.6.0",
+    "fullcalendar": "^5.9.0",
+    "@fortawesome/fontawesome-free": "5.13.1"
+  }
+}

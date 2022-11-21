@@ -9,3 +9,4 @@ venv/
 .idea/*
 *.xlsx
 db.*
+/node_modules/

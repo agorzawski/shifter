@@ -168,9 +168,10 @@ STATICFILES_FINDERS = ['npm.finders.NpmFinder',
                        ]
 
 NPM_FILE_PATTERNS = {
-    'bootstrap': ['dist/css/bootstrap.min.css', 'dist/js/bootstrap.min.js'],
-    'fullcalendar': ['main.min.css', 'main.min.js'],
-    'jquery': ['dist/jquery.min.js'],
+    'bootstrap': ['dist/css/bootstrap.min.css.map', 'dist/css/bootstrap.min.css',
+                  'dist/js/bootstrap.min.js', 'dist/js/bootstrap.min.js.map'],
+    'fullcalendar': ['main.min.css', 'main.min.css.map', 'main.min.js', 'main.min.js.map'],
+    'jquery': ['dist/jquery.min.js', 'dist/jquery.min.js.map'],
     '@fortawesome': ['fontawesome-free/*'],
 }
 

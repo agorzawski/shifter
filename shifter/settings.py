@@ -162,6 +162,18 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_FINDERS = ['npm.finders.NpmFinder',
+                       'django.contrib.staticfiles.finders.FileSystemFinder',
+                       'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+                       ]
+
+NPM_FILE_PATTERNS = {
+    'bootstrap': ['dist/css/bootstrap.min.css', 'dist/js/bootstrap.min.js'],
+    'fullcalendar': ['main.min.css', 'main.min.js'],
+    'jquery': ['dist/jquery.min.js'],
+    '@fortawesome': ['fontawesome-free/*'],
+}
+
 
 MAIN_PAGE_HOME_BUTTON = os.getenv('MAIN_PAGE_HOME_BUTTON', 'Shifter')
 APP_REPO = os.getenv('APP_REPO', 'NO REPO PROVIDED')

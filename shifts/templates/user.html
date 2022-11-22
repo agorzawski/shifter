@@ -1,11 +1,12 @@
 {% extends 'template_main.html'%}
+{% load static %}
 
 {% block 'extra_menu_item' %}
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <strong>Display options<small> Revision:{{displayed_revision}}</small></strong>
         </a>
-        <form class="dropdown-menu p-4" action="{% url "shifter:index-post" %}" method="POST" enctype="multipart/form-data" >
+        <form class="dropdown-menu p-4">
           {% csrf_token %}
           <div class="form-group">
           <label>Displayed campaigns:</label>
@@ -28,7 +29,7 @@
     <div class="col-sm-8 mx-auto">
       <main role="main">
           <br>
-          <h1><span class="badge badge-light"> Hello {{member}}</span></h1>
+          <h1><span class="badge badge-light"> Hello <member_id data-id="{{ member.id }}">{{member}}</member_id></span></h1>
 
           <ul>
               <li>In the current revision <small>{{revision}}</small> you are scheduled for {{scheduled_shifts_list|length}} shifts.</li>
@@ -109,6 +110,11 @@
 
 <br>
 
-{% include 'calendar.html' %}
+{% url 'ajax.get_user_events' as the_url %}
+{% include 'calendar.html' with event_source=the_url %}
+{% endblock %}
 
+
+{%  block js %}
+<script type="text/javascript" src="{% static 'js/calendar_script.min.js' %}"></script>
 {% endblock %}

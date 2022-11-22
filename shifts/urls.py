@@ -6,7 +6,6 @@ app_name = 'shifter'
 handler404 = 'shifts.views.page_not_found'
 urlpatterns = [
     path('', views.index, name='index'),
-    path('planning', views.index_post, name='index-post'),
     path('today', views.todays, name='today'),
     path('user', views.user, name='user'),
     path('user/rev/<int:rid>', views.user, name='user'),

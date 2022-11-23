@@ -37,6 +37,9 @@
 <br>
 {% url 'ajax.get_team_events' as the_url %}
 {% include 'calendar.html' with event_source=the_url %}
+<div class="col-sm-8 mx-auto">
+    <p>Your rota-maker{{ rota_maker|pluralize }} : {%  for a_rota_maker in rota_maker %} <a href="mailto:{{ a_rota_maker.email }}">{{ a_rota_maker.first_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %} </p>
+</div>
 
 {% if user.is_authenticated %}
 <div class="col-sm-8 mx-auto">

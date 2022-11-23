@@ -23,10 +23,6 @@ from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 
 
-def page_not_found(request, exception):
-    return render(request, "404.html", {})
-
-
 @require_safe
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")

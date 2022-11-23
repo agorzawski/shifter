@@ -20,7 +20,7 @@ import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
-from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
+from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
 
 
 @require_safe
@@ -101,29 +101,19 @@ def todays(request):
 
 @require_safe
 @login_required
-def user(request):
-    member = request.user
+def user(request, u=None, rid=None):
+    if u is None:
+        member = request.user
+    else:
+        member = Member.objects.filter(id=u).first()
     ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
     dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
     weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
-    contex = prepare_user_context(member)
+    contex = prepare_user_context(member, revisionNext=rid)
     contex['dailyViolations'] = dailyViolations
     contex['weeklyViolations'] = weeklyViolations
+
     return render(request, 'user.html', prepare_default_context(request, contex))
-
-
-@require_safe
-def user_simple(request):
-    if request.GET.get('id', None) is not None:
-        member = Member.objects.filter(id=request.GET.get('id')).first()
-        ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(
-            member=member)
-        dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
-        contex = prepare_user_context(member)
-        contex['dailyViolations'] = dailyViolations
-        return render(request, 'user.html', prepare_default_context(request, contex))
-    messages.info(request, 'Unauthorized access. Returning back to the main page!')
-    return HttpResponseRedirect(reverse("shifter:index"))
 
 
 @require_safe
@@ -264,6 +254,31 @@ def shifts(request):
     else:
         shiftIds = ShiftID.objects.all().order_by('-label')
         dataToReturn = {'ids': [id.label for id in shiftIds]}
+    return JsonResponse(dataToReturn)
+
+
+@require_safe
+def scheduled_work_time(request):
+    rev = Revision.objects.filter(valid=True).order_by("-number")[0]
+    startDate = None
+    endDate = None
+    try:
+        if request.GET.get('start', None) is not None:
+            startDate = datetime.datetime.strptime(request.GET.get('start'), DATE_FORMAT)
+        if request.GET.get('end', None) is not None:
+            endDate = datetime.datetime.strptime(request.GET.get('end'), DATE_FORMAT)
+        if request.GET.get('rev', None) is not None:
+            revId=int(request.GET.get('rev'))
+            rev = Revision.objects.filter(valid=True).filter(number=revId)[0]
+    except ValueError:
+        pass
+    scheduled_shifts = Shift.objects.filter(revision=rev)\
+                                    .filter(member__role__abbreviation='SL') \
+                                    .order_by('date', 'slot__hour_start', 'member__role__priority')
+    if startDate is not None and endDate is not None:
+        scheduled_shifts = scheduled_shifts.filter(date__gte=startDate) \
+                                            .filter(date__lte=endDate)
+    dataToReturn = find_working_hours(scheduled_shifts, startDate=startDate, endDate=endDate)
     return JsonResponse(dataToReturn)
 
 

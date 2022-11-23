@@ -10,6 +10,7 @@
           {% csrf_token %}
           <div class="form-group">
           <label>Displayed campaigns:</label>
+
           {% for c in campaigns %}
           <br><input class="form-check-input" type="checkbox" name="campaign{{c.id}}" id="campaign{{c.id}}" value="{{c.id}}"
                      {%if c in scheduled_campaigns_list%} checked {%endif%} disabled>
@@ -19,6 +20,7 @@
           </div>
 <!--          <div class="dropdown-divider"></div>-->
 <!--          <button type="submit" class="btn btn-primary" {%if not logged_user %} disabled {%endif%} >Apply</button>-->
+
         </form>
       </li>
 {% endblock %}
@@ -84,6 +86,12 @@
               <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>
               <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>
 
+          </p>
+        <hr>
+          <p>
+          <h5>Newer revisions found for you</h5>
+          {% for one in newer_revisions%}
+            <a class="btn btn-danger" href="/user/rev/{{one.number}}"> <strong>{{one}}</strong> </a> {%endfor%}
           </p>
           <hr>
           <h5>Some inconsistencies</h5>

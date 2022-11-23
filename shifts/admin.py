@@ -41,7 +41,6 @@ class CampaignAdmin(admin.ModelAdmin):
 class SlotAdmin(admin.ModelAdmin):
 
     def move_to_op_TRUE(self, request, queryset):
-
         updated = queryset.update(op=True)
         self.message_user(request, ngettext(
             '%d slots was set to TRUE.',
@@ -50,7 +49,6 @@ class SlotAdmin(admin.ModelAdmin):
         ) % updated, messages.SUCCESS)
 
     def move_to_op_FALSE(self, request, queryset):
-
         updated = queryset.update(op=False)
         self.message_user(request, ngettext(
             '%d slots was set to FALSE.',
@@ -76,14 +74,14 @@ class ShiftIDAdmin(admin.ModelAdmin):
     list_display = [
         'label',
         'date_created'
-        ]
+    ]
     ordering = ('-label',)
 
 
 @admin.register(Shift)
 class ShiftAdmin(admin.ModelAdmin):
 
-    def move_to_newest_revision(self, request, queryset):
+    def MOVE_to_newest_VALID_revision(self, request, queryset):
         last_season = Revision.objects.filter(valid=True).order_by('-number').first()
         updated = queryset.update(revision=last_season)
         self.message_user(request, ngettext(
@@ -93,8 +91,22 @@ class ShiftAdmin(admin.ModelAdmin):
         ) % updated, messages.SUCCESS)
         self.description = 'Move selected shifts to the latest revision'
 
+    def COPY_to_newest_TEMP_revision(self, request, queryset):
+        last_rev = Revision.objects.order_by('-number').first()
+        # updated = queryset.update(revision=last_rev)
+        for one in queryset:
+            _copy_shift(one, last_rev)
+        self.description = 'Copy selected shifts to the latest temp revision'
 
-    def move_to_default_slot(self, request, queryset):
+    def MERGE_to_newest_VALID_revision(self, request, queryset):
+        last_rev = Revision.objects.filter(valid=True).order_by('-number').first()
+        # updated = queryset.update(revision=last_rev)
+        for one in queryset:
+            print(one)
+            # TODO finish the actual merge back to the ACTIVE revision
+        self.description = 'Merge back selected shifts to the latest valid revision'
+
+    def UPDATE_to_default_slot_NWH(self, request, queryset):
         slot = Slot.objects.filter(abbreviation='NWH').first()
         # TODO consider changing mode to include 'default' field
         updated = queryset.update(slot=slot)
@@ -117,7 +129,10 @@ class ShiftAdmin(admin.ModelAdmin):
 
     list_filter = ('campaign', 'revision', 'csv_upload_tag', 'slot', 'member__team', 'member__role', 'role', 'member')
     ordering = ('-date',)
-    actions = (move_to_newest_revision, move_to_default_slot)
+    actions = (UPDATE_to_default_slot_NWH,
+               MOVE_to_newest_VALID_revision,
+               MERGE_to_newest_VALID_revision,
+               COPY_to_newest_TEMP_revision)
 
     def _member(self, object):
         return '{} ({})'.format(object.member.username, object.member.team)
@@ -132,4 +147,17 @@ class ShiftRoleAdmin(admin.ModelAdmin):
     list_display = [
         'name',
         'abbreviation',
-        ]
+    ]
+
+
+def _copy_shift(oldShift, last_rev):
+    shift = Shift()
+    shift.campaign = oldShift.campaign
+    shift.role = oldShift.role
+    shift.revision = last_rev
+    shift.date = oldShift.date
+    shift.slot = oldShift.slot
+    shift.member = oldShift.member
+    shift.csv_upload_tag = oldShift.csv_upload_tag
+    shift.save()
+    return shift

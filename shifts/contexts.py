@@ -56,11 +56,15 @@ def prepare_default_context(request, contextToAdd):
     return context
 
 
-def prepare_user_context(member):
+def prepare_user_context(member, revisionNext=None):
     currentMonth = datetime.datetime.now()
     nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
+    newer_revisions = Revision.objects.filter(date_start__gt=revision.date_start).order_by("-number")
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision).order_by("-date")
+    future_scheduled_shifts = []
+    if revisionNext is not None:
+        future_scheduled_shifts = Shift.objects.filter(member=member, revision=revisionNext).order_by("-date")
 
     shift2codes = get_date_code_counts(scheduled_shifts)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
@@ -70,6 +74,8 @@ def prepare_user_context(member):
         'nextmonth': nextMonth.strftime(MONTH_NAME),
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
+        'future_scheduled_shifts': future_scheduled_shifts,
+        'newer_revisions': newer_revisions,
         'campaigns': Campaign.objects.filter(revision=revision),
         'hrcodes': shift2codes,
         'hrcodes_summary': count_total(shift2codes)

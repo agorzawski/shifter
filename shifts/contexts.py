@@ -6,7 +6,7 @@ from shifts.models import SIMPLE_DATE, MONTH_NAME, DATE_FORMAT
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
 import os
 import datetime
-
+from guardian.shortcuts import get_users_with_perms, get_objects_for_user
 from shifter.settings import MAIN_PAGE_HOME_BUTTON, APP_REPO, APP_REPO_ICON, CONTROL_ROOM_PHONE_NUMBER, WWW_EXTRA_INFO, \
     SHIFTER_PRODUCTION_INSTANCE, SHIFTER_TEST_INSTANCE, PHONEBOOK_NAME, STOP_DEV_MESSAGES, DEFAULT_SHIFT_SLOT
 
@@ -30,6 +30,9 @@ def prepare_default_context(request, contextToAdd):
                       .format(SHIFTER_PRODUCTION_INSTANCE), )
     for oneShifterMessages in ShifterMessage.objects.filter(valid=True).order_by('-number'):
         messages.warning(request, oneShifterMessages.description)
+
+    rota_maker_for = get_objects_for_user(request.user, 'members.view_desiderata')
+
     context = {
         'logged_user': request.user.is_authenticated,
         'defaultDate': date.strftime(DATE_FORMAT),
@@ -46,6 +49,7 @@ def prepare_default_context(request, contextToAdd):
         'controlRoomPhoneNumber': CONTROL_ROOM_PHONE_NUMBER,
         'DEFAULT_SHIFT_SLOT': Slot.objects.get(abbreviation=DEFAULT_SHIFT_SLOT),
         'wwwWithMoreInfo': WWW_EXTRA_INFO,
+        'rota_maker_for': rota_maker_for,
     }
     for one in contextToAdd.keys():
         context[one] = contextToAdd[one]
@@ -119,6 +123,7 @@ def prepare_team_context(request, member=None, team=None, extraContext=None):
             memberSummary.append(result.get(oneSlot.abbreviation, '--'))
         teamMembersSummary.append(memberSummary)
 
+    rota_maker = get_users_with_perms(team, only_with_perms_in=['view_desiderata'])
     context = {
         'member': member,
         'team': team,
@@ -132,6 +137,7 @@ def prepare_team_context(request, member=None, team=None, extraContext=None):
         'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_shifts_list': scheduled_shifts,
         'scheduled_campaigns_list': scheduled_campaigns,
+        'rota_maker': rota_maker,
     }
     if isinstance(extraContext, dict):
         for one in extraContext.keys():

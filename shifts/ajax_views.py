@@ -16,27 +16,42 @@ def get_revision_name(request: HttpRequest) -> JsonResponse:
     return JsonResponse({'name': str(revision)})
 
 
-@require_safe
-def get_user_events(request: HttpRequest) -> HttpResponse:
-    start_date = request.GET.get('start', None)
-    end_date = request.GET.get('end', None)
-
-    if start_date is None or end_date is None:
-        return HttpResponse({}, content_type="application/json", status=500)
-
-    start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
-    end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
-
+def _get_member(request: HttpRequest):
     member_id = request.GET.get('member', -1)
     if member_id == -1:
         member = request.user
     else:
         member = Member.objects.filter(id=member_id).first()
+    return member
 
-    scheduled_shifts = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first())\
-        .filter(member=member).filter(date__gt=start).filter(date__lt=end)
 
-    calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
+def _get_scheduled_shifts(request: HttpRequest):
+    start_date = request.GET.get('start', None)
+    end_date = request.GET.get('end', None)
+    if start_date is None or end_date is None:
+        return HttpResponse({}, content_type="application/json", status=500)
+    start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
+    end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
+    return Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first())\
+        .filter(member=_get_member(request)).filter(date__gt=start).filter(date__lt=end)
+
+
+@require_safe
+def get_user_events(request: HttpRequest) -> HttpResponse:
+    calendar_events = [d.get_shift_as_json_event() for d in _get_scheduled_shifts(request)]
+    return HttpResponse(json.dumps(calendar_events), content_type="application/json")
+
+
+@require_safe
+def get_user_future_events(request: HttpRequest) -> HttpResponse:
+    calendar_events = [d.get_shift_as_json_event() for d in _get_scheduled_shifts(request)]
+    revisionNext = request.GET.get('revision_next', -1)
+    if revisionNext != -1:
+        revisionNext = Revision.objects.get(number=revisionNext)
+        future_scheduled_shifts = Shift.objects.filter(member=_get_member(request),
+                                                       revision=revisionNext)
+        for d in future_scheduled_shifts:
+            calendar_events.append(d.get_planned_shift_as_json_event())
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 

@@ -32,7 +32,7 @@
           <h1><span class="badge badge-light"> Hello <member_id data-id="{{ member.id }}">{{member}}</member_id></span></h1>
 
           <ul>
-              <li>In the current revision <small>{{revision}}</small> you are scheduled for {{scheduled_shifts_list|length}} shifts.</li>
+<!--              <li>In the current revision <small>{{revision}}</small> you are scheduled for {{scheduled_shifts_list|length}} shifts.</li>-->
               <li>Check out your team  <a href="/t?mid={{member.id}}"> <strong>{{member.team}}</strong> shifts breakdown</a></li>
               {% if user.is_authenticated %}
               <li><a data-toggle="collapse" href="#collapseCodesDiv" role="button"
@@ -82,16 +82,17 @@
               <h5>Dynamic links (one can subscribe with any calendar app):</h5>
           <a class="btn btn-warning" href="ical?mid={{member.id}}">iCal link for you <strong>{{member}}</strong> </a>
               <a class="btn btn-warning" href="ical?tid={{member.team.id}}">iCal link for your team <strong>{{member.team}}</strong> </a>
-              <h5>Static links (once downloaded remain fixed):</h5>
-              <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>
-              <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>
+<!--              <h5>Static links (once downloaded remain fixed):</h5>-->
+<!--              <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>-->
+<!--              <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>-->
 
           </p>
         <hr>
           <p>
-          <h5>Newer revisions found for you</h5>
+          <h5>Newer revisions found:</h5>
           {% for one in newer_revisions%}
-            <a class="btn btn-danger" href="/user/rev/{{one.number}}"> <strong>{{one}}</strong> </a> {%endfor%}
+            {%if future_rev_id%}<future_rev_id data-id="{{ future_rev_id }}"></future_rev_id>{%endif%}
+            <a class="btn btn{%if one.number == future_rev_id%}-danger{%else%}-outline-danger{%endif%}" href="/user/rev/{{one.number}}"> <strong>{{one}}</strong> </a> {%endfor%}
           </p>
           <hr>
           <h5>Some inconsistencies</h5>
@@ -110,7 +111,6 @@
 
 <br>
 
-{% url 'ajax.get_user_events' as the_url %}
 {% include 'calendar.html' with event_source=the_url %}
 {% endblock %}
 

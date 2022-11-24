@@ -125,10 +125,20 @@ class Shift(models.Model):
                  'url': reverse('shifter:user', args=(self.member.id,)),
                  'color': self.slot.color_in_calendar,
                  }
-
         if 'ShiftLeader' in self.member.role.name:
             event['textColor'] = '#E9E72D'
+        return event
 
+    def get_planned_shift_as_json_event(self) -> dict:
+        event = {'id': self.id,
+                 'title': self.get_shift_title(),
+                 'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
+                 'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
+                 'url': reverse('shifter:user', args=(self.member.id,)),
+                 'color': self.slot.color_in_calendar,
+                 'borderColor': 'red',
+                 'textColor':'red',
+                 }
         return event
 
     @cached_property

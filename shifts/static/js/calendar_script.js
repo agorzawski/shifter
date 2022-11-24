@@ -14,6 +14,16 @@ function get_revision(){
     }
 }
 
+function get_revision_next(){
+    let future_rev_tag = $("future_rev_id")
+    console.log(future_rev_tag)
+    if( future_rev_tag.length){
+        return future_rev_tag.data("id");
+    }else{
+        return -1;
+    }
+}
+
 function get_team_id(){
     let team_tag = $("team_id")
     if( team_tag.length){
@@ -78,6 +88,7 @@ $(document).ready(function () {
           return {
             all_roles: $('#all_roles').is(':checked'),
             revision: get_revision(),
+            revision_next: get_revision_next(),
             campaigns: get_selected_campaigns(),
             team: get_team_id(),
             member: get_member_id(),

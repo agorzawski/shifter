@@ -113,11 +113,15 @@ def user(request, u=None, rid=None):
     ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
     dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
     weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
-    contex = prepare_user_context(member, revisionNext=rid)
-    contex['dailyViolations'] = dailyViolations
-    contex['weeklyViolations'] = weeklyViolations
+    context = prepare_user_context(member, revisionNext=rid)
+    context['dailyViolations'] = dailyViolations
+    context['weeklyViolations'] = weeklyViolations
+    context['the_url'] = reverse('ajax.get_user_events')
+    if rid is not None:
+        context['future_rev_id'] = rid
+        context['the_url'] = reverse('ajax.get_user_future_events')
 
-    return render(request, 'user.html', prepare_default_context(request, contex))
+    return render(request, 'user.html', prepare_default_context(request, context))
 
 
 @require_safe

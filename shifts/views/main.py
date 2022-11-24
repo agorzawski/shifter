@@ -128,8 +128,10 @@ def team(request, t=None):
     else:
         teamO = Team.objects.filter(id=t).first()
     context = {'browsable': False}
-    if member.team == teamO:
-        context['browsable'] = True
+
+    if request.user.is_authenticated:
+        if member.team == teamO:
+            context['browsable'] = True
     return render(request, 'team.html',
                   prepare_default_context(request,
                                           prepare_team_context(request,

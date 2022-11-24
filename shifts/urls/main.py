@@ -10,9 +10,8 @@ urlpatterns = [
     path('user/rev/<int:rid>', views.user, name='user'),
     path('user/<int:u>', views.user, name='user'),
     path('user/<int:u>/rev/<int:rid>', views.user, name='user'),
-
     path('team', views.team, name='team'),
-    path('t', views.team_simple, name='team-simple'),  # FIXME add/id/remove?
+    path('team/<int:t>', views.team, name='team-simple'),
     path('calendar.ics', views.icalendar_view, name='calendar'),
     path('ical', views.icalendar, name='calendar_public'),
     path('dates', views.dates, name='dates'),

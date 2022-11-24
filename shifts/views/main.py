@@ -121,41 +121,21 @@ def user(request, u=None, rid=None):
 
 
 @require_safe
-@login_required
-def team(request):
+def team(request, t=None):
     member = request.user
-    context = {'browsable': True}
+    if t is None:
+        teamO = member.team
+    else:
+        teamO = Team.objects.filter(id=t).first()
+    context = {'browsable': False}
+    if member.team == teamO:
+        context['browsable'] = True
     return render(request, 'team.html',
                   prepare_default_context(request,
                                           prepare_team_context(request,
                                                                member=member,
-                                                               team=None,
+                                                               team=teamO,
                                                                extraContext=context)))
-
-
-@require_safe
-def team_simple(request):
-    if request.GET.get('mid', None) is not None:
-        member = Member.objects.filter(id=request.GET.get('mid')).first()
-        context = {'browsable': False}
-        return render(request, 'team.html',
-                      prepare_default_context(request,
-                                              prepare_team_context(request,
-                                                                   member=member,
-                                                                   team=None,
-                                                                   extraContext=context)))
-    if request.GET.get('id', None) is not None:
-        team = Team.objects.filter(id=request.GET.get('id')).first()
-        extra_context = {'browsable': False}
-        return render(request, 'team.html',
-                      prepare_default_context(request,
-                                              prepare_team_context(request,
-                                                                   member=None,
-                                                                   team=team,
-                                                                   extraContext=extra_context)))
-
-    messages.info(request, 'Unauthorized access. Returning back to the main page!')
-    return HttpResponseRedirect(reverse("shifter:index"))
 
 
 @require_safe

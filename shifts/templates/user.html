@@ -33,7 +33,7 @@
 
           <ul>
 <!--              <li>In the current revision <small>{{revision}}</small> you are scheduled for {{scheduled_shifts_list|length}} shifts.</li>-->
-              <li>Check out your team  <a href="/t?mid={{member.id}}"> <strong>{{member.team}}</strong> shifts breakdown</a></li>
+              <li>Check out your team  <a href="/team/{{member.team.id}}"> <strong>{{member.team}}</strong> shifts breakdown</a></li>
               {% if user.is_authenticated %}
               <li><a data-toggle="collapse" href="#collapseCodesDiv" role="button"
                  aria-expanded="false" aria-controls="collapseCodesDiv">

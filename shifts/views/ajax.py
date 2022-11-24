@@ -4,7 +4,7 @@ from django.views.decorators.http import require_safe
 from shifts.models import *
 import datetime
 from members.models import Team
-from .hrcodes import public_holidays, public_holidays_special
+from shifts.hrcodes import public_holidays, public_holidays_special
 from shifts.models import SIMPLE_DATE
 import json
 
@@ -128,6 +128,7 @@ def get_holidays(request: HttpRequest) -> HttpResponse:
 
     calendar_events = [{'start': d.strftime(format=SIMPLE_DATE),
                         'end': d.strftime(format=SIMPLE_DATE),
-                        'overlap': False,
+                        'overlap': True,
+                        'color': "#8fdf82",
                         'display': 'background'} for d in ph]
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")

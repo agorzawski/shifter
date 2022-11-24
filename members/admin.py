@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import ugettext_lazy as _
 
 from members.models import Member, Team, Role
+from guardian.admin import GuardedModelAdmin
 
 
 @admin.register(Member)
@@ -50,7 +51,7 @@ class MemberAdmin(UserAdmin):
 
 
 @admin.register(Team)
-class TeamAdmin(admin.ModelAdmin):
+class TeamAdmin(GuardedModelAdmin):
     model = Team
     list_display = ['name']
 

@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from . import ajax_views
+from shifts.views import ajax as ajax_views
 
 urlpatterns = [
     path('get_events', ajax_views.get_events, name='ajax.get_events'),

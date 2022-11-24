@@ -17,10 +17,11 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path('planning/', include('shifts.urls')),
+    path('planning/', include('shifts.urls.main')),
     path('', include('shifts.urls')),
-    path('ajax/', include('shifts.ajax')),
+    path('ajax/', include('shifts.urls.ajax')),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),  # new
     path('options/', include('django.contrib.auth.urls')),
+    path('desiderata/', include('shifts.urls.desiderata'))
 ]

@@ -20,9 +20,12 @@ class ShifterMessageAdmin(admin.ModelAdmin):
 class RevisionAdmin(admin.ModelAdmin):
     model = Revision
     list_display = [
+        'name',
         'number',
         'date_start',
         'valid',
+        'ready_for_preview',
+        'merged',
     ]
 
 

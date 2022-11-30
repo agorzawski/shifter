@@ -16,3 +16,4 @@ class AssetBookingFormClosing(forms.ModelForm):
         model = AssetBooking
         fields = ('after_comment',)
 
+

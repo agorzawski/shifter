@@ -14,11 +14,12 @@ import members.models
 from members.models import Team
 from shifts.models import *
 from assets.models import *
+from studies.models import *
 from assets.forms import AssetBookingForm, AssetBookingFormClosing
 import datetime
 import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
-from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
+from shifts.contexts import prepare_default_context,prepare_user_context, prepare_team_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 
@@ -55,6 +56,9 @@ def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None
     scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
                             .filter(role=None)\
                             .order_by('date', 'slot__hour_start', 'member__role__priority')
+
+    scheduled_studies = StudyRequest.objects.filter(state__in=["B","D"]).order_by('slot_start', 'priority')
+
     if all_roles:
         scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
                                 .order_by('date', 'slot__hour_start', 'member__role__priority')
@@ -63,6 +67,7 @@ def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None
         'revisions': revisions,
         'displayed_revision': revision,
         'scheduled_shifts_list': scheduled_shifts,
+        'scheduled_studies_list': scheduled_studies,
         'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_campaigns_list': scheduled_campaigns,
         'all_roles': all_roles
@@ -113,12 +118,16 @@ def todays(request):
                                       slotToGo=slotToGo,
                                       hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
+    todayAM=datetime.datetime.today().replace(hour=0, minute=0, second=1, microsecond=0)
+    todayPM = datetime.datetime.today().replace(hour=23, minute=59, second=00, microsecond=0)
+    scheduled_studies = StudyRequest.objects.filter(state__in=["B","D"],slot_start__gte=todayAM,slot_end__lte=todayPM).order_by('slot_start', 'priority')
     context = {'today': activeShift['today'],
                'checkTime': activeShift['today'].time(),
                'activeSlot': activeShift['activeSlot'],
                'activeSlots': activeShift['activeSlots'],
                'currentTeam': activeShift['currentTeam'],
-               'shiftID': activeShift['shiftID'], }
+               'shiftID': activeShift['shiftID'],
+               'activeStudies': scheduled_studies}
     return render(request, 'today.html', prepare_default_context(request, context))
 
 
@@ -199,14 +208,18 @@ def icalendar(request):
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
 
     shifts = Shift.objects.filter(member=member, revision=revision)
+    studies = StudyRequest.objects.filter(member=member,state__in=["B","D"])
     if team is not None:
         shifts = Shift.objects.filter(member__team=team, revision=revision)
+        studies = StudyRequest.objects.filter(member__team=team,state__in=["B","D"])
     if team is None and member is None:
         shifts = Shift.objects.filter(revision=revision)
+        studies = None
 
     context = {
         'campaign': 'Exported Shifts',
         'shifts': shifts,
+        'studies': studies,
         'member': member,
         'team': team if not None else member.team,
     }
@@ -240,9 +253,15 @@ def icalendar_view(request):
 
     shifts = Shift.objects.filter(date__lte=monthLastDay, date__gte=monthFirstDay) \
         .filter(member=member, revision=revision)
+
+    StudyFirstDay = datetime.datetime.combine(monthFirstDay, datetime.time(hour=0, minute=0, second=1, microsecond=0))
+    StudyLasttDay = datetime.datetime.combine(monthLastDay, datetime.time(hour=23, minute=59, second=59, microsecond=0))
+    studies = StudyRequest.objects.filter(slot_end__lte=StudyLasttDay, slot_start__gte=StudyFirstDay).filter(member=member,state__in=["B","D"])
+
     context = {
         'campaign': 'Exported Shifts',
         'shifts': shifts,
+        'studies': studies,
         'member': member,
     }
     body = render_to_string('icalendar.ics', context)

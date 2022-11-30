@@ -28,7 +28,7 @@
       },
       headerToolbar: { left: 'prev,today,next',
                 center:'title',
-                right: 'legend, dayGridMonth,dayGridWeek',
+                right: 'legend, dayGridMonth,timeGridWeek',
               },
       //initialView: 'dayGridWeek', //TODO
       columnFormat: {
@@ -61,6 +61,18 @@
             url:'/u?id={{shift.member.id}}',
             {% if 'ShiftLeader' in shift.member.role.name %} textColor: '#E9E72D',{% endif %}
             color:'{{shift.slot.color_in_calendar}}',
+            },
+            {% endfor %}
+            {% for study in scheduled_studies_list %}
+            {
+            id: {{forloop.counter}}, //shifts are sorted with roles
+            title: '{{study.member.first_name}} for {{study.title}}',
+            start:'{{ study.study_start }}',
+            end:'{{ study.study_end }}',
+            url:'/u?id={{study.member.id}}',
+            color: '#F5D959',
+            textColor: '#676767',
+            {% if study.priority %} borderColor: '#FF3333', textColor: '#FF3333', {% endif %}
             },
             {% endfor %}
             {% for ph in publicHolidays %}

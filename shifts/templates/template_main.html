@@ -1,21 +1,13 @@
+{%  load static %}
 <!DOCTYPE html>
 <html lang='en' >
 <head>
 <meta charset='UTF-8'>
 <title>Shifter - shifts planner and viewer</title>
+    <link rel="stylesheet" href="{% static '@fortawesome/fontawesome-free/css/all.min.css'%}">
+    <link rel="stylesheet" href="{% static 'bootstrap/dist/css/bootstrap.min.css'%}">
+    <link rel="stylesheet" href="{% static 'fullcalendar/main.min.css'%}">
 
-  <link href='https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.7/semantic.min.css' rel='stylesheet'>
-  <link href='https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.1/css/all.css' rel='stylesheet'>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.css" integrity="sha256-eTXm0PcnjHYM1YDUkEQ3vYfZxF1BffpYGWz2lFqmCrg=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.css" integrity="sha256-z7G6BBWwBOXahthaod21GyxfNhxiQFBVn6WQYHRs9W8=" crossorigin="anonymous">
-  <link rel="stylesheet" href="/static/accordion.css" %}">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.9.0/main.js" integrity="sha256-9+heQ0nDVUAhO3sCt1pKLQSmV0gSo7QcQmtJ2ZCT55g=" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script>
- if (document.location.search.match(/type=embed/gi)) {
-       window.parent.postMessage('resize', '*');
-     }
-</script>
 </head>
 
 <body translate='no'>
@@ -61,13 +53,26 @@
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Teams View</a>
         <div class="dropdown-menu">
-            <a class="dropdown-item"  href='/team' >My Team detailed Summary {% if not logged_user %} {% load static %}
+            <a class="dropdown-item"  href='/team' >My Team detailed Summary {% if not logged_user %}
+            <img src="{% static 'img/padlock.png' %}" height="20" alt=""><span class="badge bg-success">Login required</span> {%endif%} </a>
+            <a class="dropdown-item"  href='{%  url 'desiderata.user' %}' >My Desiderata {% if not logged_user %}
             <img src="{% static 'img/padlock.png' %}" height="20" alt=""><span class="badge bg-success">Login required</span> {%endif%} </a>
             <div class="dropdown-divider"></div>
-            {% for c in teams %}<a class="dropdown-item"  href="/t?id={{c.id}}"> {{c.name}} </a>
+            {% for c in teams %}<a class="dropdown-item"  href="/team/{{c.id}}"> {{c.name}} </a>
             {% endfor%}
         </div>
       </li>
+
+    {%  if rota_maker_for %}
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Rota-maker</a>
+        <div class="dropdown-menu">
+            {% for a_managed_team in rota_maker_for %}
+                <a class="dropdown-item"  href="{%  url 'desiderata.team_view' team_id=a_managed_team.id %}"> {{a_managed_team.name}} </a>
+            {% endfor%}
+        </div>
+      </li>
+    {%  endif %}
     </ul>
     <ul class="navbar-nav">
     {% block 'extra_menu_item' %}
@@ -124,11 +129,14 @@
 
 {% block 'body' %}
 {% endblock %}
-
-</body>
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" integrity="sha256-7dA7lq5P94hkBsWdff7qobYkp9ope/L5LQy2t/ljPLo=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="{% static 'jquery/dist/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'fullcalendar/main.min.js' %}"></script>
 <script>
+ if (document.location.search.match(/type=embed/gi)) {
+       window.parent.postMessage('resize', '*');
+     }
+
   document.onreadystatechange = function () {
   var state = document.readyState
   if (state == 'interactive') {
@@ -142,4 +150,9 @@
   }
 }
 </script>
+
+{%  block js %}
+{% endblock %}
+
+</body>
 </html>

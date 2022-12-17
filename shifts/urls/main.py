@@ -1,17 +1,17 @@
 from django.urls import include, path
 
-from . import views
+from shifts.views import main as views
 
-app_name = 'shifter'
-handler404 = 'shifts.views.page_not_found'
+
 urlpatterns = [
     path('', views.index, name='index'),
-    path('planning', views.index_post, name='index-post'),
     path('today', views.todays, name='today'),
     path('user', views.user, name='user'),
-    path('u', views.user_simple, name='user-simple'),
+    path('user/rev/<int:rid>', views.user, name='user'),
+    path('user/<int:u>', views.user, name='user'),
+    path('user/<int:u>/rev/<int:rid>', views.user, name='user'),
     path('team', views.team, name='team'),
-    path('t', views.team_simple, name='team-simple'),
+    path('team/<int:t>', views.team, name='team-simple'),
     path('calendar.ics', views.icalendar_view, name='calendar'),
     path('ical', views.icalendar, name='calendar_public'),
     path('dates', views.dates, name='dates'),
@@ -19,6 +19,7 @@ urlpatterns = [
     path('phonebook', views.phonebook, name='phonebook'),
     path('phonebook-post', views.phonebook_post, name='phonebook-post'),
     path('ioc-update', views.ioc_update, name='ioc-update'),
+    path('scheduled-work-time', views.scheduled_work_time, name='scheduled_work_time'),
     path('shifts', views.shifts, name='shifts'),
     path('shift-upload-csv', views.shifts_upload, name="shift-upload"),
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),

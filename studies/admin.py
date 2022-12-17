@@ -3,7 +3,7 @@ from django.contrib import admin
 # Register your models here.
 from .models import StudyRequest
 
-@admin.action(description='Mark selected studies as priority')
+#@admin.action(description='Mark selected studies as priority')
 def make_priority(modeladmin, request, queryset):
     queryset.update(priority=True)
 

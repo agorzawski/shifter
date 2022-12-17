@@ -106,13 +106,32 @@ $(document).ready(function () {
         alert('there was an error while fetching public holidays!');
       },
 
+    },
+    {
+      id: "studies",
+      url: $('#calendar').data('source-studies'),
+      extraParams: function() {
+          return {
+            show_studies: $('#show_studies').is(':checked'),
+            team: get_team_id(),
+            member: get_member_id(),
+          };
+        },
+      failure: function() {
+        alert('there was an error while fetching studies planning!');
+      },
     }
+
   ],
     });
     calendar.render();
 
     $('#all_roles').change(function() {
         calendar.getEventSourceById('shifts').refetch()
+    });
+
+    $('#show_studies').change(function() {
+        calendar.getEventSourceById('studies').refetch()
     });
 
     $('#revision').change(function() {

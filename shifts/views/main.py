@@ -175,10 +175,10 @@ def icalendar(request):
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
 
     shifts = Shift.objects.filter(member=member, revision=revision)
-    studies = StudyRequest.objects.filter(member=member,state__in=["B","D"])
+    studies = StudyRequest.objects.filter(member=member,state__in=["B", "D"])
     if team is not None:
         shifts = Shift.objects.filter(member__team=team, revision=revision)
-        studies = StudyRequest.objects.filter(member__team=team,state__in=["B","D"])
+        studies = StudyRequest.objects.filter(member__team=team,state__in=["B", "D"])
     if team is None and member is None:
         shifts = Shift.objects.filter(revision=revision)
         studies = None

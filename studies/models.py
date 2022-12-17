@@ -181,3 +181,14 @@ class StudyRequest(models.Model):
     @cached_property
     def study_time_end(self) -> str:
         return self.slot_end.strftime(SIMPLE_TIME)
+
+    def get_study_as_json_event(self) -> dict:
+        event = {'id': self.id,
+                 'title': self.member.first_name + ' for ' + self.title,
+                 'start': self.study_start,
+                 'end': self.study_end,
+                 'color': '#F5D959',
+                 'textColor': '#FF3333' if self.priority else '#676767',
+                 'borderColor': '#FF3333' if self.priority else '#BBBBBB'
+        }
+        return event

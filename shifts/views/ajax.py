@@ -2,6 +2,7 @@ from django.http import HttpResponse, JsonResponse
 from django.http import HttpRequest
 from django.views.decorators.http import require_safe
 from shifts.models import *
+from studies.models import *
 import datetime
 from members.models import Team
 from shifts.hrcodes import public_holidays, public_holidays_special
@@ -132,3 +133,26 @@ def get_holidays(request: HttpRequest) -> HttpResponse:
                         'color': "#8fdf82",
                         'display': 'background'} for d in ph]
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
+
+
+@require_safe
+def get_studies(request: HttpRequest) -> HttpResponse:
+    team_id = int(request.GET.get('team', -1))
+    member_id = int(request.GET.get('member', -1))
+    show_studies = request.GET.get('show_studies', False)
+    show_studies = True if show_studies == "true" else False
+
+    studies_events = []
+    if team_id < 0 and member_id < 0:
+        if show_studies:
+            scheduled_studies = StudyRequest.objects.filter(
+                                                            state__in=["B", "D"]).order_by('slot_start', 'priority')
+            studies_events = [d.get_study_as_json_event() for d in scheduled_studies]
+    if team_id > 0:
+        pass  # just omit the studies on the teams view
+    if member_id > 0:
+        scheduled_studies = StudyRequest.objects.filter(member=_get_member(request),
+                                                        state__in=["B", "D"]).order_by('slot_start', 'priority')
+        studies_events = [d.get_study_as_json_event() for d in scheduled_studies]
+
+    return HttpResponse(json.dumps(studies_events), content_type="application/json")

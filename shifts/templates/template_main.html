@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="{% static '@fortawesome/fontawesome-free/css/all.min.css'%}">
     <link rel="stylesheet" href="{% static 'bootstrap/dist/css/bootstrap.min.css'%}">
     <link rel="stylesheet" href="{% static 'fullcalendar/main.min.css'%}">
+    <link rel="stylesheet" href="/static/accordion.css" %}">
+
 </head>
 
 <body translate='no'>
@@ -33,6 +35,11 @@
       <li class="nav-item">
         <a class="nav-link" href='/phonebook'> {% load static %}
       <img src="{% static 'img/phonebook.png' %}" height="20" alt=""/> {{PHONEBOOK_NAME}}</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href='/studies/request'> {% load static %}
+      <img src="{% static 'img/study.png' %}" height="20" alt=""/> Request Study {% if not logged_user %} {% load static %}
+      <img src="{% static 'img/padlock.png' %}" height="20" alt=""><span class="badge bg-success">Login required</span> {%endif%}</a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href='/assets'> {% load static %}
@@ -99,7 +106,7 @@
       </li>
        {%if logged_user %}<li class="nav-item">
 <!--        <a class="nav-link" href="options/logout"><span class="badge bg-warning">Logout</span></a>-->
-        <a class="btn btn-warning my-2 my-sm-0" type="submit" href="options/logout">Logout</a>
+        <a class="btn btn-warning my-2 my-sm-0" type="submit" href="/options/logout">Logout</a>
       </li>
       <li class="nav-item">
         &nbsp&nbsp

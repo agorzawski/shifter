@@ -2,6 +2,7 @@ from django.db.models import Q, Count
 import django.contrib.messages as messages
 from members.models import Member, Team
 from shifts.models import Campaign, Revision, Shift, Slot, ShifterMessage
+from studies.models import StudyRequest
 from shifts.models import SIMPLE_DATE, MONTH_NAME, DATE_FORMAT
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
 import os
@@ -62,7 +63,7 @@ def prepare_user_context(member, revisionNext=None):
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     newer_revisions = Revision.objects.filter(date_start__gt=revision.date_start).order_by("-number")
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision).order_by("-date")
-
+    # scheduled_studies = StudyRequest.objects.filter(member=member,state__in=["B","D"]).order_by('slot_start', 'priority')
     shift2codes = get_date_code_counts(scheduled_shifts)
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     context = {
@@ -106,6 +107,7 @@ def prepare_team_context(request, member=None, team=None, extraContext=None):
         team = member.team
     teamMembers = Member.objects.filter(team=team)
     scheduled_shifts = Shift.objects.filter(member__team=team, revision=revision)
+    scheduled_studies = StudyRequest.objects.filter(state__in=["B","D"],member__team=team).order_by('slot_start', 'priority')
     scheduled_campaigns = Campaign.objects.all().filter(revision=revision)
     # TODO get this outside the main code, maybe another flag in the Slot? TBC
     slotLookUp = ['NWH', 'PM', 'AM', 'EV', 'NG', 'LMS', 'LES', 'D', 'A']
@@ -131,6 +133,7 @@ def prepare_team_context(request, member=None, team=None, extraContext=None):
         'lastmonth_label': lastMonth.strftime(MONTH_NAME),
         'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_shifts_list': scheduled_shifts,
+        'scheduled_studies_list': scheduled_studies,
         'scheduled_campaigns_list': scheduled_campaigns,
         'rota_maker': rota_maker,
     }

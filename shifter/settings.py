@@ -32,6 +32,7 @@ ALLOWED_HOSTS = list(filter(None, os.getenv('DJANGO_ALLOWED_HOSTS', "").split(',
 INSTALLED_APPS = [
     'members.apps.MembersConfig',
     'shifts.apps.ShiftsConfig',
+    'studies.apps.StudiesConfig',
     'assets.apps.AssetsConfig',
     'crispy_forms',
     'django.contrib.admin',
@@ -147,7 +148,7 @@ AUTH_USER_MODEL = 'members.Member'
 
 LOGIN_REDIRECT_URL = '/user'
 LOGOUT_REDIRECT_URL = '/'
-LOGIN_URL = 'options/login/'
+LOGIN_URL = '/options/login/'
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/

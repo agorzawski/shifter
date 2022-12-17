@@ -91,7 +91,7 @@
           <p>
           <h5>Newer plans available for the preview:</h5>
           {% for one in newer_revisions%}
-            {% if one.ready_for_preview %}{%if future_rev_id%}<future_rev_id data-id="{{ future_rev_id }}"></future_rev_id>{%endif%}
+            {% if one.ready_for_preview and not one.merged %}{%if future_rev_id%}<future_rev_id data-id="{{ future_rev_id }}"></future_rev_id>{%endif%}
             <a class="btn btn{%if one.number == future_rev_id%}-danger{%else%}-outline-danger{%endif%}" href="/user/rev/{{one.number}}"> <strong>{{one}}</strong> </a> {%endif%}{%endfor%}
           </p>
           <hr>

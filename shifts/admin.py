@@ -103,10 +103,8 @@ class ShiftAdmin(admin.ModelAdmin):
 
     def MERGE_to_newest_VALID_revision(self, request, queryset):
         last_rev = Revision.objects.filter(valid=True).order_by('-number').first()
-        # updated = queryset.update(revision=last_rev)
         for one in queryset:
-            print(one)
-            # TODO finish the actual merge back to the ACTIVE revision
+            _copy_shift(one, last_rev)
         self.description = 'Merge back selected shifts to the latest valid revision'
 
     def UPDATE_to_default_slot_NWH(self, request, queryset):

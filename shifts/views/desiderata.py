@@ -54,7 +54,9 @@ def team_view(request: HttpRequest, team_id: int) -> HttpResponse:
 @login_required
 def user(request: HttpRequest) -> HttpResponse:
     member = request.user
-    context = {'browsable': True}
+    desiderata_types = Desiderata.DesiderataType
+    context = {'browsable': True,
+               'desiderata_types': desiderata_types}
     return render(request, 'user_desiderata.html',
                   prepare_default_context(request,
                                           prepare_team_context(request,
@@ -66,17 +68,19 @@ def user(request: HttpRequest) -> HttpResponse:
 @require_safe
 @login_required
 def add(request: HttpRequest) -> HttpResponse:
-
     the_user = request.user
     all_day = True if request.GET.get('allDay', 'false') == 'true' else False
     date_start = datetime.datetime.fromisoformat(request.GET.get('startStr'))
     date_end = datetime.datetime.fromisoformat(request.GET.get('endStr'))
+    event_type = request.GET.get('event_type')
+    assert event_type in Desiderata.DesiderataType
     date_start = make_aware(date_start, timezone.get_current_timezone())
     date_end = make_aware(date_end, timezone.get_current_timezone())
     the_desiderata = Desiderata(start=date_start,
                                 stop=date_end,
                                 member=the_user,
-                                all_day=all_day
+                                all_day=all_day,
+                                type=event_type,
                                 )
     the_desiderata.save()
     return JsonResponse({}, status=200)

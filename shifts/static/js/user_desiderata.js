@@ -1,23 +1,17 @@
+function get_desiderata_type(){
+    return $("#desiderata_type_form input[type='radio']:checked").val();
+}
+
 $(document).ready(function () {
     let calendarEl = document.getElementById('calendar');
     let calendar = new FullCalendar.Calendar(calendarEl, {
         timeZone: 'Europe/Stockholm',
         themeSystem: 'bootstrap',
-        customButtons:
-            {
-            legend:
-                {
-                    text: 'What are the colors?',
-                    click: function() {
-                        $('.collapse').toggle();
-                    }
-                },
-            },
         headerToolbar:
             {
                 left: 'prev,today,next',
                 center:'title',
-                right: 'legend, dayGridMonth,timeGridWeek',
+                right: 'dayGridMonth,timeGridWeek',
             },
         columnFormat:
             {
@@ -32,7 +26,6 @@ $(document).ready(function () {
         selectable: true,
         selectMirror: true,
         snapDuration: '00:30:00',
-        eventColor: '#ab4646',
         select: function(info)
         {
             $.ajax({
@@ -41,7 +34,8 @@ $(document).ready(function () {
                     {
                         "allDay": info.allDay,
                         "startStr": info.startStr,
-                        "endStr": info.endStr
+                        "endStr": info.endStr,
+                        "event_type": get_desiderata_type(),
                     },
                 success: function(response)
                     {

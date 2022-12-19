@@ -94,20 +94,39 @@ class Desiderata(models.Model):
     """
     A Desiderata belongs to a user. By default, a desireta represent a time slot where the user IS NOT available.
     """
+
+    class DesiderataType(models.TextChoices):
+        VACATION = 'vac', 'Vacation'
+        CONFERENCE = 'conf', 'Conference'
+        OTHER = 'other', 'Other'
+
     start = models.DateTimeField()
     stop = models.DateTimeField()
     all_day = models.BooleanField(default=False)
     member = models.ForeignKey(Member, on_delete=CASCADE)
+    type = models.CharField(
+        max_length=10,
+        choices=DesiderataType.choices,
+        default=DesiderataType.VACATION,
+    )
 
     def get_as_json_event(self, team=False):
         event = {'id': self.id,
-                 'title': "Unavailable (All day)" if self.all_day else "Unavailable",
                  'start': timezone.localtime(self.start).strftime(format=DATE_FORMAT_FULL),
                  'end': timezone.localtime(self.stop).strftime(format=DATE_FORMAT_FULL),
                  'allDay': self.all_day,
                  }
+        if self.type == 'vac':
+            event['color'] = '#ab4646'
+            event['title'] = "Vacation (All day)" if self.all_day else "Vacation"
+        elif self.type == 'conf':
+            event['color'] = '#638ef2'
+            event['title'] = "Conference (All day)" if self.all_day else "Conference"
+        else:
+            event['color'] = '#8ff29c'
+            event['title'] = "Unavailable (All day)" if self.all_day else "Unavailable"
         if team:
-            event['title'] = self.member.name + " " + event['title']
+            event['title'] = self.member.name + " - " + event['title']
         return event
 
 

@@ -5,7 +5,7 @@ RUN groupadd -r -g 1000 ops &&\
     useradd --no-log-init -r -g ops -u 1000 ops
 
 RUN apt-get update && \
-    apt-get install -y git && \
+    apt-get install -y git nodejs && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /requirements.txt

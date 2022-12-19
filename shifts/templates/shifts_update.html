@@ -1,6 +1,6 @@
 {% extends 'template_main.html'%}
 {% block 'body' %}
-<div class="col-sm-8 mx-auto">
+<div class="col-sm-8 mx-auto" xmlns:shifter="http://www.w3.org/1999/xhtml">
   <main role="main">
       <h2> Update the campaign shifts</h2>
         This operation, will:
@@ -8,7 +8,7 @@
           <li>update the campaign with selected revision</li>
           <li>create new shifts with adjusted to the new date and assigned with selected revision</li>
       </ul>
-    <form action="{% url "shifter:shift-update-post" %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+    <form action="{% url 'shifter:shift-update-post' %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
     {% csrf_token %}
 
       <div class="form-group">

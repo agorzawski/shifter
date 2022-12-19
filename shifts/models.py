@@ -1,8 +1,10 @@
 from django.db import models
-from django.db.models import DO_NOTHING
+from django.db.models import DO_NOTHING, CASCADE
 
 from members.models import Member
+from django.utils import timezone
 from django.utils.functional import cached_property
+from django.shortcuts import reverse
 import datetime
 from enum import Enum
 
@@ -24,9 +26,12 @@ class Revision(models.Model):
     number = models.AutoField(primary_key=True, blank=True)
     date_start = models.DateTimeField(null=False)
     valid = models.BooleanField()
+    name = models.CharField(max_length=200, default='Default')
+    merged = models.BooleanField(default=False)
+    ready_for_preview = models.BooleanField(default=False)
 
     def __str__(self):
-        return 'v{} from {}'.format(self.number, self.date_start.strftime(SIMPLE_DATE))
+        return 'v{} {}'.format(self.number, self.name)
 
 
 class Campaign(models.Model):
@@ -57,7 +62,7 @@ class Campaign(models.Model):
 
 class Slot(models.Model):
     name = models.CharField(max_length=200)
-    abbreviation = models.CharField(max_length=10, default='AM')
+    abbreviation = models.CharField(unique=True, max_length=10, default='AM')
     id_code = models.CharField(max_length=1, default='A')
     hour_start = models.TimeField(blank=False)
     hour_end = models.TimeField(blank=False)
@@ -85,8 +90,47 @@ class ShiftID(models.Model):
         return '{}'.format(self.label)
 
 
-class Shift(models.Model):
+class Desiderata(models.Model):
+    """
+    A Desiderata belongs to a user. By default, a desireta represent a time slot where the user IS NOT available.
+    """
 
+    class DesiderataType(models.TextChoices):
+        VACATION = 'vac', 'Vacation'
+        CONFERENCE = 'conf', 'Conference'
+        OTHER = 'other', 'Other'
+
+    start = models.DateTimeField()
+    stop = models.DateTimeField()
+    all_day = models.BooleanField(default=False)
+    member = models.ForeignKey(Member, on_delete=CASCADE)
+    type = models.CharField(
+        max_length=10,
+        choices=DesiderataType.choices,
+        default=DesiderataType.VACATION,
+    )
+
+    def get_as_json_event(self, team=False):
+        event = {'id': self.id,
+                 'start': timezone.localtime(self.start).strftime(format=DATE_FORMAT_FULL),
+                 'end': timezone.localtime(self.stop).strftime(format=DATE_FORMAT_FULL),
+                 'allDay': self.all_day,
+                 }
+        if self.type == 'vac':
+            event['color'] = '#ab4646'
+            event['title'] = "Vacation (All day)" if self.all_day else "Vacation"
+        elif self.type == 'conf':
+            event['color'] = '#638ef2'
+            event['title'] = "Conference (All day)" if self.all_day else "Conference"
+        else:
+            event['color'] = '#8ff29c'
+            event['title'] = "Unavailable (All day)" if self.all_day else "Unavailable"
+        if team:
+            event['title'] = self.member.name + " - " + event['title']
+        return event
+
+
+class Shift(models.Model):
     class Moment(Enum):
         START = 0
         END = 1
@@ -106,6 +150,39 @@ class Shift(models.Model):
 
     def __str__(self):
         return '{} {} {}'.format(self.member, self.date, self.slot)
+
+    def get_shift_title(self) -> str:
+        title = f"{self.member.first_name} as "
+        if self.role:
+            title += f"{self.role} ({self.member.role})"
+        else:
+            title += f"{self.member.role}"
+
+        return title
+
+    def get_shift_as_json_event(self) -> dict:
+        event = {'id': self.id,
+                 'title': self.get_shift_title(),
+                 'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
+                 'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
+                 'url': reverse('shifter:user', args=(self.member.id,)),
+                 'color': self.slot.color_in_calendar,
+                 }
+        if 'ShiftLeader' in self.member.role.name:
+            event['textColor'] = '#E9E72D'
+        return event
+
+    def get_planned_shift_as_json_event(self) -> dict:
+        event = {'id': self.id,
+                 'title': self.get_shift_title(),
+                 'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
+                 'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
+                 'url': reverse('shifter:user', args=(self.member.id,)),
+                 'color': self.slot.color_in_calendar,
+                 'borderColor': 'red',
+                 'textColor':'red',
+                 }
+        return event
 
     @cached_property
     def start(self) -> datetime:

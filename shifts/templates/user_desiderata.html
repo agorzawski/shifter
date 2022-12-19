@@ -1,0 +1,36 @@
+{% extends 'template_main.html'%}
+{% load static %}
+
+{% block 'body' %}
+    <div class="col-8 mx-auto">
+    <h1>Desiderata for <member_id data-id="{{ member.id }}">{{member}}</member_id></h1>
+    <p>While creating a new planning, the rota maker assumes you're available all time ! As it's most probably not the
+    case, you can set up here your availability planning. <br>
+    Place slots corresponding to the period you are not available. <strong>This planning is only visible by the
+    rota-maker, shifter admins and you !</strong></p>
+        <div class="row">
+            <div class="col mx-auto">
+                <h4>Desiderata type :</h4>
+                <form id="desiderata_type_form">
+                {%  for x in desiderata_types %}
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="inlineRadioOptions" id="desiderata_type{{ forloop.counter }}" value="{{ x.value }}" {%  if forloop.first %}checked{% endif %}>
+                    <label class="form-check-label" for="desiderata_type{{ forloop.counter }}">{{ x.label }}</label>
+                </div>
+                {% endfor %}
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class='ui container'>
+      <div class='ui grid'>
+        <div class='ui sixteen column'>
+          <div id='calendar' style="padding-top: 10px;" data-delete-event="{% url 'desiderata.delete' %}" data-edit-event="{% url 'desiderata.edit' %}"  data-post-event="{% url 'desiderata.add' %}" data-source-desiderata="{% url 'desiderata.get_user_desiderata' %}" data-source-holidays="{%  url 'ajax.get_holidays' %}"></div>
+        </div>
+      </div>
+    </div>
+{%  endblock 'body' %}
+
+{%  block js %}
+    <script type="text/javascript" src="{% static 'js/user_desiderata.min.js' %}"></script>
+{% endblock %}

@@ -10,6 +10,11 @@ class Team(models.Model):
     def __str__(self):
         return '{}'.format(self.name)
 
+    class Meta:
+        permissions = (
+            ('view_desiderata', 'View Desiderata'),
+        )
+
 
 class Role(models.Model):
     name = models.CharField(max_length=200)

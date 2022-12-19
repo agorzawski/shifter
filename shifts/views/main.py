@@ -14,34 +14,20 @@ import members.models
 from members.models import Team
 from shifts.models import *
 from assets.models import *
+from studies.models import *
 from assets.forms import AssetBookingForm, AssetBookingFormClosing
 import datetime
 import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
-from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
+from shifts.contexts import prepare_default_context,prepare_user_context, prepare_team_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
-from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
-
-
-def page_not_found(request, exception):
-    return render(request, "404.html", {})
+from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
 
 
 @require_safe
 def index(request):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
     return prepare_main_page(request, revisions)
-
-
-@require_http_methods(["POST"])
-@csrf_protect
-def index_post(request):
-    revisions = Revision.objects.filter(valid=True).order_by("-number")
-    revision = Revision.objects.filter(number=request.POST['revision']).first()
-    filtered_campaigns = [int(i) for i in request.POST.getlist('campaign[]')]
-    all_roles = request.POST.get('all_roles', None) is not None
-    return prepare_main_page(request, revisions, revision=revision,
-                             filtered_campaigns=filtered_campaigns, all_roles=all_roles)
 
 
 def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None, all_roles=False):
@@ -52,17 +38,27 @@ def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None
     if filtered_campaigns is not None:
         scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=filtered_campaigns)
 
-    scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
-                            .filter(role=None)\
-                            .order_by('date', 'slot__hour_start', 'member__role__priority')
-    if all_roles:
-        scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
-                                .order_by('date', 'slot__hour_start', 'member__role__priority')
-
+# <<<<<<< HEAD:shifts/views.py
+#     scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
+#                             .filter(role=None)\
+#                             .order_by('date', 'slot__hour_start', 'member__role__priority')
+#
+#     scheduled_studies = StudyRequest.objects.filter(state__in=["B","D"]).order_by('slot_start', 'priority')
+#
+#     if all_roles:
+#         scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
+#                                 .order_by('date', 'slot__hour_start', 'member__role__priority')
+#
+#     context = {
+#         'revisions': revisions,
+#         'displayed_revision': revision,
+#         'scheduled_shifts_list': scheduled_shifts,
+#         'scheduled_studies_list': scheduled_studies,
+# =======
     context = {
         'revisions': revisions,
         'displayed_revision': revision,
-        'scheduled_shifts_list': scheduled_shifts,
+# >>>>>>> development:shifts/views/main.py
         'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_campaigns_list': scheduled_campaigns,
         'all_roles': all_roles
@@ -113,78 +109,58 @@ def todays(request):
                                       slotToGo=slotToGo,
                                       hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
+    todayAM=datetime.datetime.today().replace(hour=0, minute=0, second=1, microsecond=0)
+    todayPM = datetime.datetime.today().replace(hour=23, minute=59, second=00, microsecond=0)
+    scheduled_studies = StudyRequest.objects.filter(state__in=["B","D"],slot_start__gte=todayAM,slot_end__lte=todayPM).order_by('slot_start', 'priority')
     context = {'today': activeShift['today'],
                'checkTime': activeShift['today'].time(),
                'activeSlot': activeShift['activeSlot'],
                'activeSlots': activeShift['activeSlots'],
                'currentTeam': activeShift['currentTeam'],
-               'shiftID': activeShift['shiftID'], }
+               'shiftID': activeShift['shiftID'],
+               'activeStudies': scheduled_studies}
     return render(request, 'today.html', prepare_default_context(request, context))
 
 
 @require_safe
 @login_required
-def user(request):
-    member = request.user
+def user(request, u=None, rid=None):
+    if u is None:
+        member = request.user
+    else:
+        member = Member.objects.filter(id=u).first()
     ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
     dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
     weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
-    contex = prepare_user_context(member)
-    contex['dailyViolations'] = dailyViolations
-    contex['weeklyViolations'] = weeklyViolations
-    return render(request, 'user.html', prepare_default_context(request, contex))
+    context = prepare_user_context(member, revisionNext=rid)
+    context['dailyViolations'] = dailyViolations
+    context['weeklyViolations'] = weeklyViolations
+    context['the_url'] = reverse('ajax.get_user_events')
+    if rid is not None:
+        context['future_rev_id'] = rid
+        context['the_url'] = reverse('ajax.get_user_future_events')
+
+    return render(request, 'user.html', prepare_default_context(request, context))
 
 
 @require_safe
-def user_simple(request):
-    if request.GET.get('id', None) is not None:
-        member = Member.objects.filter(id=request.GET.get('id')).first()
-        ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(
-            member=member)
-        dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
-        contex = prepare_user_context(member)
-        contex['dailyViolations'] = dailyViolations
-        return render(request, 'user.html', prepare_default_context(request, contex))
-    messages.info(request, 'Unauthorized access. Returning back to the main page!')
-    return HttpResponseRedirect(reverse("shifter:index"))
-
-
-@require_safe
-@login_required
-def team(request):
+def team(request, t=None):
     member = request.user
-    context = {'browsable': True}
+    if t is None:
+        teamO = member.team
+    else:
+        teamO = Team.objects.filter(id=t).first()
+    context = {'browsable': False}
+
+    if request.user.is_authenticated:
+        if member.team == teamO:
+            context['browsable'] = True
     return render(request, 'team.html',
                   prepare_default_context(request,
                                           prepare_team_context(request,
                                                                member=member,
-                                                               team=None,
+                                                               team=teamO,
                                                                extraContext=context)))
-
-
-@require_safe
-def team_simple(request):
-    if request.GET.get('mid', None) is not None:
-        member = Member.objects.filter(id=request.GET.get('mid')).first()
-        context = {'browsable': False}
-        return render(request, 'team.html',
-                      prepare_default_context(request,
-                                              prepare_team_context(request,
-                                                                   member=member,
-                                                                   team=None,
-                                                                   extraContext=context)))
-    if request.GET.get('id', None) is not None:
-        team = Team.objects.filter(id=request.GET.get('id')).first()
-        extra_context = {'browsable': False}
-        return render(request, 'team.html',
-                      prepare_default_context(request,
-                                              prepare_team_context(request,
-                                                                   member=None,
-                                                                   team=team,
-                                                                   extraContext=extra_context)))
-
-    messages.info(request, 'Unauthorized access. Returning back to the main page!')
-    return HttpResponseRedirect(reverse("shifter:index"))
 
 
 @require_safe
@@ -199,14 +175,18 @@ def icalendar(request):
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
 
     shifts = Shift.objects.filter(member=member, revision=revision)
+    studies = StudyRequest.objects.filter(member=member,state__in=["B", "D"])
     if team is not None:
         shifts = Shift.objects.filter(member__team=team, revision=revision)
+        studies = StudyRequest.objects.filter(member__team=team,state__in=["B", "D"])
     if team is None and member is None:
         shifts = Shift.objects.filter(revision=revision)
+        studies = None
 
     context = {
         'campaign': 'Exported Shifts',
         'shifts': shifts,
+        'studies': studies,
         'member': member,
         'team': team if not None else member.team,
     }
@@ -240,9 +220,15 @@ def icalendar_view(request):
 
     shifts = Shift.objects.filter(date__lte=monthLastDay, date__gte=monthFirstDay) \
         .filter(member=member, revision=revision)
+
+    StudyFirstDay = datetime.datetime.combine(monthFirstDay, datetime.time(hour=0, minute=0, second=1, microsecond=0))
+    StudyLasttDay = datetime.datetime.combine(monthLastDay, datetime.time(hour=23, minute=59, second=59, microsecond=0))
+    studies = StudyRequest.objects.filter(slot_end__lte=StudyLasttDay, slot_start__gte=StudyFirstDay).filter(member=member,state__in=["B","D"])
+
     context = {
         'campaign': 'Exported Shifts',
         'shifts': shifts,
+        'studies': studies,
         'member': member,
     }
     body = render_to_string('icalendar.ics', context)
@@ -287,6 +273,31 @@ def shifts(request):
     else:
         shiftIds = ShiftID.objects.all().order_by('-label')
         dataToReturn = {'ids': [id.label for id in shiftIds]}
+    return JsonResponse(dataToReturn)
+
+
+@require_safe
+def scheduled_work_time(request):
+    rev = Revision.objects.filter(valid=True).order_by("-number")[0]
+    startDate = None
+    endDate = None
+    try:
+        if request.GET.get('start', None) is not None:
+            startDate = datetime.datetime.strptime(request.GET.get('start'), DATE_FORMAT)
+        if request.GET.get('end', None) is not None:
+            endDate = datetime.datetime.strptime(request.GET.get('end'), DATE_FORMAT)
+        if request.GET.get('rev', None) is not None:
+            revId=int(request.GET.get('rev'))
+            rev = Revision.objects.filter(valid=True).filter(number=revId)[0]
+    except ValueError:
+        pass
+    scheduled_shifts = Shift.objects.filter(revision=rev)\
+                                    .filter(member__role__abbreviation='SL') \
+                                    .order_by('date', 'slot__hour_start', 'member__role__priority')
+    if startDate is not None and endDate is not None:
+        scheduled_shifts = scheduled_shifts.filter(date__gte=startDate) \
+                                            .filter(date__lte=endDate)
+    dataToReturn = find_working_hours(scheduled_shifts, startDate=startDate, endDate=endDate)
     return JsonResponse(dataToReturn)
 
 

@@ -151,8 +151,8 @@ class StudyRequest(models.Model):
     duration = models.IntegerField(default=1,choices=STUDY_DURANTION_CHOICES, null=True, blank=True, help_text='Study duration (30 min steps)')
 
     #Admin variables
-    slot_start = models.DateTimeField(default=datetime.datetime.now())
-    slot_end = models.DateTimeField(default=datetime.datetime.now())
+    slot_start = models.DateTimeField(auto_now_add=True)
+    slot_end = models.DateTimeField(auto_now_add=True)
     priority = models.BooleanField(default=False)
 
     state = models.CharField(max_length=1,

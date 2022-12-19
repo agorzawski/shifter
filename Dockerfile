@@ -18,7 +18,7 @@ RUN python -m venv /venv \
   && pip install --no-cache-dir --upgrade pip \
   && pip install --no-cache-dir -r /requirements.txt
 
-RUN npm install --production
+RUN npm install
 
 COPY --chown=ops:ops . /app/
 

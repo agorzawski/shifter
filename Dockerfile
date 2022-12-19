@@ -24,9 +24,8 @@ WORKDIR /app
 RUN npm install
 CMD ["npm", "start"]
 
-RUN python manage.py collectstatic --noinput
-
 ENV PATH /venv/bin:$PATH
 EXPOSE 8000
 
+RUN python manage.py collectstatic --noinput
 CMD ["python", "/app/manage.py", "runserver", "0.0.0.0:8000"]

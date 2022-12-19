@@ -5,10 +5,12 @@ RUN groupadd -r -g 1000 ops &&\
     useradd --no-log-init -r -g ops -u 1000 ops
 
 RUN apt-get update && \
-    apt-get install -y git && \
-    apt-get install -y nodejs && \
-    npm && \   
+    apt-get install -y git && \ 
     rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y nodejs \
+    npm   
 
 COPY requirements.txt /requirements.txt
 RUN python -m venv /venv \

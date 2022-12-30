@@ -72,6 +72,11 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'shifts.permanent_contexts.operation_crew_context',
+                'shifts.permanent_contexts.useful_contact_context',
+                'shifts.permanent_contexts.application_context',
+                'shifts.permanent_contexts.rota_maker_role',
+                'shifts.permanent_contexts.nav_bar_context',
             ],
         },
     },
@@ -147,7 +152,7 @@ AUTH_USER_MODEL = 'members.Member'
 
 LOGIN_REDIRECT_URL = '/user'
 LOGOUT_REDIRECT_URL = '/'
-LOGIN_URL = 'options/login/'
+LOGIN_URL = '/accounts/login/'
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
@@ -175,10 +180,17 @@ STATICFILES_FINDERS = ['npm.finders.NpmFinder',
 
 NPM_FILE_PATTERNS = {
     'bootstrap': ['dist/css/bootstrap.min.css.map', 'dist/css/bootstrap.min.css',
-                  'dist/js/bootstrap.min.js', 'dist/js/bootstrap.min.js.map'],
+                  'dist/js/bootstrap.bundle.min.js', 'dist/js/bootstrap.bundle.min.js.map'],
     'fullcalendar': ['main.min.css', 'main.min.css.map', 'main.min.js', 'main.min.js.map'],
     'jquery': ['dist/jquery.min.js', 'dist/jquery.min.js.map'],
     '@fortawesome': ['fontawesome-free/*'],
+    'bootstrap-icons': ['*'],
+    'select2': ['dist/css/select2.min.css', 'dist/js/*'],
+    'datatables.net': ['js/jquery.dataTables.min.js'],
+    'datatables.net-select': ['js/dataTables.select.min.js'],
+    'datatables.net-bs5': ['js/dataTables.bootstrap5.min.js', 'css/dataTables.bootstrap5.min.css', 'images/*'],
+    'datatables.net-searchpanes-bs5': ['js/searchPanes.bootstrap5.min.js', 'css/searchPanes.bootstrap5.min.css'],
+    'datatables.net-searchpanes': ['js/dataTables.searchPanes.min.js'],
 }
 
 

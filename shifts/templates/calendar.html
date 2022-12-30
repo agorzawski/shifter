@@ -1,13 +1,3 @@
-<div class='ui container'>
-  <div class='ui grid'>
-    <div class='ui sixteen column'>
-       <div class="collapse" id="collapseExample">
-        <div class="card card-body">
-            <h5>Shift slots</h5>
-            {%for s in slots%}<div style="background-color:{{s.color_in_calendar}};color:#FFFFFF;">{{s.name}} <strong>({{s.abbreviation}})</strong> for <strong>{{s.hour_start}}</strong> - <strong>{{s.hour_end}}</strong> </div>{% endfor%}
-        </div>
-      </div>
+<div class='container'>
       <div id='calendar' style="padding-top: 10px;" data-source-shifts="{{event_source}}" data-source-future-shifts="{%  url 'ajax.get_user_future_events' %}" data-source-holidays="{%  url 'ajax.get_holidays' %}" data-source-revision="{%  url 'ajax.get_revision_name' %}" data-default-date="{{defaultDate}}"></div>
-    </div>
-  </div>
 </div>

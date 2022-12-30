@@ -1,14 +1,10 @@
 function get_selected_campaigns(){
-    let campaigns = [];
-    $.each($("input[name='campaign[]']:checked"), function(){
-        campaigns.push($(this).val());
-    });
-    return campaigns;
+    return $(".displayed_campaigns").val();
 }
 
 function get_revision(){
-    if(document.getElementById('revision') !== null){
-        return $('#revision').find(":selected").val();
+    if(document.getElementById('displayed_revision') !== null){
+        return $(".displayed_revision").val();
     }else{
         return -1;
     }
@@ -16,7 +12,6 @@ function get_revision(){
 
 function get_revision_next(){
     let future_rev_tag = $("future_rev_id")
-    console.log(future_rev_tag)
     if( future_rev_tag.length){
         return future_rev_tag.data("id");
     }else{
@@ -25,7 +20,7 @@ function get_revision_next(){
 }
 
 function get_team_id(){
-    let team_tag = $("team_id")
+    let team_tag = $("#team_id_for_ajax")
     if( team_tag.length){
         return team_tag.data("id");
     }else{
@@ -43,21 +38,22 @@ function get_member_id(){
 }
 
 $(document).ready(function () {
-    get_team_id()
     let calendarEl = document.getElementById('calendar');
     let calendar = new FullCalendar.Calendar(calendarEl, {
-      themeSystem: 'bootstrap',
+      themeSystem: 'bootstrap5',
       customButtons: {
-        legend: {
-          text: 'What are the colors?',
-          click: function() {
-            $('.collapse').toggle();
-          }
-        },
+              myCustomButton: {
+                  text: 'Tools',
+                  click: function() {
+                        myOffcanvas = $('#tools_off_canvas')
+                        var bsOffcanvas = new bootstrap.Offcanvas(myOffcanvas)
+                        bsOffcanvas.show()
+                  }
+    }
       },
       headerToolbar: { left: 'prev,today,next',
                 center:'title',
-                right: 'legend, dayGridMonth,timeGridWeek',
+                right: 'myCustomButton dayGridMonth,timeGridWeek',
               },
       //initialView: 'dayGridWeek', //TODO
       columnFormat: {
@@ -115,7 +111,7 @@ $(document).ready(function () {
         calendar.getEventSourceById('shifts').refetch()
     });
 
-    $('#revision').change(function() {
+    $('#displayed_revision').change(function() {
         calendar.getEventSourceById('shifts').refetch()
         //get revision name :
                 $.ajax({
@@ -130,7 +126,7 @@ $(document).ready(function () {
 
     });
 
-    $(".displayed_campaigns").on("change", "input[type='checkbox']", function() {
+    $(".displayed_campaigns").change( function() {
         calendar.getEventSourceById('shifts').refetch()
     });
 });

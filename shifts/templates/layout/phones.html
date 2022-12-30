@@ -1,0 +1,29 @@
+<div class="fab-container">
+    <div class="fab fab-icon-holder">
+        <i class="fa fa-phone-volume fa-flip-horizontal"></i>
+    </div>
+    <ul class="fab-options">
+    {%  for a_very_important_person in operation_crew %}
+    <li>
+        <span class="fab-label">{{ a_very_important_person.real_role }} : {{ a_very_important_person.member }}</span>
+        <div class="fab-icon-holder">
+            <a href="tel:{{ a_very_important_person.member.mobile }}"> <i class="fa fa-phone fa-flip-horizontal"></i></a>
+        </div>
+    </li>
+    {%  endfor %}
+    <li>
+        <span class="fab-label">MCR</span>
+        <div class="fab-icon-holder">
+           <a href="tel:{{ controlRoomPhoneNumber }}"> <i class="fa fa-phone fa-flip-horizontal"></i></a>
+        </div>
+    </li>
+    {%  for contact in useful_contact %}
+    <li>
+        <span class="fab-label">{{ contact.name }}</span>
+        <div class="fab-icon-holder">
+           <a href="{{ contact }}" target="_blank"> <i class="fa {{ contact.fa_icon }} fa-flip-horizontal"></i></a>
+        </div>
+    </li>
+    {%  endfor %}
+    </ul>
+</div>

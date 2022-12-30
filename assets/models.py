@@ -16,7 +16,7 @@ class Asset(models.Model):
     asset_type = models.ForeignKey(AssetType, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
-        return '{} | {}'.format( self.asset_type.name, self.name)
+        return '{} | {}'.format(self.asset_type.name, self.name)
 
 
 class AssetBooking(models.Model):
@@ -44,3 +44,20 @@ class AssetBooking(models.Model):
 
     def __str__(self):
         return '{} ({}) for {}'.format(self.member, self.asset, self.use_start)
+
+    def asset_as_json(self, user=None):
+        data = {'who': {'member': f'{self.member}', 'team': f'{self.member.team}'},
+                'asset': {'type': f'{self.asset.asset_type.name}', 'name': f'{self.asset.name}'},
+                'use_start': {'display': self.use_start.strftime('%b. %d, %Y, %I:%M%p'), 'order': self.use_start.second},
+                'use_end': {'display': self.use_end.strftime('%b. %d, %Y, %I:%M%p'), 'order': self.use_end.second},
+                'active': "Active" if self.state != AssetBooking.BookingState.RETURNED else "Over",
+                'comment': f'<small> {self.booking_created.strftime("%b. %d, %Y, %I:%M%p")} / {self.booked_by}'
+                           f'</small><br> {self.initial_comment}'}
+        if self.state == 'R':
+            data['closing'] = f"<span class='badge bg-success'>Booking over</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}"
+        else:
+            if self.member != user and not user.is_staff:
+                data['closing'] = '<span class="badge bg-warning">Booking ongoing</span>'
+            else:
+                data['closing'] = f"<a class='btn btn-outline-success' data-book_id={self.id} data-name='{self.asset.asset_type.name} - {self.asset.name}' onclick='test(event)'> End booking </a>"
+        return data

@@ -1,17 +1,18 @@
 from django.urls import include, path
+from django.contrib.auth.decorators import login_required
 
 from shifts.views import main as views
 
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('team/<int:team_id>', views.index, name='team_view'),
+
     path('today', views.todays, name='today'),
     path('user', views.user, name='user'),
     path('user/rev/<int:rid>', views.user, name='user'),
     path('user/<int:u>', views.user, name='user'),
     path('user/<int:u>/rev/<int:rid>', views.user, name='user'),
-    path('team', views.team, name='team'),
-    path('team/<int:t>', views.team, name='team-simple'),
     path('calendar.ics', views.icalendar_view, name='calendar'),
     path('ical', views.icalendar, name='calendar_public'),
     path('dates', views.dates, name='dates'),
@@ -25,7 +26,6 @@ urlpatterns = [
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),
     path('shift-update', views.shifts_update, name="shift-update"),
     path('shift-update-post', views.shifts_update_post, name="shift-update-post"),
-    path('assets', views.assets, name="assets"),
-    path('assets-post', views.assets_post, name="assets-post"),
-    path('assets-post-close', views.assets_post_close, name="assets-post-close"),
+    path('assets', login_required(views.AssetsView.as_view()), name='assets'),
+    path('assets/close', views.assets_close, name='assets-close'),
 ]

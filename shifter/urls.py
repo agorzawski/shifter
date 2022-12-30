@@ -22,6 +22,5 @@ urlpatterns = [
     path('ajax/', include('shifts.urls.ajax')),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),  # new
-    path('options/', include('django.contrib.auth.urls')),
     path('desiderata/', include('shifts.urls.desiderata'))
 ]

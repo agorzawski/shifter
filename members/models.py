@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import cached_property
 
-
 class Team(models.Model):
     name = models.CharField(max_length=200)
 

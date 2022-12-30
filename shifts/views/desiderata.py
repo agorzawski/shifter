@@ -18,7 +18,7 @@ from assets.forms import AssetBookingForm, AssetBookingFormClosing
 import datetime
 import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
-from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
+from shifts.contexts import prepare_default_context, prepare_user_context#, prepare_team_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 import datetime
@@ -41,26 +41,14 @@ def team_view(request: HttpRequest, team_id: int) -> HttpResponse:
     if the_team not in logged_user_manage:
         raise PermissionDenied
     # Here we are sure the team exists, and the user has the right to see the full desiderata
-    context = {'browsable': True}
-    return render(request, 'team_desiderata.html',
-                  prepare_default_context(request,
-                                          prepare_team_context(request,
-                                                               member=logged_user,
-                                                               team=the_team,
-                                                               extraContext=context)))
+    return render(request, 'team_desiderata.html', {'team': the_team})
 
 
 @require_safe
 @login_required
 def user(request: HttpRequest) -> HttpResponse:
     member = request.user
-    context = {'browsable': True}
-    return render(request, 'user_desiderata.html',
-                  prepare_default_context(request,
-                                          prepare_team_context(request,
-                                                               member=member,
-                                                               team=None,
-                                                               extraContext=context)))
+    return render(request, 'user_desiderata.html', {'member': member})
 
 
 @require_safe

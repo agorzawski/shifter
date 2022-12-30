@@ -2,22 +2,12 @@ $(document).ready(function () {
     let calendarEl = document.getElementById('calendar');
     let calendar = new FullCalendar.Calendar(calendarEl, {
         timeZone: 'Europe/Stockholm',
-        themeSystem: 'bootstrap',
-        customButtons:
-            {
-            legend:
-                {
-                    text: 'What are the colors?',
-                    click: function() {
-                        $('.collapse').toggle();
-                    }
-                },
-            },
+        themeSystem: 'bootstrap5',
         headerToolbar:
             {
                 left: 'prev,today,next',
                 center:'title',
-                right: 'legend, dayGridMonth,timeGridWeek',
+                right: 'dayGridMonth,timeGridWeek',
             },
         columnFormat:
             {

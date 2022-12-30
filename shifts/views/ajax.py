@@ -4,6 +4,7 @@ from django.views.decorators.http import require_safe
 from shifts.models import *
 import datetime
 from members.models import Team
+from assets.models import AssetBooking
 from shifts.hrcodes import public_holidays, public_holidays_special
 from shifts.models import SIMPLE_DATE
 import json
@@ -55,27 +56,27 @@ def get_user_future_events(request: HttpRequest) -> HttpResponse:
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 
-@require_safe
-def get_team_events(request: HttpRequest) -> HttpResponse:
-    start_date = request.GET.get('start', None)
-    end_date = request.GET.get('end', None)
-
-    if start_date is None or end_date is None :
-        return HttpResponse({}, content_type="application/json", status=500)
-
-    start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
-    end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
-
-    team_id = request.GET.get('team', -1)
-    if team_id == -1:
-        team = request.user.team
-    else:
-        team = Team.objects.filter(id=int(team_id)).first()
-    revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    scheduled_shifts = Shift.objects.filter(member__team=team, revision=revision)\
-        .filter(date__gt=start).filter(date__lt=end)
-    calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
-    return HttpResponse(json.dumps(calendar_events), content_type="application/json")
+# @require_safe
+# def get_team_events(request: HttpRequest) -> HttpResponse:
+#     start_date = request.GET.get('start', None)
+#     end_date = request.GET.get('end', None)
+#
+#     if start_date is None or end_date is None :
+#         return HttpResponse({}, content_type="application/json", status=500)
+#
+#     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
+#     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
+#
+#     team_id = request.GET.get('team', -1)
+#     if team_id == -1:
+#         team = request.user.team
+#     else:
+#         team = Team.objects.filter(id=int(team_id)).first()
+#     revision = Revision.objects.filter(valid=True).order_by("-number").first()
+#     scheduled_shifts = Shift.objects.filter(member__team=team, revision=revision)\
+#         .filter(date__gt=start).filter(date__lt=end)
+#     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
+#     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 
 @require_safe
@@ -85,6 +86,7 @@ def get_events(request: HttpRequest) -> HttpResponse:
     all_roles = request.GET.get('all_roles', None)
     campaigns = request.GET.get('campaigns', None)
     revision = request.GET.get('revision', None)
+    team_id = request.GET.get('team', -1)
 
     if start_date is None or end_date is None or all_roles is None or campaigns is None or revision is None:
         return HttpResponse({}, content_type="application/json", status=500)
@@ -102,16 +104,28 @@ def get_events(request: HttpRequest) -> HttpResponse:
         revision = Revision.objects.get(valid=True, number=revision)
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
-    scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
-                            .filter(role=None) \
-                            .filter(date__gt=start) \
-                            .filter(date__lt=end) \
-        .order_by('date', 'slot__hour_start', 'member__role__priority')
-    if all_roles:
-        scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns) \
-            .filter(date__gt=start) \
-            .filter(date__lt=end) \
-            .order_by('date', 'slot__hour_start', 'member__role__priority')
+    filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns}
+    if not all_roles:
+        filter_dic['role'] = None
+    if int(team_id) > 0:
+        team = Team.objects.get(id=team_id)
+        filter_dic['member__team'] = team
+    scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+
+    #
+    #
+    #
+    #
+    # scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
+    #                         .filter(role=None) \
+    #                         .filter(date__gt=start) \
+    #                         .filter(date__lt=end) \
+    #     .order_by('date', 'slot__hour_start', 'member__role__priority')
+    # if all_roles:
+    #     scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns) \
+    #         .filter(date__gt=start) \
+    #         .filter(date__lt=end) \
+    #         .order_by('date', 'slot__hour_start', 'member__role__priority')
 
     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
 
@@ -132,3 +146,10 @@ def get_holidays(request: HttpRequest) -> HttpResponse:
                         'color': "#8fdf82",
                         'display': 'background'} for d in ph]
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
+
+
+@require_safe
+def get_assets(request: HttpRequest) -> HttpResponse:
+    bookings = AssetBooking.objects.all().order_by('-use_start')
+    data = {"data": [b.asset_as_json(user=request.user) for b in bookings]}
+    return JsonResponse(data)

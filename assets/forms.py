@@ -25,3 +25,4 @@ class AssetBookingFormClosing(forms.Form):
     booking_id = forms.CharField(widget=forms.HiddenInput(attrs={'id': 'closed_booking_id_to_set',}))
     after_comment = forms.CharField(widget=forms.Textarea)
 
+

@@ -2,6 +2,7 @@ from django.http import HttpResponse, JsonResponse
 from django.http import HttpRequest
 from django.views.decorators.http import require_safe
 from shifts.models import *
+from studies.models import *
 import datetime
 from members.models import Team
 from assets.models import AssetBooking
@@ -56,29 +57,6 @@ def get_user_future_events(request: HttpRequest) -> HttpResponse:
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 
-# @require_safe
-# def get_team_events(request: HttpRequest) -> HttpResponse:
-#     start_date = request.GET.get('start', None)
-#     end_date = request.GET.get('end', None)
-#
-#     if start_date is None or end_date is None :
-#         return HttpResponse({}, content_type="application/json", status=500)
-#
-#     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
-#     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
-#
-#     team_id = request.GET.get('team', -1)
-#     if team_id == -1:
-#         team = request.user.team
-#     else:
-#         team = Team.objects.filter(id=int(team_id)).first()
-#     revision = Revision.objects.filter(valid=True).order_by("-number").first()
-#     scheduled_shifts = Shift.objects.filter(member__team=team, revision=revision)\
-#         .filter(date__gt=start).filter(date__lt=end)
-#     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
-#     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
-
-
 @require_safe
 def get_events(request: HttpRequest) -> HttpResponse:
     start_date = request.GET.get('start', None)
@@ -112,21 +90,6 @@ def get_events(request: HttpRequest) -> HttpResponse:
         filter_dic['member__team'] = team
     scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
 
-    #
-    #
-    #
-    #
-    # scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
-    #                         .filter(role=None) \
-    #                         .filter(date__gt=start) \
-    #                         .filter(date__lt=end) \
-    #     .order_by('date', 'slot__hour_start', 'member__role__priority')
-    # if all_roles:
-    #     scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns) \
-    #         .filter(date__gt=start) \
-    #         .filter(date__lt=end) \
-    #         .order_by('date', 'slot__hour_start', 'member__role__priority')
-
     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
 
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
@@ -153,3 +116,25 @@ def get_assets(request: HttpRequest) -> HttpResponse:
     bookings = AssetBooking.objects.all().order_by('-use_start')
     data = {"data": [b.asset_as_json(user=request.user) for b in bookings]}
     return JsonResponse(data)
+
+
+def get_studies(request: HttpRequest) -> HttpResponse:
+    team_id = int(request.GET.get('team', -1))
+    member_id = int(request.GET.get('member', -1))
+    show_studies = request.GET.get('show_studies', False)
+    show_studies = True if show_studies == "true" else False
+
+    studies_events = []
+    if team_id < 0 and member_id < 0:
+        if show_studies:
+            scheduled_studies = StudyRequest.objects.filter(
+                                                            state__in=["B", "D"]).order_by('slot_start', 'priority')
+            studies_events = [d.get_study_as_json_event() for d in scheduled_studies]
+    if team_id > 0:
+        pass  # just omit the studies on the teams view
+    if member_id > 0:
+        scheduled_studies = StudyRequest.objects.filter(member=_get_member(request),
+                                                        state__in=["B", "D"]).order_by('slot_start', 'priority')
+        studies_events = [d.get_study_as_json_event() for d in scheduled_studies]
+
+    return HttpResponse(json.dumps(studies_events), content_type="application/json")

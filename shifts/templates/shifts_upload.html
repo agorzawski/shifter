@@ -19,7 +19,7 @@
 
           <br>
         <h1> Provide an input</h1>
-        <form action="{% url "shifter:shift-upload-post" %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+        <form action="{% url 'shifter:shift-upload-post' %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
 
         {% csrf_token %}
         <div class="form-group row">

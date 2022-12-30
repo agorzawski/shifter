@@ -102,7 +102,22 @@ $(document).ready(function () {
         alert('there was an error while fetching public holidays!');
       },
 
+    },
+    {
+      id: "studies",
+      url: $('#calendar').data('source-studies'),
+      extraParams: function() {
+          return {
+            show_studies: $('#show_studies').is(':checked'),
+            team: get_team_id(),
+            member: get_member_id(),
+          };
+        },
+      failure: function() {
+        alert('there was an error while fetching studies planning!');
+      },
     }
+
   ],
     });
     calendar.render();
@@ -111,20 +126,10 @@ $(document).ready(function () {
         calendar.getEventSourceById('shifts').refetch()
     });
 
-    $('#displayed_revision').change(function() {
-        calendar.getEventSourceById('shifts').refetch()
-        //get revision name :
-                $.ajax({
-                url: $('#calendar').data('source-revision'),
-                data: {'revision' : $('#revision').find(":selected").val()},
-                success: function(data){
-                    var div_to_change = $('#displayed_revision_name')
-                    div_to_change.empty()
-                    div_to_change.html(data.name)
-                },
-        });
-
+    $('#show_studies').change(function() {
+        calendar.getEventSourceById('studies').refetch()
     });
+
 
     $(".displayed_campaigns").change( function() {
         calendar.getEventSourceById('shifts').refetch()

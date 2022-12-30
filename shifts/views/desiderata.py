@@ -1,30 +1,14 @@
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, HttpRequest
+from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse, HttpResponse, HttpRequest
 from django.shortcuts import render
 
-from django.template.loader import render_to_string
-from django.urls import reverse
-import django.contrib.messages as messages
-from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.http import require_http_methods, require_safe
-from django.db import IntegrityError
+from django.views.decorators.http import require_safe
 
-import members.models
 from members.models import Team
-from shifts.models import *
-from assets.models import *
-from assets.forms import AssetBookingForm, AssetBookingFormClosing
-import datetime
-import phonenumbers
-from shifts.activeshift import prepare_active_crew, prepare_for_JSON
-from shifts.contexts import prepare_default_context, prepare_user_context#, prepare_team_context
-from shifter.settings import DEFAULT_SHIFT_SLOT
-from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 import datetime
 from shifts.models import Desiderata
 from django.utils.timezone import make_aware
-from django.conf import settings
 from django.utils import timezone
 import json
 from django.db.models import Q
@@ -48,23 +32,26 @@ def team_view(request: HttpRequest, team_id: int) -> HttpResponse:
 @login_required
 def user(request: HttpRequest) -> HttpResponse:
     member = request.user
-    return render(request, 'user_desiderata.html', {'member': member})
+    desiderata_types = Desiderata.DesiderataType
+    return render(request, 'user_desiderata.html', {'member': member, 'desiderata_types': desiderata_types})
 
 
 @require_safe
 @login_required
 def add(request: HttpRequest) -> HttpResponse:
-
     the_user = request.user
     all_day = True if request.GET.get('allDay', 'false') == 'true' else False
     date_start = datetime.datetime.fromisoformat(request.GET.get('startStr'))
     date_end = datetime.datetime.fromisoformat(request.GET.get('endStr'))
+    event_type = request.GET.get('event_type')
+    assert event_type in Desiderata.DesiderataType
     date_start = make_aware(date_start, timezone.get_current_timezone())
     date_end = make_aware(date_end, timezone.get_current_timezone())
     the_desiderata = Desiderata(start=date_start,
                                 stop=date_end,
                                 member=the_user,
-                                all_day=all_day
+                                all_day=all_day,
+                                type=event_type,
                                 )
     the_desiderata.save()
     return JsonResponse({}, status=200)

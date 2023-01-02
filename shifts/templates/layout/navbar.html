@@ -27,10 +27,13 @@
                         {% endfor%}
                     </ul>
                 </li>
-                <!-- Assets Link (Login Required) -->
+                <!-- Assets and study Link (Login Required) -->
                 {%  if user.is_authenticated %}
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'assets' %}active{%  endif %}" href="{%  url 'assets' %}"><i class="fa-solid fa-screwdriver-wrench"></i> Assets</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'study_request' %}active{%  endif %}" href="{%  url 'studies:study_request' %}"><i class="fa-solid fa-graduation-cap"></i> Studies</a>
                 </li>
                 {%  endif %}
                 <!-- Rota-maker Link (Rota-maker role required) -->

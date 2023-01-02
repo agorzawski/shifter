@@ -42,13 +42,11 @@ def prepare_main_page(request, revisions, team, revision=None, filtered_campaign
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(date_end__gt=someDate)
     if filtered_campaigns is not None:
         scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=filtered_campaigns)
-    scheduled_studies = StudyRequest.objects.filter(state__in=["B", "D"]).order_by('slot_start', 'priority')
     context = {
         'revisions': revisions,
         'displayed_revision': revision,
         'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_campaigns_list': scheduled_campaigns,
-        'scheduled_studies_list': scheduled_studies,
         'all_roles': all_roles,
         'team': team,
     }

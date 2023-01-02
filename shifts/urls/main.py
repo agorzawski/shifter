@@ -7,7 +7,6 @@ from shifts.views import main as views
 urlpatterns = [
     path('', views.index, name='index'),
     path('team/<int:team_id>', views.index, name='team_view'),
-
     path('today', views.todays, name='today'),
     path('user', views.user, name='user'),
     path('user/rev/<int:rid>', views.user, name='user'),

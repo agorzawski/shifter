@@ -27,6 +27,69 @@
         {%  endfor %}
         {% endfor %}
     </div>
+
+    <hr>
+
+    <div class="row justify-content-center">
+        <h2 class="text-center mb-3">Daily Studies</h2>
+        {%  if activeStudies %}
+
+        {% endif %}
+
+        {%  for a_studie in activeStudies %}
+            {%  if forloop.first %}
+                <div class="accordion" id="accordion_studies">
+            {%  endif %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="study_header{{ a_studie.id }}">
+                <button class="accordion-button bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#study_collapse{{ a_studie.id }}" aria-expanded="true" aria-controls="study_collapse{{ a_studie.id }}">
+                    {%  if a_studie.priority %} <span class="badge text-bg-warning rounded-pill flex float-end">Priority</span>&nbsp;{% endif %}<strong>{{ a_studie.title }}</strong>&nbsp;- {{ a_studie.slot_start|date:'H:i'}} to {{ a_studie.slot_end|date:'H:i' }}
+                </button>
+            </h2>
+            <div id="study_collapse{{ a_studie.id }}" class="accordion-collapse collapse" aria-labelledby="study_header{{ a_studie.id }}">
+                <div class="accordion-body">
+                    {% if a_studie.description %}
+                        <blockquote class="blockquote">
+                            <p>{{ a_studie.description }}</p>
+                        </blockquote>
+                        <hr>
+                    {% endif %}
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Study Leader:</dt>
+                        <dd class="col-sm-9">{{ a_studie.member }}</dd>
+
+                        {% if a_studie.collaborators.all %}
+                        <dt class="col-sm-3">Collaborators</dt>
+                        <dd class="col-sm-9">
+                            {%  for a_collaborator in a_studie.collaborators.all %}
+                            <p>{{ a_collaborator }}</p>
+                            {% endfor %}
+                        </dd>
+                        {%  endif %}
+                        <dt class="col-sm-3">Beam Parameters</dt>
+                        <dd class="col-sm-9">
+                            <p>Current: <i>{{ a_studie.beam_current }} mA</i></p>
+                            <p>Pulse Length: <i>{{ a_studie.beam_pulse_length }} <span>&#181;</span>s</i></p>
+                            <p>Repetition Rate: <i>{{ a_studie.beam_reprate }} Hz</i></p>
+                            <p>Destination: <i>{{ a_studie.beam_destination }}</i></p>
+                        </dd>
+
+                        <dt class="col-sm-3">Jira Link</dt>
+                        <dd class="col-sm-9">{% if a_studie.jira %}<a href="{{ a_studie.jira }}">Jira</a>{% else %}No jira number provided{% endif %}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+            {%  if forloop.last %}
+                </div>
+            {%  endif %}
+        {% empty %}
+            Nothing planned today
+        {% endfor %}
+    </div>
+
+
 </div>
 
 

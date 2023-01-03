@@ -1,12 +1,13 @@
 # ESS OP Shifter Changelog
 
 
-### v.X
+### v.1.x
 - Beam studies planner (ACCOP-337) first version,
 - Shifter's Desiderata for shift planning,
 - Shifter's view allow to display/compare with future plannings,
-- Internal: fixes improving the calendar displays and data sources,
-- Internal: moved to npm packages with statics,
+- Refreshed look to follow the latest Full Calendar, 
+  - Internal: fixes improving the calendar displays and data sources,
+  - Internal: moved to npm packages with statics,
 
 ### v.0.9.3
 - Bug removal on sorting the shifts for active shift/work time calcs.

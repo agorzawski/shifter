@@ -199,7 +199,7 @@ class Shift(models.Model):
                  'title': self.get_shift_title(),
                  'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
                  'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
-                 'url': reverse('shifter:user', args=(self.member.id,)),
+                 'url': reverse('shifter:users') + f'?u={self.member.id}',
                  'color': self.slot.color_in_calendar,
                  }
         if 'ShiftLeader' in self.member.role.name:
@@ -211,7 +211,7 @@ class Shift(models.Model):
                  'title': self.get_shift_title(),
                  'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
                  'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
-                 'url': reverse('shifter:user', args=(self.member.id,)),
+                 'url': reverse('shifter:users') + f'?u={self.member.id}',
                  'color': self.slot.color_in_calendar,
                  'borderColor': 'red',
                  'textColor':'red',

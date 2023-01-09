@@ -11,9 +11,17 @@ function get_revision(){
 }
 
 function get_revision_next(){
-    let future_rev_tag = $("future_rev_id")
+    let future_rev_tag = $("[name='future_revisions_checkboxes']")
     if( future_rev_tag.length){
-        return future_rev_tag.data("id");
+        return $("input[name='future_revisions_checkboxes']:checked").data('future_rev_id');
+    }else{
+        return -1;
+    }
+}
+
+function get_specific_users(){
+    if(document.getElementById('users_selection') !== null){
+        return $(".users_selection").val();
     }else{
         return -1;
     }
@@ -36,6 +44,7 @@ function get_member_id(){
         return -1;
     }
 }
+
 
 $(document).ready(function () {
     let calendarEl = document.getElementById('calendar');
@@ -88,6 +97,7 @@ $(document).ready(function () {
             campaigns: get_selected_campaigns(),
             team: get_team_id(),
             member: get_member_id(),
+            users: get_specific_users(),
           };
         },
       failure: function() {
@@ -130,8 +140,20 @@ $(document).ready(function () {
         calendar.getEventSourceById('studies').refetch()
     });
 
+    $(".users_selection").change( function() {
+        calendar.getEventSourceById('shifts').refetch()
+    });
 
     $(".displayed_campaigns").change( function() {
         calendar.getEventSourceById('shifts').refetch()
     });
+
+    $('#planning-tab').click(function(){
+        calendar.render()
+    })
+
+    $('input[type=radio][name=future_revisions_checkboxes]').change(function() {
+        calendar.getEventSourceById('shifts').refetch()
+    })
+
 });

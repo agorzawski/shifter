@@ -5,6 +5,7 @@
     </div>
     <div class="offcanvas-body">
         <div class="container">
+            {% if hide_campaign_selection is not True %}
             <div class="row my-2">
                 <label for="displayed_campaigns">
                     <strong>Selected Campaign(s):</strong>
@@ -15,13 +16,15 @@
                     </select>
                 </label>
             </div>
-
+            {%  endif %}
+            {%  if hide_extra_role_selection is not True %}
             <div class="row m-2 p-2">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="all_roles">
                     <label class="form-check-label" for="all_roles">Display additional roles assigned to the specific shift, e.g. <strong>Office</strong>.</label>
                 </div>
             </div>
+            {% endif %}
             <div class="row m-2 p-2">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="show_studies" checked>

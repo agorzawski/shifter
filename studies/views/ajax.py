@@ -31,6 +31,9 @@ def get_studies(request: HttpRequest) -> HttpResponse:
                                                         state__in=["B", "D"]).order_by('slot_start', 'priority')
         studies_events = [d.get_study_as_json_event() for d in scheduled_studies]
 
+    if not show_studies:
+        studies_events = []
+
     return HttpResponse(json.dumps(studies_events), content_type="application/json")
 
 

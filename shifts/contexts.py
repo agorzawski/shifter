@@ -45,7 +45,7 @@ def prepare_user_context(member, revisionNext=None):
     currentMonth = datetime.datetime.now()
     nextMonth = currentMonth + datetime.timedelta(30)  # banking rounding
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    newer_revisions = Revision.objects.filter(date_start__gt=revision.date_start).order_by("-number")
+    newer_revisions = Revision.objects.filter(date_start__gt=revision.date_start).filter(ready_for_preview=True).filter(merged=False).order_by("-number")
     scheduled_shifts = Shift.objects.filter(member=member, revision=revision).order_by("-date")
     # scheduled_studies = StudyRequest.objects.filter(member=member,state__in=["B","D"]).order_by('slot_start', 'priority')
     shift2codes = get_date_code_counts(scheduled_shifts)

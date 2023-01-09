@@ -193,6 +193,8 @@ NPM_FILE_PATTERNS = {
     'datatables.net-bs5': ['js/dataTables.bootstrap5.min.js', 'css/dataTables.bootstrap5.min.css', 'images/*'],
     'datatables.net-searchpanes-bs5': ['js/searchPanes.bootstrap5.min.js', 'css/searchPanes.bootstrap5.min.css'],
     'datatables.net-searchpanes': ['js/dataTables.searchPanes.min.js'],
+    'moment': ['min/moment-with-locales.min.js', 'min/moment-with-locales.min.js.map'],
+    'daterangepicker': ['daterangepicker.css', 'daterangepicker.js'],
 }
 
 

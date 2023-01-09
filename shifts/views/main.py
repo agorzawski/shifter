@@ -117,17 +117,56 @@ def user(request, u=None, rid=None):
     else:
         member = Member.objects.filter(id=u).first()
     ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
+
+    today = datetime.datetime.now()
+    year = today.year
+    month = today.month
+
+    default_start = datetime.date(year, month, 1)
+    default_end = datetime.date(year, month + 1, 1) + datetime.timedelta(days=-1)
     dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
     weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
     context = prepare_user_context(member, revisionNext=rid)
     context['dailyViolations'] = dailyViolations
     context['weeklyViolations'] = weeklyViolations
+    context['violations_total'] = len(dailyViolations + weeklyViolations)
+    context['default_start'] = default_start
+    context['default_end'] = default_end
+    context['hide_campaign_selection'] = True
+    context['hide_extra_role_selection'] = True
     context['the_url'] = reverse('ajax.get_user_events')
     if rid is not None:
-        context['future_rev_id'] = rid
-        context['the_url'] = reverse('ajax.get_user_future_events')
+        requested_revision = get_object_or_404(Revision, number=rid)
+        revision = Revision.objects.filter(valid=True).order_by("-number").first()
+        if requested_revision not in Revision.objects.filter(date_start__gt=revision.date_start).filter(ready_for_preview=True).filter(merged=False).order_by("-number"):
+            raise Http404
+        messages.warning(request, "On top of the current schedule, you're seeing revision '{}'".format(requested_revision))
+        context['requested_future_rev_id'] = rid
 
     return render(request, 'user.html', prepare_default_context(request, context))
+
+
+@login_required()
+def users(request):
+    users_list = Member.objects.all()
+    users_requested = request.GET.get('u', '')
+    users_requested = users_requested.split(",")
+    users_requested = [int(x) for x in users_requested] if users_requested != [''] else []
+    revisions = Revision.objects.filter(valid=True).order_by("-number")
+    revision = revisions.first()
+    someDate = datetime.datetime.now() + datetime.timedelta(days=-61)  # default - always last two months
+    scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(date_end__gt=someDate)
+
+    context = {
+        'revisions': revisions,
+        'displayed_revision': revision,
+        'campaigns': Campaign.objects.filter(revision=revision),
+        'scheduled_campaigns_list': scheduled_campaigns,
+        'users': users_list,
+        'users_requested': users_requested,
+    }
+    return render(request, 'users.html', prepare_default_context(request, context))
+
 
 @require_safe
 def icalendar(request):

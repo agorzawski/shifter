@@ -35,6 +35,9 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'study_request' %}active{%  endif %}" href="{%  url 'studies:study_request' %}"><i class="fa-solid fa-graduation-cap"></i> Studies</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'users' %}active{%  endif %}" href="{%  url 'users' %}"><i class="fa-solid fa-users-viewfinder"></i> Users Planning</a>
+                </li>
                 {%  endif %}
                 <!-- Rota-maker Link (Rota-maker role required) -->
                 {%  if rota_maker_for %}
@@ -62,7 +65,7 @@
                         <img class="rounded-circle" loading="lazy" height="35" src={% if shift.member.photo|length > 0 %} "data:image/gif;base64,{{shift.member.photo}}" {%  else %} {% static 'img/anonymous.png'%} {% endif %}/>
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                        <li><a class="dropdown-item" href="#">My Shifts</a></li>
+                        <li><a class="dropdown-item" href="{% url 'user' %}">My Shifts</a></li>
                         <li><a class="dropdown-item" href="#">My Team</a></li>
                         <li><a class="dropdown-item" href="{%  url 'desiderata.user' %}">My Desiderata</a></li>
                         {% if user.is_superuser %}

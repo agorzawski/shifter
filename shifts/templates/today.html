@@ -1,76 +1,96 @@
 {% extends 'template_main.html'%}
-{% block 'body' %}
+{% block body %}
 
-<div class="col-sm-8 mx-auto" xmlns="http://www.w3.org/1999/html">
-
-      <main role="main">
-        <h1> <span class="badge badge-light"> {{currentTeam.0.campaign}} </span></h1>
-        <h3>{{today.date}} {{today.time}} / SID: <strong>{{shiftID}}</strong></h3>
-<!--        <h3>The following active slots are found for now: {{checkTime}} </h3>-->
-        {% if activeSlot == None %} <h3><span class="badge badge-warning">Requested data is OUTSIDE scheduled shifts, showing the last one registered before the requested date!</span></h3> {%endif%}
-        <h5>Control Room Phone Number: <a class="btn btn-outline-primary" href="tel:{{controlRoomPhoneNumber}}"><strong>{{controlRoomPhoneNumber}}</strong></a></h5>
-        <h5>More information: <a class="btn btn-outline-primary" href="{{wwwWithMoreInfo}}">{{wwwWithMoreInfo}}</a></h5>
+<!-- Now on shift -->
+<div class="container">
+    <div class="row justify-content-center">
+        <h1 class="text-center mb-3"> {{currentTeam.0.campaign}}</h1>
         <hr>
-        {% for slot in activeSlots %}
-        <div>
-          <h1>   <span class="badge badge-{% if activeSlot == slot %}dark{%else%}light{% endif %}">  <strong> {{slot}} </strong> </span>  </h1>
-          <hr>
-        {% for shifter in currentTeam %}
-        {% if shifter.slot == slot %}
-        <div style="padding:40px;text-align:center;float:left;"> <h3><strong>{{shifter.member.first_name}}</strong> {{shifter.member.last_name}}</h3>
-          <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}light{%endif%}"> {% if shifter.role != null %}{{shifter.role}}<br>({{shifter.member.role}}){%else%}{{shifter.member.role}}{%endif%} </span></h3>
-          <h3> <span class="badge badge-{% if shifter.member.role.name == 'ShiftLeader'%}warning{%else%}secondary{%endif%}"> {{shifter.member.team}} </span></h3>
-          {% if shifter.member.photo|length > 0 %} <img src='data:image/gif;base64,{{shifter.member.photo}}' height="100" alt=""/> {% endif %}
-          <h4> mobile: <a class="btn btn-outline-primary" href="tel:{{shifter.member.mobile}}"><strong>{{shifter.member.mobile}}</strong></a> </h4>
-          <h4> email: <a class="btn btn-outline-primary" href="mailto:{{shifter.member.email}}">{{shifter.member.email}}</a> </h4>
-        </div>
-          {% endif %}
-        {% endfor %}
-          <div style="padding:40px;text-align:center;float:left;"></div>
-
-        <div style="clear:both;">
-          <hr>
-          <h3> Daily Studies</h3>
-          {% for study in activeStudies%}
-            <button class="accordion">{{study.title}} from {{study.study_time_start}} to {{study.study_time_end}} {% if study.priority %}   <span class="badge badge-warning"> Priority </span> {% endif %}</button>
-            <div class="panel">
-              <p><strong>Study Leader: </strong>{{study.member.name}}</p>
-              <p><strong>Description: </strong>{{study.description}}</p>
-              <p><strong>Beam Parameters:</strong></p>
-              <ul>
-                <li>Current: {{study.beam_current}} mA and {{study.beam_pulse_length}} us</li>
-                <li>Pulse Length: {{study.beam_pulse_length}} us</li>
-                <li>Repetition Rate: {{study.get_beam_reprate_display}}</li>
-                <li>Destination: {{study.get_beam_destination_display}}</li>
-              </ul>
-              {% if study.jira is not Null %}<p>Link to <a href={{study.jira}}>JIRA</a></p> {% endif %}
-              <!--{% if study.priority %} <p> <span class="badge badge-warning"> Study Priority </span> </p> {% endif %}-->
-            </div>
-            <div style="padding:5px;text-align:center;float:left;"></div>
-          {% endfor %}
-        </div>
-        </div>
-        {% endfor %}
-
-      </main>
-
+        <h3 class="text-center mb-3">{{today.date}} {{today.time}}  <span class="badge bg-info text-dark">SID: <strong>{{shiftID}}</strong> </span> </h3>
     </div>
 
-<script>
-var acc = document.getElementsByClassName("accordion");
-var i;
+    {% if activeSlot != None %}
+        <div class="row justify-content-center">
+            <div class="alert alert-warning" role="alert">
+                Requested data is <strong>outside</strong> scheduled shifts, showing the last one registered before the requested date!
+            </div>
+        </div>
+    {% endif %}
 
-for (i = 0; i < acc.length; i++) {
-  acc[i].addEventListener("click", function() {
-    this.classList.toggle("active");
-    var panel = this.nextElementSibling;
-    if (panel.style.display === "block") {
-      panel.style.display = "none";
-    } else {
-      panel.style.display = "block";
-    }
-  });
-}
-</script>
+    <hr>
+
+    <div class="row justify-content-center">
+        {%  for slot in activeSlots %}
+        <h2 class="text-center mb-3">{{slot}} <span class="badge {% if activeSlot == slot %}bg-success"> Active shift{%else%}bg-danger"> Non Active Shift{% endif %}</span></h2>
+        {%  for a_very_important_person in operation_crew %}
+            {%  include 'layout/person_id_card.html' with shift=a_very_important_person %}
+        {%  endfor %}
+        {% endfor %}
+    </div>
+
+    <hr>
+
+    <div class="row justify-content-center">
+        <h2 class="text-center mb-3">Daily Studies</h2>
+        {%  if activeStudies %}
+
+        {% endif %}
+
+        {%  for a_studie in activeStudies %}
+            {%  if forloop.first %}
+                <div class="accordion" id="accordion_studies">
+            {%  endif %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="study_header{{ a_studie.id }}">
+                <button class="accordion-button bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#study_collapse{{ a_studie.id }}" aria-expanded="true" aria-controls="study_collapse{{ a_studie.id }}">
+                    {%  if a_studie.priority %} <span class="badge text-bg-warning rounded-pill flex float-end">Priority</span>&nbsp;{% endif %}<strong>{{ a_studie.title }}</strong>&nbsp;- {{ a_studie.slot_start|date:'H:i'}} to {{ a_studie.slot_end|date:'H:i' }}
+                </button>
+            </h2>
+            <div id="study_collapse{{ a_studie.id }}" class="accordion-collapse collapse" aria-labelledby="study_header{{ a_studie.id }}">
+                <div class="accordion-body">
+                    {% if a_studie.description %}
+                        <blockquote class="blockquote">
+                            <p>{{ a_studie.description }}</p>
+                        </blockquote>
+                        <hr>
+                    {% endif %}
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Study Leader:</dt>
+                        <dd class="col-sm-9">{{ a_studie.member }}</dd>
+
+                        {% if a_studie.collaborators.all %}
+                        <dt class="col-sm-3">Collaborators</dt>
+                        <dd class="col-sm-9">
+                            {%  for a_collaborator in a_studie.collaborators.all %}
+                            <p>{{ a_collaborator }}</p>
+                            {% endfor %}
+                        </dd>
+                        {%  endif %}
+                        <dt class="col-sm-3">Beam Parameters</dt>
+                        <dd class="col-sm-9">
+                            <p>Current: <i>{{ a_studie.beam_current }} mA</i></p>
+                            <p>Pulse Length: <i>{{ a_studie.beam_pulse_length }} <span>&#181;</span>s</i></p>
+                            <p>Repetition Rate: <i>{{ a_studie.beam_reprate }} Hz</i></p>
+                            <p>Destination: <i>{{ a_studie.beam_destination }}</i></p>
+                        </dd>
+
+                        <dt class="col-sm-3">Jira Link</dt>
+                        <dd class="col-sm-9">{% if a_studie.jira %}<a href="{{ a_studie.jira }}">Jira</a>{% else %}No jira number provided{% endif %}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+            {%  if forloop.last %}
+                </div>
+            {%  endif %}
+        {% empty %}
+            Nothing planned today
+        {% endfor %}
+    </div>
+
+
+</div>
+
 
 {% endblock %}

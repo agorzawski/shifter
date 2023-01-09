@@ -1,25 +1,21 @@
 {% extends 'template_main.html'%}
 {% load static %}
 
-{% block 'body' %}
-    <div class="col-8 mx-auto">
-    <h1>Desiderata for <team_id data-id="{{ team.id }}">{{team}}</team_id></h1>
-    <p><strong>Dear rota-maker, kindly remind that these informations are confidential !</strong></p>
+{% block body %}
+<div class="container-fluid">
+    <div class="row">
+        <h2 class="text-center mb-3">Desiderata for <team_id data-id="{{ team.id }}">{{team}}</team_id></h2>
+        <p class="text-center mb-3"><strong>Dear rota-maker, kindly remind that these informations are confidential !</strong></p>
     </div>
-    <div class='ui container'>
-      <div class='ui grid'>
-        <div class='ui sixteen column'>
-           <div class="collapse" id="collapseExample">
-            <div class="card card-body">
-                <h5>Shift slots</h5>
-                {%for s in slots%}<div style="background-color:{{s.color_in_calendar}};color:#FFFFFF;">{{s.name}} <strong>({{s.abbreviation}})</strong> for <strong>{{s.hour_start}}</strong> - <strong>{{s.hour_end}}</strong> </div>{% endfor%}
+    <div class="row">
+        <div class="col">
+            <div class='container'>
+                  <div id='calendar' style="padding-top: 10px;" data-source-desiderata="{% url 'desiderata.get_team_desiderata' %}" data-source-holidays="{%  url 'ajax.get_holidays' %}"></div>
             </div>
-          </div>
-          <div id='calendar' style="padding-top: 10px;" data-source-desiderata="{% url 'desiderata.get_team_desiderata' %}" data-source-holidays="{%  url 'ajax.get_holidays' %}"></div>
         </div>
-      </div>
     </div>
-{%  endblock 'body' %}
+</div>
+{%  endblock body %}
 
 {%  block js %}
     <script type="text/javascript" src="{% static 'js/team_desiderata.min.js' %}"></script>

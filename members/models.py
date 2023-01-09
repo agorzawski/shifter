@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import cached_property
 
-
 class Team(models.Model):
     name = models.CharField(max_length=200)
 
@@ -45,7 +44,10 @@ class Member(AbstractUser):
 
     @cached_property
     def name(self):
-        return f'{self.first_name} {self.last_name}'
+        if self.last_name:
+            return f'{self.first_name} {self.last_name}'
+        else:
+            return f'{self.first_name}'
 
     def __str__(self):
         return '{}'.format(self.name)

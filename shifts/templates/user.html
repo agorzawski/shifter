@@ -1,120 +1,256 @@
 {% extends 'template_main.html'%}
 {% load static %}
 
-{% block 'extra_menu_item' %}
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <strong>Display options<small> Revision:{{displayed_revision}}</small></strong>
-        </a>
-        <form class="dropdown-menu p-4">
-          {% csrf_token %}
-          <div class="form-group">
-          <label>Displayed campaigns:</label>
-
-          {% for c in campaigns %}
-          <br><input class="form-check-input" type="checkbox" name="campaign{{c.id}}" id="campaign{{c.id}}" value="{{c.id}}"
-                     {%if c in scheduled_campaigns_list%} checked {%endif%} disabled>
-            <label class="form-check-label" for="campaign{{c.id}}">{{c}}<br>
-            <small><strong>{{c.date_start}} - {{c.date_end}}</strong></small></label>
-          {% endfor %}
-          </div>
-<!--          <div class="dropdown-divider"></div>-->
-<!--          <button type="submit" class="btn btn-primary" {%if not logged_user %} disabled {%endif%} >Apply</button>-->
-
-        </form>
-      </li>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'datatables.net-bs5/css/dataTables.bootstrap5.min.css'%}">
+<link rel="stylesheet" href="{% static 'datatables.net-searchpanes-bs5/css/searchPanes.bootstrap5.min.css'%}">
+<link rel="stylesheet" href="{% static 'daterangepicker/daterangepicker.css'%}">
+<link rel="stylesheet" href="{% static 'select2/dist/css/select2.min.css'%}">
 {% endblock %}
 
-{% block 'body' %}
-    <div class="col-sm-8 mx-auto">
-      <main role="main">
-          <br>
-          <h1><span class="badge badge-light"> Hello <member_id data-id="{{ member.id }}">{{member}}</member_id></span></h1>
 
-          <ul>
-<!--              <li>In the current revision <small>{{revision}}</small> you are scheduled for {{scheduled_shifts_list|length}} shifts.</li>-->
-              <li>Check out your team  <a href="/team/{{member.team.id}}"> <strong>{{member.team}}</strong> shifts breakdown</a></li>
-              {% if user.is_authenticated %}
-              <li><a data-toggle="collapse" href="#collapseCodesDiv" role="button"
-                 aria-expanded="false" aria-controls="collapseCodesDiv">
-                Show your specific codes to report (ESS HR)
-              </a></li>
-              {% endif %}
-          </ul>
-          {% if user.is_authenticated %}
-            <div class="collapse" id="collapseCodesDiv">
-              <div class="card card-body">
-                  <h5>HR CODES TO REPORT</h5>
+{% block body %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <h2 class="text-center mb-3"><member_id data-id="{{ member.id }}">{{member}}'s personal space</member_id></h2>
+        <div class="col-8 pb-5">
+            <ul class="nav nav-tabs" id="user_tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="planning-tab" data-bs-toggle="tab" data-bs-target="#planning-tab-pane" type="button" role="tab" aria-controls="planning-tab-pane" aria-selected="true">My Planning</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link position-relative" id="revision-tab" data-bs-toggle="tab" data-bs-target="#revision-tab-pane" type="button" role="tab" aria-controls="revision-tab-pane" aria-selected="false">
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ newer_revisions.count }}
+                            <span class="visually-hidden">newer revision</span>
+                        </span>
+                        Newer Revision</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="time_report-tab" data-bs-toggle="tab" data-bs-target="#time_report-tab-pane" type="button" role="tab" aria-controls="time_report-tab-pane" aria-selected="false">Time Report</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="links-tab" data-bs-toggle="tab" data-bs-target="#links-tab-pane" type="button" role="tab" aria-controls="links-tab-pane" aria-selected="false">Calendar Links</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link position-relative" id="inconsistencies-tab" data-bs-toggle="tab" data-bs-target="#inconsistencies-tab-pane" type="button" role="tab" aria-controls="inconsistencies-tab-pane" aria-selected="false">
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ violations_total }}
+                            <span class="visually-hidden">Inconsistencies</span>
+                        </span>
+                        Inconsistencies</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="user_tabs_content">
+                <div class="tab-pane fade show active" id="planning-tab-pane" role="tabpanel" aria-labelledby="planning-tab" tabindex=""0>
+                        {% include 'calendar.html' with event_source=the_url %}
+                </div>
+                <!-- Tab displaying the time reporting breakdown -->
+                <div class="tab-pane fade" id="time_report-tab-pane" role="tabpanel" aria-labelledby="time_report-tab" tabindex="1">
+                    <div class='container'>
+                        <div class="row justify-content-center m-4">
+                            <div class="col">
+                                <h2 class="mb-3">HR Codes to report</h2>
+                                <div class="alert alert-warning fade show" role="alert">
+                                    <strong>Disclaimer</strong> These counts here are build to the best of our knowledge based on the HR documents, but should be treated as an indication rather than the ultimate reference.
+                                </div>
 
-                  <div class="alert alert-warning {{ message.tags }} alert-dismissible" role="alert" >
-                    <strong>DISCLAIMER:</strong> These counts here are build to the best of our knowledge based on the HR documents, but should be treated as an indication rather than the ultimate reference.
-                  </div>
+                                <form class="row g-3 m-3">
+                                    <div class="form-group row">
+                                        <label for="inputPassword" class="col-sm-2 col-form-label">Date-range :</label>
+                                        <div class="col-sm-10">
+                                            <input class="form-control"  type="text" id="date_range_picker" name="daterange" value="{{ default_start | date:"m/d/y" }} - {{ default_end | date:"m/d/y" }}" />
+                                        </div>
+                                    </div>
+                                </form>
 
-                  <table class="table table-striped small">
-                  <thead>
-                    <tr>
-                      <th scope="col">#</th>
-                      <th scope="col">OB1 hours</th>
-                      <th scope="col">OB2 hours</th>
-                      <th scope="col">OB3 hours</th>
-                      <th scope="col">OB4 hours</th>
-                      <th scope="col">NWH hours</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                {%for one, codes in hrcodes.items %}
-                    <tr>
-                      <th scope="row">{{one}}</th>
-                      {% for key, oneCount in codes.items %}<td>{%if oneCount > 0 %}<strong>{%endif%}{{oneCount}}{%if oneCount > 0 %}</strong>{%endif%}</td> {% endfor %}
-                    </tr>
-                {%endfor%}
-                </tbody>
-                  <thead>
-                    <tr>
-                      <th scope="col">#</th>
-                      {% for key, oneCode in hrcodes_summary.items %}<th scope="col">{{oneCode}}</th> {% endfor %}
-                    </tr>
-                  </thead>
-                </table>
-              </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="table_HR" data-source="{% url 'ajax.get_hr_codes' %}">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">OB1 hours</th>
+                                                <th scope="col">OB2 hours</th>
+                                                <th scope="col">OB3 hours</th>
+                                                <th scope="col">OB4 hours</th>
+                                                <th scope="col">NWH hours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        <!-- filled by AJAX -->
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab displaying the tutorial for subscribing to the calendar in outlook -->
+                <div class="tab-pane fade" id="links-tab-pane" role="tabpanel" aria-labelledby="links-tab" tabindex="2">
+                    <div class='container'>
+                        <div class="row justify-content-center m-4">
+                            <div class="col">
+                                <h2 class="mb-3">Add Shifts to your Outlook calendar</h2>
+                                <div>
+                                    <p><b>Note:&nbsp;</b>When you subscribe to a calendar, your calendar will automatically refresh if the other calendar is updated. This can sometimes take more than 24 hours.</p>
+                                </div>
+                                <ol type="1">
+                                    <li>
+                                        <p>
+                                            <a href="https://mail.esss.lu.se/owa/#path=/mail" target="_blank">Sign in to Outlook WEB</a>.
+                                        </p>
+                                    </li>
+                                    <li>
+                                        <p>
+                                            On the right top corner click <img width="20" src="{% static 'img/outlook_select.png' %}" alt="Calendar" loading="lazy">,and then select calendar <img width="20" src="{% static 'img/outlook_calendar.png' %}" alt="Calendar" loading="lazy">.
+                                        </p>
+                                    </li>
+                                    <li>
+                                        <p>
+                                            In the navigation pane, select <b>Add calendar</b>.
+                                        </p>
+                                    </li>
+                                    <li>
+                                        <p>
+                                            Select <b>From internet</b>.
+                                        </p>
+                                        <p>
+                                            <img src="{% static 'img/outlook_subscribe.png' %}" alt="Subscribe to a calendar" loading="lazy">
+                                        </p>
+                                    </li>
+                                    <li>
+                                        <p class="mb-2">
+                                            Enter the URL for the calendar :
+                                        </p>
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">iCal link for you&nbsp<strong>{{member}}</strong></span>
+                                            <input type="text" class="form-control" aria-label="user link" aria-describedby="basic-addon2" id="personal_link_clipboard_data" value="{{ request.scheme }}://{{ request.META.HTTP_HOST }}{% url 'calendar_public' %}?mid={{member.id}}">
+                                            <button class="btn btn-outline-secondary btn-light" type="button" id="personal_link_clipboard"><i class="fa-regular fa-copy"></i></button>
+                                        </div>
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">iCal link for your team&nbsp<strong>{{member.team}}</strong></span>
+                                            <input type="text" class="form-control" aria-label="team link" aria-describedby="basic-addon2" id="team_link_clipboard_data" value="{{ request.scheme }}://{{ request.META.HTTP_HOST }}{% url 'calendar_public' %}?tid={{member.team.id}}">
+                                            <button class="btn btn-outline-secondary btn-light" type="button" id="team_link_clipboard"><i class="fa-regular fa-copy"></i></button>
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <p>
+                                            Select <b>Import</b>.
+                                        </p>
+                                    </li>
+                                    <li>
+                                        You're done !
+                                    </li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab displaying future revision switches buttons -->
+                <div class="tab-pane fade" id="revision-tab-pane" role="tabpanel" aria-labelledby="revision-tab" tabindex="3">
+                    <div class='container'>
+                        <div class="row justify-content-center m-4">
+                            <div class="col">
+                                <h2 class="mb-3">Future revisions : </h2>
+                                <div class="alert alert-warning fade show" role="alert">
+                                    <strong>Newer plans available for the preview :</strong> You can preview the future planning by checking the one(s) you want to see. Please note that these plannings are not only approved, and not yet considered as valid.
+                                </div>
+                                {% for one in newer_revisions%}
+                                 {% if forloop.first %}
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="radio" name="future_revisions_checkboxes" id="future_revisions_checkboxes_none" data-future_rev_id="-1" {%  if not requested_future_rev_id %}checked{% endif %}>
+                                        <label class="form-check-label" for="future_revisions_checkboxes_none">
+                                            Hide all future revisions
+                                        </label>
+                                    </div>
+                                 {% endif %}
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="radio" name="future_revisions_checkboxes" id="future_revisions_checkboxes_{{ one.number }}" data-future_rev_id="{{ one.number }}" {% if requested_future_rev_id == one.number %}checked{% endif %}>
+                                        <label class="form-check-label" for="future_revisions_checkboxes_{{ one.number }}">
+                                            {{one}}
+                                        </label>
+                                    </div>
+                                {%endfor%}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab displaying possible inconsistencies -->
+                <div class="tab-pane fade" id="inconsistencies-tab-pane" role="tabpanel" aria-labelledby="inconsistencies-tab" tabindex="4">
+                    <div class='container'>
+                        <div class="row justify-content-center m-4">
+                            <div class="col">
+                                <h2 class="mb-3">Some inconsistencies :</h2>
+                                {% if violations_total == 0 %}
+                                    <p>No inconsistencies in the current planning</p>
+                                {% else %}
+                                    <dl class="row">
+                                        <dt class="col-sm-3">Daily shift issues:</dt>
+                                        <dd class="col-sm-9">
+                                            {% for one in dailyViolations%}
+                                                <p><span class="badge text-bg-warning">{{one.0}}</span> - <span class="badge text-bg-warning">{{one.1}} </span></p>
+                                            {% empty %}
+                                                <p>No daily issues</p>
+                                            {%endfor%}
+                                        </dd>
+                                        <dt class="col-sm-3">Weekly shift issues:</dt>
+                                        <dd class="col-sm-9">
+                                            {% for one in weeklyViolations%}
+                                                <p><span class="badge text-bg-warning">{{one.0}}</span> - <span class="badge text-bg-warning">{{one.1}} </span></p>
+                                            {% empty %}
+                                                <p>No weekly issues</p>
+                                            {%endfor%}
+                                        </dd>
+                                    </dl>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-          <p>
-              <h5>Dynamic links (one can subscribe with any calendar app):</h5>
-          <a class="btn btn-warning" href="ical?mid={{member.id}}">iCal link for you <strong>{{member}}</strong> </a>
-              <a class="btn btn-warning" href="ical?tid={{member.team.id}}">iCal link for your team <strong>{{member.team}}</strong> </a>
-<!--              <h5>Static links (once downloaded remain fixed):</h5>-->
-<!--              <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=current">Download iCal file with your shifts for <badge class="badge badge-warning"> {{currentmonth}}</badge></a>-->
-<!--              <a class="btn btn-primary" href="calendar.ics?member={{member.id}}&month=next">Download iCal file with your for shifts <badge class="badge badge-warning"> {{nextmonth}}</badge></a>-->
-
-          </p>
-        <hr>
-          <p>
-          <h5>Newer plans available for the preview:</h5>
-          {% for one in newer_revisions%}
-            {% if one.ready_for_preview and not one.merged %}{%if future_rev_id%}<future_rev_id data-id="{{ future_rev_id }}"></future_rev_id>{%endif%}
-            <a class="btn btn{%if one.number == future_rev_id%}-danger{%else%}-outline-danger{%endif%}" href="/user/rev/{{one.number}}"> <strong>{{one}}</strong> </a> {%endif%}{%endfor%}
-          </p>
-          <hr>
-          <h5>Some inconsistencies</h5>
-          <h6>Daily shift issues:</h6>
-          {% for one in dailyViolations%}
-            <p><span class="badge badge-warning">{{one.0}}</span> - <span class="badge badge-warning">{{one.1}} </span></p>
-          {%endfor%}
-          <h6>Weekly shift issues:</h6>
-          {% for one in weeklyViolations%}
-            <p><span class="badge badge-warning">{{one.0}}</span> - <span class="badge badge-warning">{{one.1}} </span></p>
-          {%endfor%}
-          {% endif %}
-          <hr>
-      </main>
+        </div>
     </div>
+</div>
 
-<br>
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true" id="live_toast">
+      <div class="d-flex">
+        <div class="toast-body" id="toast_content">
+        </div>
+        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+</div>
 
-{% include 'calendar.html' with event_source=the_url %}
+{%  include 'layout/calendar_tools_off_canvas.html' %}
+
 {% endblock %}
 
 
 {%  block js %}
 <script type="text/javascript" src="{% static 'js/calendar_script.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/user_space.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'datatables.net/js/jquery.dataTables.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'datatables.net-select/js/dataTables.select.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'moment/min/moment-with-locales.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'daterangepicker/daterangepicker.js' %}"></script>
+<script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
+    <script>
+    $(document).ready(function() {
+    $('#displayed_campaigns').select2();
+    $('#displayed_revision').select2();
+});</script>
+
 {% endblock %}

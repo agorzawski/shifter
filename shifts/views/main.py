@@ -1,7 +1,8 @@
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, Http404, redirect
+from django.core.exceptions import PermissionDenied
 
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -9,6 +10,7 @@ import django.contrib.messages as messages
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods, require_safe
 from django.db import IntegrityError
+from django.views import View
 
 import members.models
 from members.models import Team
@@ -19,49 +21,34 @@ from assets.forms import AssetBookingForm, AssetBookingFormClosing
 import datetime
 import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
-from shifts.contexts import prepare_default_context,prepare_user_context, prepare_team_context
+from shifts.contexts import prepare_default_context, prepare_user_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
 
 
 @require_safe
-def index(request):
+def index(request, team_id=-1):
     revisions = Revision.objects.filter(valid=True).order_by("-number")
-    return prepare_main_page(request, revisions)
+    team = None
+    if team_id > 0:
+        team = get_object_or_404(Team, id=team_id)
+    return prepare_main_page(request, revisions, team)
 
 
-def prepare_main_page(request, revisions, revision=None, filtered_campaigns=None, all_roles=False):
+def prepare_main_page(request, revisions, team, revision=None, filtered_campaigns=None, all_roles=False):
     if revision is None:
         revision = revisions.first()
     someDate = datetime.datetime.now() + datetime.timedelta(days=-61)  # default - always last two months
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(date_end__gt=someDate)
     if filtered_campaigns is not None:
         scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=filtered_campaigns)
-
-# <<<<<<< HEAD:shifts/views.py
-#     scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
-#                             .filter(role=None)\
-#                             .order_by('date', 'slot__hour_start', 'member__role__priority')
-#
-#     scheduled_studies = StudyRequest.objects.filter(state__in=["B","D"]).order_by('slot_start', 'priority')
-#
-#     if all_roles:
-#         scheduled_shifts = Shift.objects.filter(revision=revision).filter(campaign__in=scheduled_campaigns)\
-#                                 .order_by('date', 'slot__hour_start', 'member__role__priority')
-#
-#     context = {
-#         'revisions': revisions,
-#         'displayed_revision': revision,
-#         'scheduled_shifts_list': scheduled_shifts,
-#         'scheduled_studies_list': scheduled_studies,
-# =======
     context = {
         'revisions': revisions,
         'displayed_revision': revision,
-# >>>>>>> development:shifts/views/main.py
         'campaigns': Campaign.objects.filter(revision=revision),
         'scheduled_campaigns_list': scheduled_campaigns,
-        'all_roles': all_roles
+        'all_roles': all_roles,
+        'team': team,
     }
     return render(request, 'index.html', prepare_default_context(request, context))
 
@@ -130,37 +117,55 @@ def user(request, u=None, rid=None):
     else:
         member = Member.objects.filter(id=u).first()
     ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
+
+    today = datetime.datetime.now()
+    year = today.year
+    month = today.month
+
+    default_start = datetime.date(year, month, 1)
+    default_end = datetime.date(year, month + 1, 1) + datetime.timedelta(days=-1)
     dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
     weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
     context = prepare_user_context(member, revisionNext=rid)
     context['dailyViolations'] = dailyViolations
     context['weeklyViolations'] = weeklyViolations
+    context['violations_total'] = len(dailyViolations + weeklyViolations)
+    context['default_start'] = default_start
+    context['default_end'] = default_end
+    context['hide_campaign_selection'] = True
+    context['hide_extra_role_selection'] = True
     context['the_url'] = reverse('ajax.get_user_events')
     if rid is not None:
-        context['future_rev_id'] = rid
-        context['the_url'] = reverse('ajax.get_user_future_events')
+        requested_revision = get_object_or_404(Revision, number=rid)
+        revision = Revision.objects.filter(valid=True).order_by("-number").first()
+        if requested_revision not in Revision.objects.filter(date_start__gt=revision.date_start).filter(ready_for_preview=True).filter(merged=False).order_by("-number"):
+            raise Http404
+        messages.warning(request, "On top of the current schedule, you're seeing revision '{}'".format(requested_revision))
+        context['requested_future_rev_id'] = rid
 
     return render(request, 'user.html', prepare_default_context(request, context))
 
 
-@require_safe
-def team(request, t=None):
-    member = request.user
-    if t is None:
-        teamO = member.team
-    else:
-        teamO = Team.objects.filter(id=t).first()
-    context = {'browsable': False}
+@login_required()
+def users(request):
+    users_list = Member.objects.all()
+    users_requested = request.GET.get('u', '')
+    users_requested = users_requested.split(",")
+    users_requested = [int(x) for x in users_requested] if users_requested != [''] else []
+    revisions = Revision.objects.filter(valid=True).order_by("-number")
+    revision = revisions.first()
+    someDate = datetime.datetime.now() + datetime.timedelta(days=-61)  # default - always last two months
+    scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(date_end__gt=someDate)
 
-    if request.user.is_authenticated:
-        if member.team == teamO:
-            context['browsable'] = True
-    return render(request, 'team.html',
-                  prepare_default_context(request,
-                                          prepare_team_context(request,
-                                                               member=member,
-                                                               team=teamO,
-                                                               extraContext=context)))
+    context = {
+        'revisions': revisions,
+        'displayed_revision': revision,
+        'campaigns': Campaign.objects.filter(revision=revision),
+        'scheduled_campaigns_list': scheduled_campaigns,
+        'users': users_list,
+        'users_requested': users_requested,
+    }
+    return render(request, 'users.html', prepare_default_context(request, context))
 
 
 @require_safe
@@ -253,7 +258,6 @@ def ioc_update(request):
 @require_safe
 def shifts(request):
     shiftId = request.GET.get('id', None)
-    dataToReturn = {}
     if shiftId is not None:
         dataToReturn = {'SID': shiftId, 'status': False}
         shiftIDs = ShiftID.objects.filter(label=shiftId)
@@ -510,87 +514,47 @@ def phonebook_post(request):
     return render(request, 'phonebook.html', prepare_default_context(request, context))
 
 
-@login_required
-@require_safe
-def assets(request):
-    form = None
-    bookNew = request.GET.get('new', False)
-    typeFilter = request.GET.get('typeId', False)
-    try:
-        typeFilter = int(typeFilter)
-    except:
-        typeFilter = False
-    if bookNew:
+class AssetsView(View):
+    def get(self, request):
         form = AssetBookingForm({'member': request.user,
                                  'use_start': datetime.datetime.now().strftime(DATE_FORMAT_FULL),
-                                 'use_end': datetime.datetime.now().strftime(DATE_FORMAT_FULL)})
-    activeBooking = None
-    bookingId = request.GET.get('close', None)
-    if bookingId is not None:
-        try:
-            activeBooking = AssetBooking.objects.get(id=bookingId)
-        except Exception as e:
-            messages.error(request, 'Wrong booking ID')
-            return page_not_found(request, exception=e)
-        if activeBooking.member != request.user and not request.user.is_staff:
-            messages.error(request, 'You cannot close the booking that is not yours!')
-            return page_not_found(request, exception=None)
-        form = AssetBookingFormClosing()
-    bookings = AssetBooking.objects.all().order_by('-use_start')
-    if typeFilter:
-        bookings = AssetBooking.objects.filter(asset__asset_type_id=typeFilter).order_by('-use_start')
-    context = {
-        'form': form,
-        'assetFilter': typeFilter,
-        'activeBooking': activeBooking,
-        'assetTypes': AssetType.objects.all(),
-        'assetBookings': bookings,
-    }
-    return render(request, 'assets.html', prepare_default_context(request, context))
+                                 'use_end': datetime.datetime.now().strftime(DATE_FORMAT_FULL)},
+                                user=request.user)
+
+        closing_form = AssetBookingFormClosing()
+        return render(request, 'assets.html', {'form': form, 'closing_form': closing_form})
+
+    def post(self, request):
+        form = AssetBookingForm(request.POST, user=request.user)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.booking_created = datetime.datetime.now()  # timezone.now()
+            post.booked_by = request.user
+            post.save()
+            message = "Booking for {} on {}, is added!".format(post.member.first_name, post.use_start)
+            messages.success(request, message)
+        else:
+            message = "Booking form is not valid, please correct."
+            messages.success(request, message)
+        return redirect('assets')
 
 
-@login_required
 @require_http_methods(["POST"])
-@csrf_protect
-def assets_post(request):
-    form = AssetBookingForm(request.POST)
-    if form.is_valid():
-        post = form.save(commit=False)
-        post.booking_created = datetime.datetime.now()  # timezone.now()
-        post.booked_by = request.user
-        if post.member != request.user and not request.user.is_staff:
-            messages.error(request, 'You can only book for yourself! Contact OPS team to book for someone else!')
-            return page_not_found(request, exception=None)
-        post.save()
-        message = "Booking for {} on {}, is added!".format(post.member.first_name, post.use_start)
-        messages.success(request, message)
-
-    context = {
-        'assetbookings': AssetBooking.objects.all().order_by('-use_start'),
-    }
-    return render(request, 'assets.html', prepare_default_context(request, context))
-
-
-@login_required
-@require_http_methods(["POST"])
-@csrf_protect
-def assets_post_close(request):
-    print(request.POST)
+def assets_close(request):
+    booking_id = request.POST.get('booking_id')
     form = AssetBookingFormClosing(request.POST)
-    idToUse = request.POST['activeBookingId']
     if form.is_valid():
-        post = form.save(commit=False)
-        activeBooking = AssetBooking.objects.get(id=idToUse)
-        activeBooking.booking_finished = datetime.datetime.now()
-        activeBooking.after_comment = post.after_comment
-        activeBooking.state = AssetBooking.BookingState.RETURNED
-        activeBooking.finished_by = request.user
-        activeBooking.save()
-        message = "Booking for {} on {}, is now closed!".format(activeBooking.member.first_name,
-                                                                activeBooking.use_start)
+        comment = form.cleaned_data['after_comment']
+        current_booking = get_object_or_404(AssetBooking, id=booking_id)
+        current_booking.booking_finished = datetime.datetime.now()
+        current_booking.after_comment = comment
+        current_booking.state = AssetBooking.BookingState.RETURNED
+        current_booking.finished_by = request.user
+        current_booking.save()
+        message = "Booking for {} on {}, is now closed!".format(current_booking.member.first_name,
+                                                                current_booking.use_start)
         messages.success(request, message)
-
-    context = {
-        'assetbookings': AssetBooking.objects.all().order_by('-use_start'),
-    }
-    return render(request, 'assets.html', prepare_default_context(request, context))
+    else:
+        message = "Booking form is not valid, please correct."
+        messages.success(request, message)
+    return redirect('assets')

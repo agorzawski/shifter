@@ -16,6 +16,40 @@ DATE_FORMAT_SLIM = '%Y%m%d'
 MONTH_NAME = '%B'
 
 
+class Contact(models.Model):
+    class ContactType(models.TextChoices):
+        MAIL = 'email', 'Email'
+        PHONE = 'phone', 'Phone Number'
+        LINK = 'link', 'URL'
+        ZOOM = 'zoom', 'Zoom Link'
+
+    name = models.CharField(max_length=15)
+    contact_type = models.CharField(
+        max_length=5,
+        choices=ContactType.choices,
+        default=ContactType.PHONE,
+    )
+    contact = models.CharField(max_length=100)
+    active = models.BooleanField(default=False)
+    fa_icon = models.CharField(max_length=50, default='fa-phone')
+
+    class Meta:
+        verbose_name = "Contact"
+        ordering = ['id']
+
+    def __str__(self):
+        if self.contact_type == 'email':
+            return f"mailto:{self.contact}"
+        elif self.contact_type == 'phone':
+            return f"tel:{self.contact}"
+        elif self.contact_type == 'link':
+            return self.contact
+        elif self.contact_type == 'zoom':
+            return self.contact
+        else:
+            return ""
+
+
 class ShifterMessage(models.Model):
     number = models.AutoField(primary_key=True, blank=True)
     description = models.TextField()
@@ -165,7 +199,7 @@ class Shift(models.Model):
                  'title': self.get_shift_title(),
                  'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
                  'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
-                 'url': reverse('shifter:user', args=(self.member.id,)),
+                 'url': reverse('shifter:users') + f'?u={self.member.id}',
                  'color': self.slot.color_in_calendar,
                  }
         if 'ShiftLeader' in self.member.role.name:
@@ -177,7 +211,7 @@ class Shift(models.Model):
                  'title': self.get_shift_title(),
                  'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
                  'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
-                 'url': reverse('shifter:user', args=(self.member.id,)),
+                 'url': reverse('shifter:users') + f'?u={self.member.id}',
                  'color': self.slot.color_in_calendar,
                  'borderColor': 'red',
                  'textColor':'red',

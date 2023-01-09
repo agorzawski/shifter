@@ -1,0 +1,50 @@
+{% extends 'template_main.html'%}
+{% load static %}
+
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'select2/dist/css/select2.min.css'%}">
+{% endblock %}
+
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-8 ">
+            <h1 class="text-center mb-3"> User selection planning</h1>
+            <div class="row my-2">
+                <label for="users_selection">
+                    <strong>Show planning for users:</strong>
+                    <select class="js-states form-control users_selection" id="users_selection" multiple="multiple">
+                        {% for an_user in users %}
+                        <option id="user_{{an_user.id}}" value="{{an_user.id}}" {%  if an_user.id in users_requested %}selected {% endif %}>{{an_user}}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            {% url 'ajax.get_users_events' as the_url %}
+            {% include 'calendar.html' with event_source=the_url %}
+        </div>
+    </div>
+</div>
+
+
+{%  include 'layout/calendar_tools_off_canvas.html' %}
+
+{% endblock %}
+
+
+{%  block js %}
+<script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/calendar_script.js' %}"></script>
+    <script>
+    $(document).ready(function() {
+    $('#displayed_campaigns').select2();
+    $('#displayed_revision').select2();
+    $('#users_selection').select2();
+});</script>
+{% endblock %}

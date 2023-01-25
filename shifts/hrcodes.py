@@ -19,11 +19,18 @@ public_holidays = [
     # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+Holidays+and+additional+days+off+%282022%29+Sweden
     date(2022, 1, 6),
     date(2022, 1, 7),
-
     date(2022, 5, 26),
     date(2022, 5, 27),
-
     date(2022, 6, 6),
+
+    # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+holidays+and+additional+days+off+%282023%29+Sweden
+    # date(2023, 1, 5), # reduced 3
+    # date(2023, 4, 6), # reduced 3
+    date(2023, 5, 18),
+    date(2023, 5, 19),
+    date(2023, 6, 5),
+    date(2023, 6, 6),
+    # date(2023, 11, 3), # reduced 3
 ]
 
 # The ones that are counted as OB4
@@ -36,6 +43,7 @@ public_holidays_special = [
     date(2021, 12, 26),
     date(2021, 12, 31),
 
+# https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+Holidays+and+additional+days+off+%282022%29+Sweden
     date(2022, 1, 1),
     date(2022, 4, 15),
     date(2022, 4, 16),
@@ -48,14 +56,16 @@ public_holidays_special = [
     date(2022, 12, 26),
     date(2022, 12, 31),
 
-    date(2022, 10, 30),
-    date(2022, 10, 31),
-    date(2022, 11, 1),
-    date(2022, 11, 2),
-    date(2022, 12, 9),
-    date(2022, 12, 10),
-    date(2022, 12, 11),
-    date(2022, 12, 12),
+    # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+holidays+and+additional+days+off+%282023%29+Sweden
+    date(2023, 1, 1),
+    # date(2023, 4, 9), reduced 3
+    date(2023, 4, 7),
+    date(2023, 4, 8),
+    date(2023, 4, 9),
+    date(2023, 4, 10),
+    date(2023, 6, 23),
+    date(2023, 12, 25),
+    date(2023, 12, 26),
 ]
 
 

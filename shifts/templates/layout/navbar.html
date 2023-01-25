@@ -49,6 +49,8 @@
                         {% for a_managed_team in rota_maker_for %}
                             <a class="dropdown-item"  href="{%  url 'desiderata.team_view' team_id=a_managed_team.id %}"> {{a_managed_team.name}} </a>
                         {% endfor%}
+                        <hr class="dropdown-divider">
+                        <a class="dropdown-item" href="{% url 'shift-upload' %}">Upload planning</a>
                     </ul>
                 </li>
                 {%  endif %}
@@ -66,7 +68,7 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                         <li><a class="dropdown-item" href="{% url 'user' %}">My Shifts</a></li>
-                        <li><a class="dropdown-item" href="#">My Team</a></li>
+                        <li><a class="dropdown-item" href="{% url 'my_team_view' %}">My Team</a></li>
                         <li><a class="dropdown-item" href="{%  url 'desiderata.user' %}">My Desiderata</a></li>
                         {% if user.is_superuser %}
                             <li><hr class="dropdown-divider"></li>

@@ -1,5 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.http import HttpRequest
+from django.db.models import Count
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_safe
 from shifts.models import *
@@ -169,3 +170,43 @@ def get_hr_codes(request: HttpRequest) -> HttpResponse:
 
     return HttpResponse(json.dumps({'data': data}), content_type="application/json")
 
+
+def get_shift_summary(m, validSlots, revision, start, end) -> tuple:
+    scheduled_shifts = Shift.objects.filter(member=m,
+                                            slot__in=validSlots,
+                                            revision=revision,
+                                            date__gte=start,
+                                            date__lt=end).count()
+
+    differentSlots = Shift.objects.filter(member=m,
+                                          slot__in=validSlots,
+                                          revision=revision,
+                                          date__gte=start,
+                                          date__lt=end) \
+        .values('slot__abbreviation') \
+        .annotate(total=Count('slot'))
+
+    result = {a['slot__abbreviation']: a['total'] for a in differentSlots}
+    return scheduled_shifts, result
+
+
+@login_required
+def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
+    start = datetime.datetime.fromisoformat(request.GET.get('start')).date()
+    end = datetime.datetime.fromisoformat(request.GET.get('end')).date()
+    revision = Revision.objects.filter(valid=True).order_by("-number").first()
+    team = request.user.team
+
+    teamMembers = Member.objects.filter(team=team, is_active=True)
+    validSlots = Slot.objects.filter(used_for_lookup=True).order_by('hour_start')
+    teamMembersSummary = []
+    for m in teamMembers:
+        l, result = get_shift_summary(m, validSlots, revision, start, end)
+        memberSummary = [m.name, l]
+        for oneSlot in validSlots:
+            memberSummary.append(result.get(oneSlot.abbreviation, '--'))
+        teamMembersSummary.append(memberSummary)
+
+    header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end -  datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
+
+    return HttpResponse(json.dumps({'data': teamMembersSummary, 'header': header}), content_type="application/json")

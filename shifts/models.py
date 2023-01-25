@@ -102,6 +102,7 @@ class Slot(models.Model):
     hour_end = models.TimeField(blank=False)
     color_in_calendar = models.CharField(max_length=7, default='#0000FF')
     op = models.BooleanField(default=False)
+    used_for_lookup = models.BooleanField(default=False)
 
     def __str__(self):
         return '{} ({} - {})'.format(self.name, self.hour_start, self.hour_end)

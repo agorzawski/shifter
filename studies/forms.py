@@ -14,11 +14,14 @@ class StudyRequestForm(forms.ModelForm):
 
     class Meta:
         model = StudyRequest
-        fields = ('member', 'collaborators', 'title', 'description', 'duration', 'beam_current', 'beam_pulse_length', 'beam_destination', 'beam_reprate', 'jira',)
+        fields = ('member', 'collaborators', 'title', 'description', 'duration', 'booking_comment', 'beam_current',
+                  'beam_pulse_length', 'beam_destination', 'beam_reprate', 'jira', )
         widgets = {
             'collaborators': forms.SelectMultiple(attrs={'style': "width: 100%", 'id': 'collaborators_field'}),
+            'booking_comment': forms.Textarea(attrs={'placeholder': "Tell us more about potential constraints regarding your slot."}),
         }
         labels = {'member': 'Study Leader'}
+
 
 
 class StudyRequestFormClosing(forms.Form):

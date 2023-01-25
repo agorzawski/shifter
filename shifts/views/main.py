@@ -35,13 +35,24 @@ def index(request, team_id=-1):
     return prepare_main_page(request, revisions, team)
 
 
-def prepare_main_page(request, revisions, team, revision=None, filtered_campaigns=None, all_roles=False):
+@login_required
+def my_team(request):
+    revisions = Revision.objects.filter(valid=True).order_by("-number")
+    team = request.user.team
+    return prepare_main_page(request, revisions, team, my_team=True)
+
+
+def prepare_main_page(request, revisions, team, revision=None, filtered_campaigns=None, all_roles=False, my_team=False):
     if revision is None:
         revision = revisions.first()
     someDate = datetime.datetime.now() + datetime.timedelta(days=-61)  # default - always last two months
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(date_end__gt=someDate)
     if filtered_campaigns is not None:
         scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=filtered_campaigns)
+    months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    month_as_int = datetime.datetime.now().month
+    previous_month_as_int = months[months.index(month_as_int) - 1]
+    next_month_as_int = months[months.index(month_as_int) + 1]
     context = {
         'revisions': revisions,
         'displayed_revision': revision,
@@ -49,8 +60,13 @@ def prepare_main_page(request, revisions, team, revision=None, filtered_campaign
         'scheduled_campaigns_list': scheduled_campaigns,
         'all_roles': all_roles,
         'team': team,
+        'my_team': my_team,
+        'shift_slots': [] if not my_team else Slot.objects.filter(used_for_lookup=True).order_by('hour_start'),
+        'current_month': [-1, ""] if not my_team else [month_as_int, datetime.date(1900, month_as_int, 1).strftime('%B')],
+        'previous_month': [-1, ""] if not my_team else [previous_month_as_int, datetime.date(1900, previous_month_as_int, 1).strftime('%B')],
+        'next_month': [-1, ""] if not my_team else [next_month_as_int, datetime.date(1900, next_month_as_int, 1).strftime('%B')]
     }
-    return render(request, 'index.html', prepare_default_context(request, context))
+    return render(request, 'team_view.html', prepare_default_context(request, context))
 
 
 @require_safe
@@ -69,6 +85,8 @@ def dates(request):
 @require_http_methods(["POST"])
 @csrf_protect
 def dates_slots_update(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
     count = 0
     for slot in Slot.objects.all():
         slot.op = False

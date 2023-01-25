@@ -1,69 +1,65 @@
 {% extends 'template_main.html'%}
 {% block body %}
-
-    <div class="col-sm-8 mx-auto">
-      <main role="main">
-
-      <div class="float-left" style="padding:40px;text-align:center;" >
-        <h1> <span class="badge badge-primary"> Defined campaigns and their dates </span></h1>
-        {% for c in campaigns %}
-          <p> <span class="badge badge-primary">{{c.name}}</span> for <strog>{{c.date_start}}</strog> - <strong>{{c.date_end}}</strong> <small>(revision {{c.revision}})</small> </p>
-        {% endfor%}
-      </div>
-
-        <hr>
-        <div class="float-none" style="padding:40px;text-align:center;" >
-
-        <form action="{% url "shifter:slots-update-post" %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
-        {% csrf_token %}
-          <h1>
-            <span class="badge badge-info"> Defined day slots </span>
-            <button class="btn btn-info" {%if not request.user.is_staff %} disabled {%endif%} >Update Slots OP </button></h1><h4><span class="badge badge-primary"> DefaultShiftSlot </span></h4>
-        {% for c in slots %}
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="{{c.abbreviation}}" name="{{c.abbreviation}}" {% if c.op%}checked{%endif%} {%if not request.user.is_staff %} disabled {%endif%}>
-            <label class="form-check-label">
-              <span class="badge badge-{%if c == DEFAULT_SHIFT_SLOT%}primary{%else%}info{%endif%}">{{c.name}} ({{c.abbreviation}})</span> for <strong>{{c.hour_start}}</strong> - <strong>{{c.hour_end}}</strong>
-            </label>
-          </div>
-          {% endfor%}
-        </form>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col text-center">
+            <h1>Defined campaigns and their dates</h1>
+            {% for c in campaigns %}
+              <p> <span class="badge bg-primary">{{c.name}}</span> for <strong>{{c.date_start}}</strong> - <strong>{{c.date_end}}</strong> <small>(revision {{c.revision}})</small> </p>
+            {% endfor%}
         </div>
-
-         <hr>
-        <div class="float-left" style="padding:40px;text-align:center;" >
-        <h1> <span class="badge badge-secondary"> Teams </span></h1>
-        {% for c in teams %}
-          <p> <a href="/t?id={{c.id}}"> {{c.name}} </a></p>
-        {% endfor%}
-        </div>
-
-
-        <div class="float-left" style="padding:40px;text-align:center;" >
-        <h1> <span class="badge badge-secondary"> Shift roles </span></h1>
-        {% for c in shiftroles %}
-          <p>{{c.name}}  <span class="badge badge-secondary">{{c.abbreviation}}</span> </p>
-        {% endfor%}
-        </div>
-
-
-        <div class="float-left" style="padding:40px;text-align:center;">
-        <h1> <span class="badge badge-secondary"> Member roles </span></h1>
-        {% for c in memberroles %}
-          <p>{{c.name}}  <span class="badge badge-secondary">{{c.abbreviation}}</span> </p>
-        {% endfor%}
-        </div>
-
-
-        <div class="float-left" style="padding:40px;text-align:center;">
-        <h1> <span class="badge badge-secondary"> Available Assets </span></h1>
-        {% for a in assets %}
-          <p><span class="badge badge-secondary">{{a.asset_type}}</span> {{a.name}}</p>
-        {% endfor%}
-        </div>
-
-
-      </main>
     </div>
-
+    <hr>
+    <div class="row justify-content-center">
+        <div class="col">
+            <h1 class="text-center">Defined day slots</h1>
+            <form action="{% url "shifter:slots-update-post" %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+                {% csrf_token %}
+                {% for c in slots %}
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="{{c.abbreviation}}" name="{{c.abbreviation}}" {% if c.op%}checked{%endif%} {%if not request.user.is_staff %} disabled {%endif%}>
+                    <label class="form-check-label" for="flexSwitchCheckDefault"><span class="badge bg-{%if c == DEFAULT_SHIFT_SLOT%}primary{%else%}info{%endif%}">{{c.name}} ({{c.abbreviation}})</span> for <strong>{{c.hour_start}}</strong> - <strong>{{c.hour_end}}</strong></label>
+                </div>
+                {% endfor%}
+           {%if request.user.is_staff %}  <button class="btn btn-info"  >Update Slots OP </button><h4><span class="badge bg-primary"> DefaultShiftSlot </span></h4>{%endif%}
+            </form>
+        </div>
+    </div>
+    <hr>
+    <div class="row justify-content-center">
+        <div class="col text-center">
+            <h1>Teams</h1>
+            {% for c in teams %}
+                <p> <a href="{%  url 'team_view' team_id=c.id %}"> {{c.name}} </a></p>
+            {% endfor%}
+        </div>
+    </div>
+    <hr>
+    <div class="row justify-content-center">
+        <div class="col text-center">
+            <h1>Shift roles</h1>
+            {% for c in shiftroles %}
+                <p>{{c.name}} <span class="badge bg-secondary">{{c.abbreviation}}</span> </p>
+            {% endfor%}
+        </div>
+    </div>
+    <hr>
+    <div class="row justify-content-center">
+        <div class="col text-center">
+            <h1>Member roles</h1>
+            {% for c in memberroles %}
+              <p>{{c.name}}  <span class="badge bg-secondary">{{c.abbreviation}}</span> </p>
+            {% endfor%}
+        </div>
+    </div>
+    <hr>
+    <div class="row justify-content-center">
+        <div class="col text-center">
+            <h1>Available Assets</h1>
+            {% for a in assets %}
+              <p><span class="badge bg-secondary">{{a.asset_type}}</span> {{a.name}}</p>
+            {% endfor%}
+        </div>
+    </div>
+</div>
 {% endblock %}

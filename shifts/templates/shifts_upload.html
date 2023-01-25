@@ -1,69 +1,66 @@
 {% extends 'template_main.html'%}
-{% block 'body' %}
-    <div class="col-sm-8 mx-auto">
-      <main role="main">
-          <h2> How to prepare an input</h2>
-          Provide a file (in the CSV format) that has lines in the following structure:
-          <br>
-          <pre><code>
-          FirstName1,NWH,NWH,-,-,-,
-          FirstName2,NWH,-,NWH,NWH,-,
-          FirstName3,PM,-,-,NWH,PM,
-          </code></pre>
+{% block body %}
 
-          <blockquote class="blockquote"><p>
-              <strong>Note: </strong>
-              Each shifter (name) can have a different number of columns defined</li>
-          </p></blockquote>
-          This will assign to FirstName1 normal working hours (NWH, other available AM and PM) for the consecutive days.
-
-          <br>
-        <h1> Provide an input</h1>
-        <form action="{% url 'shifter:shift-upload-post' %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
-
-        {% csrf_token %}
-        <div class="form-group row">
-                <input class="form-control-file" type="file" name="csv_file" id="csv_file" required>
-        </div>
-
-      <div class="form-group">
-            <select name='camp' id='camp' class="custom-select" required>
-              <option value="">Campaign assignment</option>
-                {% for camp in campaigns %}
-                    <option value="{{camp.id}}">{{camp.name}}</option>
-                {% endfor %}
-            </select>
-            <div class="invalid-feedback">Example invalid custom select feedback</div>
-      </div>
-
-      <div class="form-group">
-            <select name='revision' id='revision' class="custom-select" required>
-              <option value="">Revision assignment</option>
-                {% for rev in revisions %}
-                    <option value="{{rev.number}}"
-                            {% if rev == latest_revision %}selected="selected"{%endif%}>
-                        {{rev}} (validity: {{rev.valid}}) </option>
-                {% endfor %}
-            </select>
-            <div class="invalid-feedback">Example invalid custom select feedback</div>
-      </div>
-
-      <div class="form-group">
-            <select name='role' id='role' class="custom-select" >
-              <option value="-1">Role assignment (don't change if use default)</option>
-                {% for r in roles %}
-                    <option value="{{r.id}}">{{r.name}} </option>
-                {% endfor %}
-            </select>
-            <div class="invalid-feedback">Example invalid custom select feedback</div>
-      </div>
-
-        <div class="form-group row">
-            <div class="col-md-3 col-sm-3 col-xs-12 col-md-offset-3" style="margin-bottom:10px;">
-                 <button class="btn btn-primary"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;"></span>Upload </button>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col">
+            <h1>How to prepare an input</h1>
+            <p>Provide a file (in the CSV format) that has lines in the following structure:</p>
+            <hr>
+            <pre><code>
+                FirstName1,NWH,NWH,-,-,-,
+                FirstName2,NWH,-,NWH,NWH,-,
+                FirstName3,PM,-,-,NWH,PM,
+            </code></pre>
+            <hr>
+            <div class="alert alert-primary" role="alert">
+                <strong>Note: </strong>
+                Each shifter (name) can have a different number of columns defined <br>
+                This will assign to FirstName1 normal working hours (NWH, other available AM and PM) for the consecutive days.
             </div>
         </div>
-        </form>
-      </main>
     </div>
+    <div class="row justify-content-center">
+        <div class="col">
+            <h1>Provide an input</h1>
+            <form action="{% url 'shifter:shift-upload-post' %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="csv_file" class="form-label">CSV File: </label>
+                    <input class="form-control-file" type="file" name="csv_file" id="csv_file" required>
+                </div>
+                <div class="mb-3">
+                    <label for="camp" class="form-label">Campaign: </label>
+                    <select class="form-select" name='camp' id='camp' required>
+                        <option value="">Campaign assignment</option>
+                        {% for camp in campaigns %}
+                            <option value="{{camp.id}}">{{camp.name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="revision" class="form-label">Revision: </label>
+                    <select class="form-select" name='revision' id='revision' required>
+                        <option value="">Revision assignment</option>
+                        {% for rev in revisions %}
+                            <option value="{{rev.number}}"
+                                    {% if rev == latest_revision %}selected="selected"{%endif%}>
+                                {{rev}} (validity: {{rev.valid}}) </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">Role: </label>
+                    <select class="form-select" name='role' id='role'>
+                        <option value="-1">Role assignment (don't change if use default)</option>
+                        {% for r in roles %}
+                            <option value="{{r.id}}">{{r.name}} </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            <button class="btn btn-primary"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;"></span>Upload </button>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

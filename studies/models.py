@@ -139,10 +139,10 @@ class StudyRequest(models.Model):
                                     related_name='study_closing_member')
 
 
-
     #Study variables
     title = models.CharField(max_length=200, blank=False, null=False, help_text='Title')
     description = models.TextField(max_length=2000, blank=True, null=True, help_text='Study Description')
+    booking_comment = models.TextField(max_length=2000, blank=True, null=True, help_text='Comment regarding time slot')
     beam_current = models.FloatField(default=6.0, blank=True, null=True, help_text='Max. Beam Current (mA)')
     beam_pulse_length = models.FloatField(default=5.0, blank=True, null=True, help_text='Max. Beam Pulse Length (us)')
     beam_destination = models.CharField(default='LEBT', choices=BEAM_DESTINATION_CHOICES, blank=True, null=True, max_length=200, help_text='Beam Destination')
@@ -152,8 +152,8 @@ class StudyRequest(models.Model):
     duration = models.IntegerField(default=1, choices=STUDY_DURANTION_CHOICES, null=False, blank=False, help_text='Study duration (30 min steps)')
 
     #Admin variables
-    slot_start = models.DateTimeField(auto_now_add=True)
-    slot_end = models.DateTimeField(auto_now_add=True)
+    slot_start = models.DateTimeField(default=datetime.datetime.now)
+    slot_end = models.DateTimeField(default=datetime.datetime.now)
     priority = models.BooleanField(default=False)
 
     state = models.CharField(max_length=1,

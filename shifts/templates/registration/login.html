@@ -1,26 +1,29 @@
 {% extends 'template_main.html'%}
+{% load crispy_forms_tags %}
 
 {% block body %}
-
-<main role="main">
-  <div class="col-sm-8 mx-auto">
-    <div class="jumbotron">
-      <h1>Member login</h1>
-      <p>Please enter your username and password to continue.</p>
-      <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit" class="btn btn-success">Login</button>
-      </form>
-      <br>
-      <p> <a class="btn btn-warning" href="{% url 'password_reset' %}">If you have forgotten your password, please reset password here.</a></p>
-      <br>
-  </div>
+<div class="container">
+    <div class="row justify-content-center">
+        <h1>Member Login</h1>
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col">
+                    {{ form.username|as_crispy_field }}
+                </div>
+                <div class="col">
+                    {{ form.password|as_crispy_field }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col d-grid gap-2">
+                    <a class="btn btn-primary " href="{% url 'password_reset' %}" role="button">Reset password</a>
+                </div>
+                <div class="col d-grid gap-2">
+                    <button type="submit" class="btn btn-success">Login</button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
-</main>
-
-
-
-
-
 {% endblock %}

@@ -9,7 +9,7 @@
         <h3 class="text-center mb-3">{{today.date}} {{today.time}}  <span class="badge bg-info text-dark">SID: <strong>{{shiftID}}</strong> </span> </h3>
     </div>
 
-    {% if activeSlot != None %}
+    {% if not activeSlot %}
         <div class="row justify-content-center">
             <div class="alert alert-warning" role="alert">
                 Requested data is <strong>outside</strong> scheduled shifts, showing the last one registered before the requested date!

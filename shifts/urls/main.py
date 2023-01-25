@@ -7,12 +7,11 @@ from shifts.views import main as views
 urlpatterns = [
     path('', views.index, name='index'),
     path('team/<int:team_id>', views.index, name='team_view'),
+    path('myteam/', views.my_team, name='my_team_view'),
     path('today', views.todays, name='today'),
     path('user', views.user, name='user'),
     path('user/rev/<int:rid>', views.user, name='user'),
     path('users', views.users, name='users'),
-    #path('user/<int:u>', views.user, name='user'),
-    #path('user/<int:u>/rev/<int:rid>', views.user, name='user'),
     path('calendar.ics', views.icalendar_view, name='calendar'),
     path('ical', views.icalendar, name='calendar_public'),
     path('dates', views.dates, name='dates'),

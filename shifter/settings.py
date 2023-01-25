@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'studies.apps.StudiesConfig',
     'assets.apps.AssetsConfig',
     'crispy_forms',
+    "crispy_bootstrap5",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -212,3 +213,6 @@ DEFAULT_SHIFTER_TO_JSON = os.getenv('DEFAULT_SHIFTER_TO_JSON', ['SL', 'OP', 'STL
 SHIFTER_TEST_INSTANCE = os.getenv("SHIFTER_TEST_INSTANCE", 'False').lower() in ('true', '1', 't')
 SHIFTER_PRODUCTION_INSTANCE = os.getenv('SHIFTER_PRODUCTION_INSTANCE', '')
 STOP_DEV_MESSAGES = os.getenv('STOP_DEV_MESSAGES', 'False').lower() in ('true', '1', 't')
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"

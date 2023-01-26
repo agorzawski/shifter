@@ -56,10 +56,10 @@
                 {%  endif %}
             </ul>
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                <form class="d-flex">
-                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                    <button class="btn btn-outline-success" type="submit">Search</button>
-                </form>
+
+                <div id="remote" data-source-url='{% url "ajax.search" %}'>
+                    <input type="text" name="search_field" id="search_field" class="form-control input-lg typeahead" placeholder="Search" />
+                </div>
                 <!-- user authentication part -->
                 {% if user.is_authenticated %}
                 <li class="nav-item dropdown dropstart">

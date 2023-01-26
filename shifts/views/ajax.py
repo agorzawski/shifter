@@ -12,6 +12,7 @@ from shifts.hrcodes import public_holidays, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
 import json
+from watson import search as watson
 
 
 def _get_member(request: HttpRequest):
@@ -210,3 +211,15 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
     header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end -  datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
 
     return HttpResponse(json.dumps({'data': teamMembersSummary, 'header': header}), content_type="application/json")
+
+
+def search(request: HttpRequest) -> HttpResponse:
+    answer=[]
+    search = request.GET.get('search')
+    search_results = watson.search(search, ranking=False)
+    for result in search_results:
+        try:
+            answer.append({'value': result.object.search_display(), 'url': result.object.search_url()})
+        except AttributeError:
+            pass
+    return HttpResponse(json.dumps(answer), content_type="application/json")

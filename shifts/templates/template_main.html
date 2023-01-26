@@ -12,6 +12,8 @@
         <link rel="stylesheet" href="{% static 'bootstrap-icons/font/bootstrap-icons.css'%}">
         <link rel="stylesheet" href="{% static 'fullcalendar/main.min.css'%}">
         <link rel="stylesheet" href="{% static 'css/custom.css'%}">
+        <link rel="stylesheet" href="{% static 'css/search.css'%}">
+
         {% block extra_css %}
         {% endblock %}
     </head>
@@ -56,9 +58,11 @@
     <script type="text/javascript" src="{% static 'bootstrap/dist/js/bootstrap.bundle.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'fullcalendar/main.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/global.min.js' %}"></script>
-
+    <script type="text/javascript" src="{% static 'typeahead.js/dist/typeahead.bundle.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/search_field.min.js' %}"></script>
     {%  block js %}
     {% endblock %}
+
     {%  if SHIFTER_TEST_INSTANCE %}
     <div id="dev_warning" aria-label="Warning this page is a beta."></div>
     {% endif %}

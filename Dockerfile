@@ -27,8 +27,6 @@ CMD ["npm", "start"]
 ENV PATH /venv/bin:$PATH
 
 RUN python manage.py collectstatic --noinput
-RUN python manage.py installwatson
-RUN python manage.py buildwatson
 
 EXPOSE 8000
 

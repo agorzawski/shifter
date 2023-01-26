@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import cached_property
+from django.urls import reverse
 
 class Team(models.Model):
     name = models.CharField(max_length=200)
@@ -13,6 +14,12 @@ class Team(models.Model):
         permissions = (
             ('view_desiderata', 'View Desiderata'),
         )
+
+    def search_display(self):
+        return self.name
+
+    def search_url(self):
+        return reverse('team_view', kwargs={"team_id": self.id})
 
 
 class Role(models.Model):
@@ -51,3 +58,9 @@ class Member(AbstractUser):
 
     def __str__(self):
         return '{}'.format(self.name)
+
+    def search_display(self):
+        return "User: " + self.name
+
+    def search_url(self):
+        return reverse('users') + f"?u={self.id}"

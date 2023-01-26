@@ -11,5 +11,6 @@ urlpatterns = [
     path('get_holidays', ajax_views.get_holidays, name='ajax.get_holidays'),
     path('get_assets', ajax_views.get_assets, name='ajax.get_assets'),
     path('get_hr_codes', ajax_views.get_hr_codes, name='ajax.get_hr_codes'),
-    path('get_team_breakdown', ajax_views.get_shift_breakdown, name='ajax.get_team_breakdown')
+    path('get_team_breakdown', ajax_views.get_shift_breakdown, name='ajax.get_team_breakdown'),
+    path('search', ajax_views.search, name='ajax.search')
 ]

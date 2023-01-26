@@ -49,6 +49,12 @@ class Contact(models.Model):
         else:
             return ""
 
+    def search_display(self):
+        return "Contact: " + self.name
+
+    def search_url(self):
+        return str(self)
+
 
 class ShifterMessage(models.Model):
     number = models.AutoField(primary_key=True, blank=True)

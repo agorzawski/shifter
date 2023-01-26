@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from members.models import Member
-
+from django.urls import reverse
 
 class AssetType(models.Model):
     name = models.CharField(max_length=200)
@@ -17,6 +17,12 @@ class Asset(models.Model):
 
     def __str__(self):
         return '{} | {}'.format(self.asset_type.name, self.name)
+
+    def search_display(self):
+        return "Asset: " + str(self)
+
+    def search_url(self):
+        return reverse('assets')
 
 
 class AssetBooking(models.Model):
@@ -61,3 +67,9 @@ class AssetBooking(models.Model):
             else:
                 data['closing'] = f"<a class='btn btn-outline-success' data-book_id={self.id} data-name='{self.asset.asset_type.name} - {self.asset.name}' onclick='test(event)'> End booking </a>"
         return data
+
+    def search_display(self):
+        return "Asset booking: " + str(self)
+
+    def search_url(self):
+        return reverse('assets')

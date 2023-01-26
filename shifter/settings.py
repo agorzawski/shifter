@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'guardian',
+    'watson',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'watson.middleware.SearchContextMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = (
@@ -196,6 +198,7 @@ NPM_FILE_PATTERNS = {
     'datatables.net-searchpanes': ['js/dataTables.searchPanes.min.js'],
     'moment': ['min/moment-with-locales.min.js', 'min/moment-with-locales.min.js.map'],
     'daterangepicker': ['daterangepicker.css', 'daterangepicker.js'],
+    'typeahead.js': ['dist/typeahead.bundle.min.js']
 }
 
 

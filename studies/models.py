@@ -5,6 +5,7 @@ from django.db.models import DO_NOTHING
 import datetime
 from members.models import Member
 from enum import Enum
+from django.urls import reverse
 
 SIMPLE_DATE = "%Y-%m-%d"
 SIMPLE_TIME = "%H:%M"
@@ -163,6 +164,12 @@ class StudyRequest(models.Model):
     booking_created = models.DateTimeField(blank=False)
     booking_finished = models.DateTimeField(blank=True, null=True, )
     after_comment = models.TextField(max_length=2000, blank=True, default=None, null=True)
+
+    def search_display(self):
+        return "Study: " + self.title
+
+    def search_url(self):
+        return reverse('studies:study_request')
 
     def __str__(self):
         return '{}'.format(self.member)

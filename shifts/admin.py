@@ -3,7 +3,19 @@ from django.utils.translation import ngettext
 from django.contrib import messages
 # Register your models here.
 
-from shifts.models import ShifterMessage, Revision, Campaign, Slot, Shift, ShiftRole, ShiftID
+from shifts.models import ShifterMessage, Revision, Campaign, Slot, Shift, ShiftRole, ShiftID, Contact
+
+
+@admin.register(Contact)
+class ContactAdmin(admin.ModelAdmin):
+    model = Contact
+    list_display = [
+        'active',
+        'fa_icon',
+        'contact_type',
+        'contact',
+        'name'
+    ]
 
 
 @admin.register(ShifterMessage)

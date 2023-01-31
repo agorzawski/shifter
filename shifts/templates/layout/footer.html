@@ -1,0 +1,15 @@
+<footer class="{%  if SHIFTER_TEST_INSTANCE %}footer-dev{% else %}footer{% endif %}">
+    <div class="container text-center">
+        <div class="row align-items-center">
+            <div class="col">
+                <a class="link-secondary" target='new' href='{{APP_REPO}}/-/issues/new'>Submit ideas/bugs/requests</a>
+            </div>
+            <div class="col">
+                {{ APP_NAME }} - <a class="link-secondary" target='new' href='{{APP_REPO}}/-/blob/master/CHANGELOG.md'>{{APP_GIT_TAG}}</a>
+            </div>
+            <div class="col">
+                <a class="link-secondary" href='{%  url 'dates' %}'>Environment configuration</a>
+            </div>
+        </div>
+    </div>
+</footer>

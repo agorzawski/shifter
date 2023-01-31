@@ -1,0 +1,38 @@
+{%  load static %}
+
+<div class="col-md-3">
+    <div class="contact-box center-version">
+        <div>
+            <img alt="image" class="rounded-circle" src={% if shift.member.photo|length > 0 %} "data:image/gif;base64,{{shift.member.photo}}" {%  else %} {% static 'img/anonymous.png'%} {% endif %}/>
+            <h3 class="m-b-xs"><strong>{{ shift.member.name}}</strong></h3>
+            <h3><span class="badge bg-secondary">{{ shift.real_role}}</span></h3>
+
+        </div>
+        {%  if shift.member.mobile or shift.member.email %}
+        <div class="contact-box-footer">
+            {%  if shift.member.mobile %}
+            <div class="contact-box-link">
+                <a href="tel:{{ shift.member.mobile }}">
+                    <span class="fa-stack fa-x">
+                        <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
+                        <i class="fa-solid fa-phone fa-stack-1x fa-inverse"></i>
+                    </span>
+                    {{ shift.member.mobile }}
+                </a>
+            </div>
+            {%  endif %}
+            {%  if shift.member.email %}
+            <div class="contact-box-link">
+                <a href="mailto:{{ shift.member.email }}">
+                    <span class="fa-stack fa-x">
+                        <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
+                        <i class="fa-solid fa-mail-bulk fa-stack-1x fa-inverse"></i>
+                    </span>
+                    {{ shift.member.email }}
+                </a>
+            </div>
+            {%  endif %}
+        </div>
+        {%  endif %}
+    </div>
+</div>

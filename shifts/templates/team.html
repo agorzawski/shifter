@@ -1,33 +1,31 @@
 {% extends 'template_main.html'%}
 {% load static %}
-{% block 'extra_menu_item' %}
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <strong>Display options<small> Revision:{{displayed_revision}}</small></strong>
-        </a>
-        <form class="dropdown-menu p-4">
-          {% csrf_token %}
-          <div class="form-group">
-          <label>Displayed campaigns:</label>
 
-          {% for c in campaigns %}
-          <br><input class="form-check-input" type="checkbox" name="campaign{{c.id}}" id="campaign{{c.id}}" value="{{c.id}}"
-                     {%if c in scheduled_campaigns_list%} checked {%endif%} disabled>
-            <label class="form-check-label" for="campaign{{c.id}}">{{c}}<br>
-            <small><strong>{{c.date_start}} - {{c.date_end}}</strong></small></label>
-          {% endfor %}
-          </div>
-<!--          <div class="dropdown-divider"></div>-->
-<!--          <button type="submit" class="btn btn-primary" {%if not logged_user %} disabled {%endif%}>Apply</button>-->
-        </form>
-      </li>
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'select2/dist/css/select2.min.css'%}">
 {% endblock %}
 
-{% block 'body' %}
+{% block body %}
+<div class="container-fluid mb-5 pb-5">
+    <div class="row">
+        <h2 class="text-center mb-3"><team_id data-id="{{ team.id }}">{{team}} - Planning Overview</team_id></h2>
+    </div>
+    <div class="row">
+        <div class="col">
+            {% url 'ajax.get_team_events' as the_url %}
+            {% include 'calendar.html' with event_source=the_url %}
+        </div>
+    </div>
+</div>
+
+{%  include 'layout/calendar_tools_off_canvas.html' %}
+
+
+
     <div class="col-sm-8 mx-auto">
       <main role="main">
           <h1> <span class="badge badge-light">Hello {{member.first_name}} <team_id data-id="{{ team.id }}">{{team}}!</team_id></span></h1>
-          {% if user.is_authenticated %}
+          {% if request.user.is_authenticated %}
           <h4><a data-toggle="collapse" href="#collapseCodesDiv" role="button"
                  aria-expanded="false" aria-controls="collapseCodesDiv">Check tabular shift breakdown</a></h4>
           {% endif %}
@@ -36,8 +34,7 @@
     </div>
 
 <br>
-{% url 'ajax.get_team_events' as the_url %}
-{% include 'calendar.html' with event_source=the_url %}
+
 <div class="col-sm-8 mx-auto">
     <p>Your rota-maker{{ rota_maker|pluralize }} : {%  for a_rota_maker in rota_maker %} <a href="mailto:{{ a_rota_maker.email }}">{{ a_rota_maker.first_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %} </p>
 </div>
@@ -80,5 +77,12 @@
 {% endblock %}
 
 {%  block js %}
+<script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/calendar_script.min.js' %}"></script>
+<script>
+$(document).ready(function() {
+    $('#displayed_campaigns').select2();
+    $('#displayed_revision').select2();
+});
+</script>
 {% endblock %}

@@ -5,6 +5,7 @@ from django.db.models import DO_NOTHING
 import datetime
 from members.models import Member
 from enum import Enum
+from django.urls import reverse
 
 SIMPLE_DATE = "%Y-%m-%d"
 SIMPLE_TIME = "%H:%M"
@@ -132,27 +133,28 @@ class StudyRequest(models.Model):
         ('D', 'Done'),
     ]
 
-    member = models.ForeignKey(Member, null=True, on_delete=models.SET_NULL, related_name='study_using_member',help_text='study leader')
+    member = models.ForeignKey(Member, null=True, on_delete=models.SET_NULL, related_name='study_using_member')
+    collaborators = models.ManyToManyField(Member, blank=True)
     booked_by = models.ForeignKey(Member, null=True, on_delete=models.SET_NULL, related_name='study_booking_member')
     finished_by = models.ForeignKey(Member, null=True, blank=True, on_delete=models.SET_NULL,
                                     related_name='study_closing_member')
 
-    #collaborators = models.ForeignKey(Collaborators, null=True, on_delete=models.SET_NULL, help_text='study collaborators')
 
     #Study variables
-    title = models.CharField(max_length=200, blank=True, null=True, help_text='Title')
+    title = models.CharField(max_length=200, blank=False, null=False, help_text='Title')
     description = models.TextField(max_length=2000, blank=True, null=True, help_text='Study Description')
+    booking_comment = models.TextField(max_length=2000, blank=True, null=True, help_text='Comment regarding time slot')
     beam_current = models.FloatField(default=6.0, blank=True, null=True, help_text='Max. Beam Current (mA)')
     beam_pulse_length = models.FloatField(default=5.0, blank=True, null=True, help_text='Max. Beam Pulse Length (us)')
     beam_destination = models.CharField(default='LEBT', choices=BEAM_DESTINATION_CHOICES, blank=True, null=True, max_length=200, help_text='Beam Destination')
     beam_reprate = models.IntegerField(default=1, choices=REP_RATE_CHOICES, blank=True, null=True,
-                                     help_text='Max. beam repetition rate (Hz)')
-    jira = models.URLField(blank=True, null=True,help_text='Add a JIRA link if possible')
-    duration = models.IntegerField(default=1,choices=STUDY_DURANTION_CHOICES, null=True, blank=True, help_text='Study duration (30 min steps)')
+                                       help_text='Max. beam repetition rate (Hz)')
+    jira = models.URLField(blank=True, null=True, help_text='Add a JIRA link if possible')
+    duration = models.IntegerField(default=1, choices=STUDY_DURANTION_CHOICES, null=False, blank=False, help_text='Study duration (30 min steps)')
 
     #Admin variables
-    slot_start = models.DateTimeField(auto_now_add=True)
-    slot_end = models.DateTimeField(auto_now_add=True)
+    slot_start = models.DateTimeField(default=datetime.datetime.now)
+    slot_end = models.DateTimeField(default=datetime.datetime.now)
     priority = models.BooleanField(default=False)
 
     state = models.CharField(max_length=1,
@@ -162,6 +164,12 @@ class StudyRequest(models.Model):
     booking_created = models.DateTimeField(blank=False)
     booking_finished = models.DateTimeField(blank=True, null=True, )
     after_comment = models.TextField(max_length=2000, blank=True, default=None, null=True)
+
+    def search_display(self):
+        return "Study: " + self.title
+
+    def search_url(self):
+        return reverse('studies:study_request')
 
     def __str__(self):
         return '{}'.format(self.member)
@@ -192,3 +200,33 @@ class StudyRequest(models.Model):
                  'borderColor': '#FF3333' if self.priority else '#BBBBBB'
         }
         return event
+
+    def study_as_datatable_json(self, user=None):
+        data = {'who': {'member': f'{self.member}', 'team': f'{self.member.team}'},
+                'collaborators': [f'{m}' for m in self.collaborators.all()],
+                'title': self.title,
+                'description': self.description,
+                'request_start': {'display': self.slot_start.strftime('%b. %d, %Y, %I:%M%p'), 'order': self.slot_end.second},
+                'request_end': {'display': self.slot_end.strftime('%b. %d, %Y, %I:%M%p'), 'order': self.slot_end.second},
+                'state': {'order': [tup for tup in self.BOOKING_STATE_CHOICES if tup[0] == self.state][0][1],
+                          'display': ''},
+                'booking': 'pass'}
+        if self.state == 'R':
+            data['state']['display'] = '<span class="badge text-bg-primary">Requested</span>'
+        elif self.state == 'B':
+            data['state']['display'] = '<span class="badge text-bg-success">Booked</span>'
+        elif self.state == 'C':
+            data['state']['display'] = '<span class="badge text-bg-danger">Canceled</span>'
+        elif self.state == 'D':
+            data['state']['display'] = '<span class="badge text-bg-info">Done</span>'
+        else:
+            data['state']['display'] = '<span class="badge text-bg-warning">Unknown</span>'
+
+        if self.state == 'D' or self.state == 'C':
+            data['booking'] = f"<span class='badge bg-success'>Booking over</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}"
+        else:
+            if self.member != user and not user.is_staff:
+                data['booking'] = data['state']['display']
+            else:
+                data['booking'] = f"<a class='btn btn-outline-success' data-book_id={self.id} data-name='{self.title}' onclick='test(event)'> Edit booking </a>"
+        return data

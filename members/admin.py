@@ -13,6 +13,7 @@ class MemberAdmin(UserAdmin):
         '_nameAll',
         'is_staff',
         'is_superuser',
+        'is_active',
         'team',
         'role',
         'email',
@@ -33,6 +34,7 @@ class MemberAdmin(UserAdmin):
             'email',
             'mobile',
             'photo',
+            'is_active'
         )}),
         (_('Permissions'), {'fields': (
             'is_staff',

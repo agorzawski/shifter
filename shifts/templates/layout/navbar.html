@@ -1,0 +1,90 @@
+{%  load static %}
+
+<nav class="navbar navbar-expand-lg navbar-light {%  if SHIFTER_TEST_INSTANCE %}bg-danger{% else %}bg-light{% endif %}">
+    <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#shifterNavBar" aria-controls="shifterNavBar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="shifterNavBar">
+            <a class="navbar-brand" href="{% url 'shifter:index' %}">{{ APP_NAME }}</a>
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <!-- On shift now -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'today' %}active{%  endif %}" href="{%  url 'today' %}"><i class="fa-solid fa-users-between-lines"></i> Now on shift</a>
+                </li>
+                <!-- Overview -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{%  endif %}" href="{%  url 'index' %}"><i class="fa-solid fa-calendar-days"></i> Overview</a>
+                </li>
+                <!-- Team List -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-people-group"></i> Team View
+                    </a>
+                    <ul class="dropdown-menu {% if request.resolver_match.url_name == 'team-simple' %}active{%  endif %}">
+                        {% for a_team in teams %}
+                            <li><a class="dropdown-item"  href="{%  url 'team_view' team_id=a_team.id %}"> {{a_team.name}} </a></li>
+                        {% endfor%}
+                    </ul>
+                </li>
+                <!-- Assets and study Link (Login Required) -->
+                {%  if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'assets' %}active{%  endif %}" href="{%  url 'assets' %}"><i class="fa-solid fa-screwdriver-wrench"></i> Assets</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'study_request' %}active{%  endif %}" href="{%  url 'studies:study_request' %}"><i class="fa-solid fa-graduation-cap"></i> Studies</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'users' %}active{%  endif %}" href="{%  url 'users' %}"><i class="fa-solid fa-users-viewfinder"></i> Users Planning</a>
+                </li>
+                {%  endif %}
+                <!-- Rota-maker Link (Rota-maker role required) -->
+                {%  if rota_maker_for %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-people-group"></i> Rota-maker
+                    </a>
+                    <ul class="dropdown-menu {% if request.resolver_match.url_name == 'desiderata.team_view' %}active{%  endif %}">
+                        {% for a_managed_team in rota_maker_for %}
+                            <a class="dropdown-item"  href="{%  url 'desiderata.team_view' team_id=a_managed_team.id %}"> {{a_managed_team.name}} </a>
+                        {% endfor%}
+                        <hr class="dropdown-divider">
+                        <a class="dropdown-item" href="{% url 'shift-upload' %}">Upload planning</a>
+                    </ul>
+                </li>
+                {%  endif %}
+            </ul>
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+
+                <div id="remote" data-source-url='{% url "ajax.search" %}'>
+                    <input type="text" name="search_field" id="search_field" class="form-control input-lg typeahead" placeholder="Search" />
+                </div>
+                <!-- user authentication part -->
+                {% if user.is_authenticated %}
+                <li class="nav-item dropdown dropstart">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center m-0 p-0 ps-3" href="#" id="navbarDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false" >
+                        <img class="rounded-circle" loading="lazy" height="35" src={% if shift.member.photo|length > 0 %} "data:image/gif;base64,{{shift.member.photo}}" {%  else %} {% static 'img/anonymous.png'%} {% endif %}/>
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <li><a class="dropdown-item" href="{% url 'user' %}">My Shifts</a></li>
+                        <li><a class="dropdown-item" href="{% url 'my_team_view' %}">My Team</a></li>
+                        <li><a class="dropdown-item" href="{%  url 'desiderata.user' %}">My Desiderata</a></li>
+                        {% if user.is_superuser %}
+                            <li><hr class="dropdown-divider"></li>
+                            <a class="dropdown-item" href="{%  url 'admin:index' %}">Administration</a>
+                        {%  endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'logout' %}">Logout</a>
+                        </li>
+                    </ul>
+                </li>
+                {% else %}
+                    <a class="btn btn-outline-success ms-2" href="{%  url 'login' %}" role="button">Login</a>
+                {% endif %}
+                <!---->
+            </ul>
+        </div>
+    </div>
+</nav>

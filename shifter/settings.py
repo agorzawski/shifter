@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'studies.apps.StudiesConfig',
     'assets.apps.AssetsConfig',
     'crispy_forms',
+    "crispy_bootstrap5",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'guardian',
+    'watson',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'watson.middleware.SearchContextMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = (
@@ -73,6 +76,11 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'shifts.permanent_contexts.operation_crew_context',
+                'shifts.permanent_contexts.useful_contact_context',
+                'shifts.permanent_contexts.application_context',
+                'shifts.permanent_contexts.rota_maker_role',
+                'shifts.permanent_contexts.nav_bar_context',
             ],
         },
     },
@@ -148,7 +156,8 @@ AUTH_USER_MODEL = 'members.Member'
 
 LOGIN_REDIRECT_URL = '/user'
 LOGOUT_REDIRECT_URL = '/'
-LOGIN_URL = '/options/login/'
+LOGIN_URL = '/accounts/login/'
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
@@ -176,10 +185,20 @@ STATICFILES_FINDERS = ['npm.finders.NpmFinder',
 
 NPM_FILE_PATTERNS = {
     'bootstrap': ['dist/css/bootstrap.min.css.map', 'dist/css/bootstrap.min.css',
-                  'dist/js/bootstrap.min.js', 'dist/js/bootstrap.min.js.map'],
+                  'dist/js/bootstrap.bundle.min.js', 'dist/js/bootstrap.bundle.min.js.map'],
     'fullcalendar': ['main.min.css', 'main.min.css.map', 'main.min.js', 'main.min.js.map'],
     'jquery': ['dist/jquery.min.js', 'dist/jquery.min.js.map'],
     '@fortawesome': ['fontawesome-free/*'],
+    'bootstrap-icons': ['*'],
+    'select2': ['dist/css/select2.min.css', 'dist/js/*'],
+    'datatables.net': ['js/jquery.dataTables.min.js'],
+    'datatables.net-select': ['js/dataTables.select.min.js'],
+    'datatables.net-bs5': ['js/dataTables.bootstrap5.min.js', 'css/dataTables.bootstrap5.min.css', 'images/*'],
+    'datatables.net-searchpanes-bs5': ['js/searchPanes.bootstrap5.min.js', 'css/searchPanes.bootstrap5.min.css'],
+    'datatables.net-searchpanes': ['js/dataTables.searchPanes.min.js'],
+    'moment': ['min/moment-with-locales.min.js', 'min/moment-with-locales.min.js.map'],
+    'daterangepicker': ['daterangepicker.css', 'daterangepicker.js'],
+    'typeahead.js': ['dist/typeahead.bundle.min.js']
 }
 
 
@@ -197,3 +216,6 @@ DEFAULT_SHIFTER_TO_JSON = os.getenv('DEFAULT_SHIFTER_TO_JSON', ['SL', 'OP', 'STL
 SHIFTER_TEST_INSTANCE = os.getenv("SHIFTER_TEST_INSTANCE", 'False').lower() in ('true', '1', 't')
 SHIFTER_PRODUCTION_INSTANCE = os.getenv('SHIFTER_PRODUCTION_INSTANCE', '')
 STOP_DEV_MESSAGES = os.getenv('STOP_DEV_MESSAGES', 'False').lower() in ('true', '1', 't')
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"

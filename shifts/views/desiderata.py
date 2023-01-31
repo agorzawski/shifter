@@ -1,30 +1,14 @@
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponse, HttpRequest
+from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse, HttpResponse, HttpRequest
 from django.shortcuts import render
 
-from django.template.loader import render_to_string
-from django.urls import reverse
-import django.contrib.messages as messages
-from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.http import require_http_methods, require_safe
-from django.db import IntegrityError
+from django.views.decorators.http import require_safe
 
-import members.models
 from members.models import Team
-from shifts.models import *
-from assets.models import *
-from assets.forms import AssetBookingForm, AssetBookingFormClosing
-import datetime
-import phonenumbers
-from shifts.activeshift import prepare_active_crew, prepare_for_JSON
-from shifts.contexts import prepare_default_context, prepare_user_context, prepare_team_context
-from shifter.settings import DEFAULT_SHIFT_SLOT
-from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 import datetime
 from shifts.models import Desiderata
 from django.utils.timezone import make_aware
-from django.conf import settings
 from django.utils import timezone
 import json
 from django.db.models import Q
@@ -41,13 +25,7 @@ def team_view(request: HttpRequest, team_id: int) -> HttpResponse:
     if the_team not in logged_user_manage:
         raise PermissionDenied
     # Here we are sure the team exists, and the user has the right to see the full desiderata
-    context = {'browsable': True}
-    return render(request, 'team_desiderata.html',
-                  prepare_default_context(request,
-                                          prepare_team_context(request,
-                                                               member=logged_user,
-                                                               team=the_team,
-                                                               extraContext=context)))
+    return render(request, 'team_desiderata.html', {'team': the_team})
 
 
 @require_safe
@@ -55,14 +33,7 @@ def team_view(request: HttpRequest, team_id: int) -> HttpResponse:
 def user(request: HttpRequest) -> HttpResponse:
     member = request.user
     desiderata_types = Desiderata.DesiderataType
-    context = {'browsable': True,
-               'desiderata_types': desiderata_types}
-    return render(request, 'user_desiderata.html',
-                  prepare_default_context(request,
-                                          prepare_team_context(request,
-                                                               member=member,
-                                                               team=None,
-                                                               extraContext=context)))
+    return render(request, 'user_desiderata.html', {'member': member, 'desiderata_types': desiderata_types})
 
 
 @require_safe

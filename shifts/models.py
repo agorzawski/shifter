@@ -220,8 +220,8 @@ class Shift(models.Model):
                  'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
                  'url': reverse('shifter:users') + f'?u={self.member.id}',
                  'color': self.slot.color_in_calendar,
-                 'borderColor': 'red',
-                 'textColor':'red',
+                 'borderColor': 'black',
+                 'textColor':'black',
                  }
         return event
 

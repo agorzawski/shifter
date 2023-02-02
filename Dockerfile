@@ -22,7 +22,6 @@ COPY --chown=ops:ops . /app/
 
 WORKDIR /app
 RUN npm install
-CMD ["npm", "start"]
 
 ENV PATH /venv/bin:$PATH
 

@@ -1,31 +1,34 @@
 function get_selected_campaigns(){
-    let campaigns = [];
-    $.each($("input[name='campaign[]']:checked"), function(){
-        campaigns.push($(this).val());
-    });
-    return campaigns;
+    return $(".displayed_campaigns").val();
 }
 
 function get_revision(){
-    if(document.getElementById('revision') !== null){
-        return $('#revision').find(":selected").val();
+    if(document.getElementById('displayed_revision') !== null){
+        return $(".displayed_revision").val();
     }else{
         return -1;
     }
 }
 
 function get_revision_next(){
-    let future_rev_tag = $("future_rev_id")
-    console.log(future_rev_tag)
+    let future_rev_tag = $("[name='future_revisions_checkboxes']")
     if( future_rev_tag.length){
-        return future_rev_tag.data("id");
+        return $("input[name='future_revisions_checkboxes']:checked").data('future_rev_id');
+    }else{
+        return -1;
+    }
+}
+
+function get_specific_users(){
+    if(document.getElementById('users_selection') !== null){
+        return $(".users_selection").val();
     }else{
         return -1;
     }
 }
 
 function get_team_id(){
-    let team_tag = $("team_id")
+    let team_tag = $("#team_id_for_ajax")
     if( team_tag.length){
         return team_tag.data("id");
     }else{
@@ -42,22 +45,24 @@ function get_member_id(){
     }
 }
 
+
 $(document).ready(function () {
-    get_team_id()
     let calendarEl = document.getElementById('calendar');
     let calendar = new FullCalendar.Calendar(calendarEl, {
-      themeSystem: 'bootstrap',
+      themeSystem: 'bootstrap5',
       customButtons: {
-        legend: {
-          text: 'What are the colors?',
-          click: function() {
-            $('.collapse').toggle();
-          }
-        },
+              myCustomButton: {
+                  text: 'Tools',
+                  click: function() {
+                        myOffcanvas = $('#tools_off_canvas')
+                        var bsOffcanvas = new bootstrap.Offcanvas(myOffcanvas)
+                        bsOffcanvas.show()
+                  }
+    }
       },
       headerToolbar: { left: 'prev,today,next',
                 center:'title',
-                right: 'legend, dayGridMonth,timeGridWeek',
+                right: 'myCustomButton dayGridMonth,timeGridWeek',
               },
       //initialView: 'dayGridWeek', //TODO
       columnFormat: {
@@ -92,6 +97,7 @@ $(document).ready(function () {
             campaigns: get_selected_campaigns(),
             team: get_team_id(),
             member: get_member_id(),
+            users: get_specific_users(),
           };
         },
       failure: function() {
@@ -134,22 +140,20 @@ $(document).ready(function () {
         calendar.getEventSourceById('studies').refetch()
     });
 
-    $('#revision').change(function() {
-        calendar.getEventSourceById('shifts').refetch()
-        //get revision name :
-                $.ajax({
-                url: $('#calendar').data('source-revision'),
-                data: {'revision' : $('#revision').find(":selected").val()},
-                success: function(data){
-                    var div_to_change = $('#displayed_revision_name')
-                    div_to_change.empty()
-                    div_to_change.html(data.name)
-                },
-        });
-
-    });
-
-    $(".displayed_campaigns").on("change", "input[type='checkbox']", function() {
+    $(".users_selection").change( function() {
         calendar.getEventSourceById('shifts').refetch()
     });
+
+    $(".displayed_campaigns").change( function() {
+        calendar.getEventSourceById('shifts').refetch()
+    });
+
+    $('#planning-tab').click(function(){
+        calendar.render()
+    })
+
+    $('input[type=radio][name=future_revisions_checkboxes]').change(function() {
+        calendar.getEventSourceById('shifts').refetch()
+    })
+
 });

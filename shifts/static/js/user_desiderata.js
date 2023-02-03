@@ -6,7 +6,7 @@ $(document).ready(function () {
     let calendarEl = document.getElementById('calendar');
     let calendar = new FullCalendar.Calendar(calendarEl, {
         timeZone: 'Europe/Stockholm',
-        themeSystem: 'bootstrap',
+        themeSystem: 'bootstrap5',
         headerToolbar:
             {
                 left: 'prev,today,next',

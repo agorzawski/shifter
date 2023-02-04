@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'guardian',
+    'watson',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'watson.middleware.SearchContextMiddleware',
 ]
 
 AUTHENTICATION_BACKENDS = (
@@ -86,8 +88,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'shifter.wsgi.application'
 
-CRISPY_TEMPLATE_PACK = 'bootstrap4'
-
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
@@ -110,6 +110,9 @@ else:
             'PASSWORD': os.getenv('DATABASE_PASSWORD')
         }
     }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 
 SERVICE_ACCOUNT_EMAIL = os.getenv('DJANGO_SERVICE_ACCOUNT_EMAIL', 'noreply@ess.eu')
 SERVICE_ACCOUNT_USER = os.getenv('DJANGO_SERVICE_ACCOUNT_USER', 'noreply')
@@ -196,6 +199,7 @@ NPM_FILE_PATTERNS = {
     'datatables.net-searchpanes': ['js/dataTables.searchPanes.min.js'],
     'moment': ['min/moment-with-locales.min.js', 'min/moment-with-locales.min.js.map'],
     'daterangepicker': ['daterangepicker.css', 'daterangepicker.js'],
+    'typeahead.js': ['dist/typeahead.bundle.min.js']
 }
 
 

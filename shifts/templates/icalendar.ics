@@ -18,7 +18,17 @@ STATUS:CONFIRMED
 DTSTAMP:{{ s.booked_slot|utc|date:"Ymd\THis\Z" }}
 DTSTART:{{ s.slot_start|utc|date:"Ymd\THis\Z" }}
 DTEND:{{ s.slot_end|utc|date:"Ymd\THis\Z" }}
-SUMMARY:{{s.member}} for {{s.title}}
+SUMMARY:{{s.title}} requested by {{s.member}}
+LOCATION: ESS/ Main Control Room
+END:VEVENT
+{% endfor %}
+{% for s in studies_as_collaborator %}BEGIN:VEVENT
+UID:{{ forloop.counter }}
+STATUS:CONFIRMED
+DTSTAMP:{{ s.booked_slot|utc|date:"Ymd\THis\Z" }}
+DTSTART:{{ s.slot_start|utc|date:"Ymd\THis\Z" }}
+DTEND:{{ s.slot_end|utc|date:"Ymd\THis\Z" }}
+SUMMARY:{{s.title}} (as Collaborator)
 LOCATION: ESS/ Main Control Room
 END:VEVENT
 {% endfor %}

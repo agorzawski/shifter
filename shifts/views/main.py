@@ -270,7 +270,11 @@ def ioc_update(request):
     fullUpdate = request.GET.get('fullUpdate', None) is not None
     activeShift = prepare_active_crew(dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
-    return JsonResponse(prepare_for_JSON(activeShift))
+    dayDate = activeShift.get('today', datetime.datetime.today()).date()
+    dayStudiesStart = datetime.datetime.combine(dayDate, datetime.time(hour=0, minute=0, second=1, microsecond=0))
+    dayStudiesEnd = datetime.datetime.combine(dayDate, datetime.time(hour=23, minute=59, second=59, microsecond=0))
+    studies = StudyRequest.objects.filter(state="B", slot_start__gte=dayStudiesStart, slot_start__lte=dayStudiesEnd)
+    return JsonResponse(prepare_for_JSON(activeShift, studies=studies))
 
 
 @require_safe

@@ -190,6 +190,17 @@ class StudyRequest(models.Model):
     def study_time_end(self) -> str:
         return self.slot_end.strftime(SIMPLE_TIME)
 
+    def get_study_as_json(self) -> dict:
+        return {
+            'title': self.title,
+            'lead': self.member.name,
+            'leadEmail': self.member.email,
+            'leadPhone': self.member.mobile,
+            'team': [m.name for m in self.collaborators.all()],
+            'start': self.study_start,
+            'end': self.study_end,
+        }
+
     def get_study_as_json_event(self) -> dict:
         event = {'id': self.id,
                  'title': self.member.first_name + ' for ' + self.title,

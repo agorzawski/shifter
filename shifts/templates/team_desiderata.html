@@ -1,22 +1,108 @@
 {% extends 'template_main.html'%}
 {% load static %}
 
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'datatables.net-bs5/css/dataTables.bootstrap5.min.css'%}">
+<link rel="stylesheet" href="{% static 'datatables.net-searchpanes-bs5/css/searchPanes.bootstrap5.min.css'%}">
+<link rel="stylesheet" href="{% static 'daterangepicker/daterangepicker.css'%}">
+{% endblock %}
+
+
 {% block body %}
 <div class="container-fluid mb-5 pb-5">
-    <div class="row">
-        <h2 class="text-center mb-3">Desiderata for <team_id data-id="{{ team.id }}">{{team}}</team_id></h2>
-        <p class="text-center mb-3"><strong>Dear rota-maker, kindly remind that these informations are confidential !</strong></p>
-    </div>
-    <div class="row">
+    <div class="row justify-content-center">
+        <h3 class="text-center mb-3"><team_id data-id="{{ team.id }}">{{team}}</team_id> Rota-maker page</h3>
         <div class="col">
-            <div class='container'>
-                  <div id='calendar' style="padding-top: 10px;" data-source-desiderata="{% url 'desiderata.get_team_desiderata' %}" data-source-holidays="{%  url 'ajax.get_holidays' %}"></div>
+            <ul class="nav nav-tabs" id="user_tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="planning-tab" data-bs-toggle="tab" data-bs-target="#planning-tab-pane" type="button" role="tab" aria-controls="planning-tab-pane" aria-selected="true">Team Desideratas</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="time_report-tab" data-bs-toggle="tab" data-bs-target="#time_report-tab-pane" type="button" role="tab" aria-controls="time_report-tab-pane" aria-selected="false">Time Report</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="user_tabs_content">
+                <div class="tab-pane fade show active" id="planning-tab-pane" role="tabpanel" aria-labelledby="planning-tab" tabindex=""0>
+                    <div class="row">
+                        <p class="text-center mb-3"><strong>Dear rota-maker, kindly remind that these informations are confidential !</strong></p>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class='container'>
+                                  <div id='calendar' style="padding-top: 10px;" data-source-desiderata="{% url 'desiderata.get_team_desiderata' %}" data-source-holidays="{%  url 'ajax.get_holidays' %}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab displaying the time reporting breakdown -->
+                <div class="tab-pane fade" id="time_report-tab-pane" role="tabpanel" aria-labelledby="time_report-tab" tabindex="1">
+                    <div class='container'>
+                        <div class="row justify-content-center m-4">
+                            <div class="col">
+                                <h2 class="mb-3">HR Codes to report</h2>
+                                <div class="alert alert-warning fade show" role="alert">
+                                    <strong>Disclaimer</strong> These counts here are build to the best of our knowledge based on the HR documents, but should be treated as an indication rather than the ultimate reference.
+                                </div>
+                                <form class="row g-3 m-3">
+                                    <div class="form-group row">
+                                        <label for="inputPassword" class="col-sm-2 col-form-label">Date-range :</label>
+                                        <div class="col-sm-10">
+                                            <input class="form-control"  type="text" id="date_range_picker" name="daterange" value="{{ default_start | date:"m/d/y" }} - {{ default_end | date:"m/d/y" }}" />
+                                        </div>
+                                    </div>
+                                </form>
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="table_HR" data-source="{% url 'ajax.get_team_hr_codes' %}">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">Member</th>
+                                                <th scope="col">OB1 hours</th>
+                                                <th scope="col">OB2 hours</th>
+                                                <th scope="col">OB3 hours</th>
+                                                <th scope="col">OB4 hours</th>
+                                                <th scope="col">NWH hours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        <!-- filled by AJAX -->
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{%  endblock body %}
+
+{% endblock %}
+
 
 {%  block js %}
-    <script type="text/javascript" src="{% static 'js/team_desiderata.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/team_desiderata.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'datatables.net/js/jquery.dataTables.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'datatables.net-select/js/dataTables.select.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'datatables.net-searchpanes/js/dataTables.searchPanes.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'datatables.net-searchpanes-bs5/js/searchPanes.bootstrap5.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'moment/min/moment-with-locales.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'daterangepicker/daterangepicker.js' %}"></script>
+<script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/desiderata_space.min.js' %}"></script>
+
 {% endblock %}

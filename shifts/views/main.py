@@ -10,6 +10,7 @@ import django.contrib.messages as messages
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods, require_safe
 from django.db import IntegrityError
+from django.db.models import Q
 from django.views import View
 
 import members.models
@@ -166,7 +167,10 @@ def user(request, u=None, rid=None):
 
 @login_required()
 def users(request):
-    users_list = Member.objects.all()
+    # Requesting all ACTIVES user, but anonymous
+    first_name = Q(first_name__exact='')
+    last_name = Q(last_name__exact='')
+    users_list = Member.objects.filter(is_active=True).exclude(first_name & last_name)
     users_requested = request.GET.get('u', '')
     users_requested = users_requested.split(",")
     users_requested = [int(x) for x in users_requested] if users_requested != [''] else []

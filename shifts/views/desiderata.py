@@ -19,13 +19,22 @@ from guardian.shortcuts import get_objects_for_user
 @require_safe
 @login_required
 def team_view(request: HttpRequest, team_id: int) -> HttpResponse:
+    today = datetime.datetime.now()
+    year = today.year
+    month = today.month
+
+    default_start = datetime.date(year, month, 1)
+    default_end = datetime.date(year, month + 1, 1) + datetime.timedelta(days=-1)
+
     the_team = get_object_or_404(Team, id=team_id)
     logged_user = request.user
     logged_user_manage = get_objects_for_user(logged_user, 'members.view_desiderata')
     if the_team not in logged_user_manage:
         raise PermissionDenied
     # Here we are sure the team exists, and the user has the right to see the full desiderata
-    return render(request, 'team_desiderata.html', {'team': the_team})
+    return render(request, 'team_desiderata.html', {'team': the_team,
+                                                    'default_start': default_start,
+                                                    'default_end': default_end})
 
 
 @require_safe

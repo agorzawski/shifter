@@ -19,7 +19,7 @@
     </div>
     {% if my_team %}
     <div class="container-fluid">
-        <div class="row justify-content-md-center mb-5">
+        <div class="row justify-content mb-5">
             <div class="col">
                 <div class="accordion " id="shift-breakdown-accordion">
                     <div class="accordion-item">
@@ -55,7 +55,7 @@
     {% endif %}
     <div class="container-fluid mb-5">
         <div class="row justify-content-md-center">
-            <div class="col-8">
+            <div class="col">
                 {% url 'ajax.get_events' as the_url %}
                 {% include 'calendar.html' with event_source=the_url %}
             </div>

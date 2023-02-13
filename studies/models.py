@@ -127,6 +127,7 @@ class StudyRequest(models.Model):
     ]
 
     BOOKING_STATE_CHOICES = [
+        ('P', 'Planned'),
         ('R', 'Requested'),
         ('B', 'Booked'),
         ('C', 'Canceled'),
@@ -159,7 +160,7 @@ class StudyRequest(models.Model):
 
     state = models.CharField(max_length=1,
                              choices=BOOKING_STATE_CHOICES,
-                             default='R', )
+                             default='P', )
 
     booking_created = models.DateTimeField(blank=False)
     booking_finished = models.DateTimeField(blank=True, null=True, )
@@ -227,17 +228,19 @@ class StudyRequest(models.Model):
         elif self.state == 'B':
             data['state']['display'] = '<span class="badge text-bg-success">Booked</span>'
         elif self.state == 'C':
-            data['state']['display'] = '<span class="badge text-bg-danger">Canceled</span>'
+            data['state']['display'] = '<span class="badge text-bg-secondary">Canceled</span>'
         elif self.state == 'D':
-            data['state']['display'] = '<span class="badge text-bg-info">Done</span>'
+            data['state']['display'] = '<span class="badge text-bg-secondary">Done</span>'
+        elif self.state == 'P':
+            data['state']['display'] = '<span class="badge text-bg-primary">Planned</span>'
         else:
             data['state']['display'] = '<span class="badge text-bg-warning">Unknown</span>'
 
         if self.state == 'D' or self.state == 'C':
-            data['booking'] = f"<span class='badge bg-success'>Booking over</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}"
+            data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}"
         else:
             if self.member != user and not user.is_staff:
                 data['booking'] = data['state']['display']
             else:
-                data['booking'] = f"<a class='btn btn-outline-success' data-book_id={self.id} data-name='{self.title}' onclick='test(event)'> Edit booking </a>"
+                data['booking'] = f"<a class='btn btn-outline-dark' data-book_id={self.id} data-name='{self.title}' onclick='test(event)'> Edit study request</a>"
         return data

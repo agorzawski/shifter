@@ -25,6 +25,6 @@ class StudyRequestForm(forms.ModelForm):
 
 
 class StudyRequestFormClosing(forms.Form):
-    status = forms.ChoiceField(choices=(('C', 'Canceled'), ('D', 'Done')))
+    status = forms.ChoiceField(choices=(('C', 'Canceled'), ('D', 'Done'), ('R', 'Requested')))
     booking_id = forms.CharField(widget=forms.HiddenInput(attrs={'id': 'closed_booking_id_to_set',}))
     after_comment = forms.CharField(widget=forms.Textarea)

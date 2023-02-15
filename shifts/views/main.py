@@ -26,6 +26,11 @@ from shifts.contexts import prepare_default_context, prepare_user_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
 
+from shifts.notifications import DummyNotifier, ESSNotifyService, EmailNotifier
+notificationService = DummyNotifier('Test console Notifier enabled!')
+# notificationService = ESSNotifyService(tokenId="71305561-dead-4d09-93d6-a87b6bb7730f") # TEST service/token
+notificationEmail = EmailNotifier('DefaultDjangoEmailStuff')
+
 
 @require_safe
 def index(request, team_id=-1):

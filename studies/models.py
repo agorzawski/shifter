@@ -150,7 +150,7 @@ class StudyRequest(models.Model):
     beam_destination = models.CharField(default='LEBT', choices=BEAM_DESTINATION_CHOICES, blank=True, null=True, max_length=200, help_text='Beam Destination')
     beam_reprate = models.IntegerField(default=1, choices=REP_RATE_CHOICES, blank=True, null=True,
                                        help_text='Max. beam repetition rate (Hz)')
-    jira = models.URLField(blank=True, null=True, help_text='Add a JIRA link if possible')
+    jira = models.URLField(blank=True, null=True, help_text='Add a JIRA link (or any other link connect to the study) if possible')
     duration = models.IntegerField(default=1, choices=STUDY_DURANTION_CHOICES, null=False, blank=False, help_text='Study duration (30 min steps)')
 
     #Admin variables
@@ -165,6 +165,7 @@ class StudyRequest(models.Model):
     booking_created = models.DateTimeField(blank=False)
     booking_finished = models.DateTimeField(blank=True, null=True, )
     after_comment = models.TextField(max_length=2000, blank=True, default=None, null=True)
+    logbook_link = models.URLField(blank=True, null=True, help_text='Add an logbook link with study summary if possible')
 
     def search_display(self):
         return "Study: " + self.title
@@ -226,18 +227,21 @@ class StudyRequest(models.Model):
         if self.state == 'R':
             data['state']['display'] = '<span class="badge text-bg-primary">Requested</span>'
         elif self.state == 'B':
-            data['state']['display'] = '<span class="badge text-bg-success">Booked</span>'
+            data['state']['display'] = '<span class="badge text-bg-warning">Booked</span>'
         elif self.state == 'C':
             data['state']['display'] = '<span class="badge text-bg-secondary">Canceled</span>'
         elif self.state == 'D':
-            data['state']['display'] = '<span class="badge text-bg-secondary">Done</span>'
+            data['state']['display'] = '<span class="badge text-bg-success">Done</span>'
         elif self.state == 'P':
             data['state']['display'] = '<span class="badge text-bg-primary">Planned</span>'
         else:
-            data['state']['display'] = '<span class="badge text-bg-warning">Unknown</span>'
+            data['state']['display'] = '<span class="badge text-bg-info">Unknown</span>'
 
         if self.state == 'D' or self.state == 'C':
-            data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}"
+            if self.logbook_link is None:
+                data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}<br>"
+            else:
+                data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}<br><a href={self.logbook_link}>Logbook Link</a>"
         else:
             if self.member != user and not user.is_staff:
                 data['booking'] = data['state']['display']

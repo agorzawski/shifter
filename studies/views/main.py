@@ -39,10 +39,12 @@ def studies_close(request):
     form = StudyRequestFormClosing(request.POST)
     if form.is_valid():
         comment = form.cleaned_data['after_comment']
+        link = form.cleaned_data['logbook_link']
         status = form.cleaned_data['status']
         current_booking = get_object_or_404(StudyRequest, id=booking_id)
         current_booking.booking_finished = datetime.datetime.now()
         current_booking.after_comment = comment
+        current_booking.logbook_link = link
         current_booking.state = status
         current_booking.finished_by = request.user
         current_booking.save()

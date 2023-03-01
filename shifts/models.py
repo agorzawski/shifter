@@ -151,12 +151,13 @@ class Desiderata(models.Model):
         default=DesiderataType.VACATION,
     )
 
-    def get_as_json_event(self, team=False):
+    def get_as_json_event(self, team=False, editable=True):
         event = {'id': self.id,
                  'start': timezone.localtime(self.start).strftime(format=DATE_FORMAT_FULL),
                  'end': timezone.localtime(self.stop).strftime(format=DATE_FORMAT_FULL),
                  'allDay': self.all_day,
                  }
+
         if self.type == 'vac':
             event['color'] = '#ab4646'
             event['title'] = "Vacation (All day)" if self.all_day else "Vacation"
@@ -168,6 +169,10 @@ class Desiderata(models.Model):
             event['title'] = "Unavailable (All day)" if self.all_day else "Unavailable"
         if team:
             event['title'] = self.member.name + " - " + event['title']
+
+        if not editable:
+            event['editable'] = False
+            event['color'] = '#fcba03'
         return event
 
 

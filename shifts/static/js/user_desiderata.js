@@ -2,7 +2,16 @@ function get_desiderata_type(){
     return $("#desiderata_type_form input[type='radio']:checked").val();
 }
 
+function get_team_desiderata_status(){
+    return $('#showsTeamDesiderata').prop('checked');
+}
+
 $(document).ready(function () {
+    $('#showsTeamDesiderata').on('change', function() {
+        calendar.getEventSourceById('team_desiderata').refetch()
+    })
+
+
     let calendarEl = document.getElementById('calendar');
     let calendar = new FullCalendar.Calendar(calendarEl, {
         timeZone: 'Europe/Stockholm',
@@ -67,18 +76,19 @@ $(document).ready(function () {
         },
         eventClick: function(info)
         {
-            info.jsEvent.preventDefault(); // don't let the browser navigate
-            $.ajax({
-            url: $('#calendar').data('delete-event'),
-            data:
-                {
-                    "id": info.event.id
-                },
-            success: function(response)
-                {
-                    calendar.getEventSourceById('desiderata').refetch()
-                },
-            });
+            if (info.event.backgroundColor !== '#fcba03') {
+                info.jsEvent.preventDefault(); // don't let the browser navigate
+                $.ajax({
+                    url: $('#calendar').data('delete-event'),
+                    data:
+                        {
+                            "id": info.event.id
+                        },
+                    success: function (response) {
+                        calendar.getEventSourceById('desiderata').refetch()
+                    },
+                });
+            }
         },
         eventResize: function(info)
         {
@@ -129,6 +139,21 @@ $(document).ready(function () {
                     failure: function()
                     {
                         alert('there was an error while fetching public holidays!');
+                    },
+                },
+                {
+
+                    id: "team_desiderata",
+                    url: $('#calendar').data('source-team-desiderata'),
+                    extraParams: function() {
+                      return {
+                        show: get_team_desiderata_status(),
+                      };
+                    },
+                    editable: false,
+                    failure: function()
+                    {
+                        alert('there was an error while fetching team desiderata!');
                     },
                 }
             ],

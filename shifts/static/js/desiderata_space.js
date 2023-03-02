@@ -1,6 +1,4 @@
 $(document).ready(function() {
-
-
     $('#date_range_picker').daterangepicker({
         opens: 'left',
     });

@@ -58,17 +58,31 @@ class HRCodes(TestCase):
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_AM)
 
-    def test_codes_Not_BankHoliday2(self):  # a two shift a day AFTER  bank holiday
+    def test_codes_Not_BankHoliday2(self):  # a two shift two day AFTER bank holiday
         shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
                           fancy_date=datetime.date(2022, 4, 20))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_AM)
 
-    def test_codes_Not_BankHolidayXmasEve(self):  # a two shift a day AFTER  bank holiday
+    def test_codes_BankHolidayXmasEve(self):
         shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
                           fancy_date=datetime.date(2022, 12, 24))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_BH)
+
+    def test_codes_red_day_2023(self):  # a shift on a red day -> OB3
+        shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
+                          fancy_date=datetime.date(2023, 5, 1))
+        self.compare(hrc.get_code_counts(shift), HOURS_WE)
+        shift = get_shift(slot=Slot.objects.get(abbreviation='NG'),
+                          fancy_date=datetime.date(2023, 5, 1))
+        self.compare(hrc.get_code_counts(shift), HOURS_WE)
+
+    def test_codes_red_day_2022(self):  # a shift on a red day -> OB3
+        shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
+                          fancy_date=datetime.date(2022, 6, 6))
+        h = hrc.get_code_counts(shift)
+        self.compare(h, HOURS_WE)
 
     def compare(self, codes1, codes2):
         for oneCode in codes1.keys():

@@ -1,50 +1,20 @@
+from .common_light import *
 from django.test import TestCase
 from shifts.models import *
 import shifts.hrcodes as hrc
 
-HOURS_AM = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 8}  #
+HOURS_AM = {'OB1': 0, 'OB2': 1, 'OB3': 0, 'OB4': 0, 'NWH': 7}  #
 HOURS_PM = {'OB1': 4, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 4}  #
 HOURS_NG = {'OB1': 2, 'OB2': 6, 'OB3': 0, 'OB4': 0, 'NWH': 0}  #
-HOURS_WE = {'OB1': 0, 'OB2': 0, 'OB3': 8, 'OB4': 0, 'NWH': 0}  #
-HOURS_BH = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 8, 'NWH': 0}  #
-
-
-def get_shift(slot=None, fancy_date=None):
-    shift = Shift()
-    shift.role = None
-    shift.revision = Revision.objects.all()[0]
-    shift.date = fancy_date
-    shift.slot = slot
-    shift.member = Member.objects.get(username='test')
-    shift.csv_upload_tag = 'TEST'
-    shift.campaign = Campaign.objects.get(name='test')
-    return shift
+HOURS_WE = {'OB1': 0, 'OB2': 0, 'OB3': 8, 'OB4': 0, 'NWH': 0}  # + normal holidays, like WE
+HOURS_BH = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 8, 'NWH': 0}  # special holidays
 
 
 class HRCodes(TestCase):
 
     def setUp(self):
-        AM = Slot(name='Morning',
-                  hour_start=datetime.time(7, 0, 0), hour_end=datetime.time(15, 00, 0),
-                  abbreviation='AM')
-        AM.save()
-        PM = Slot(name='Evening',
-                  hour_start=datetime.time(14, 0, 0), hour_end=datetime.time(22, 00, 00),
-                  abbreviation='PM')
-        PM.save()
-        NG = Slot(name='Night',
-                  hour_start=datetime.time(22, 0, 0), hour_end=datetime.time(6, 0, 0),
-                  abbreviation='NG')
-        NG.save()
-
-        revision = Revision(date_start=datetime.datetime(2020, 12, 30, 12, 00, 00), valid=True)
-        revision.save()
-        campaign = Campaign(name='test')
-        campaign.date_start = datetime.datetime(2020, 12, 31, 12, 00, 00)
-        campaign.date_end = datetime.datetime(2020, 12, 31, 23, 00, 00)
-        campaign.save()
-        member = Member(username='test')
-        member.save()
+        setUpSlots()
+        setUpRevisionsCampaignsMembers()
 
     def test_codes_simple(self):
         shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),

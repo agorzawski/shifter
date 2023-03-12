@@ -8,7 +8,7 @@ from studies.models import *
 import datetime
 from members.models import Team
 from assets.models import AssetBooking
-from shifts.hrcodes import public_holidays, public_holidays_special
+from shifts.hrcodes import red_days, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
 import json
@@ -132,7 +132,7 @@ def get_holidays(request: HttpRequest) -> HttpResponse:
     start = datetime.datetime.fromisoformat(request.GET.get('start')).date()
     end = datetime.datetime.fromisoformat(request.GET.get('end')).date()
 
-    ph = [x for x in public_holidays_special + public_holidays if start <= x <= end]
+    ph = [x for x in public_holidays_special + red_days if start <= x <= end]
     ph.sort()
 
     calendar_events = [{'start': d.strftime(format=SIMPLE_DATE),

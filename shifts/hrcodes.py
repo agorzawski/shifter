@@ -33,6 +33,15 @@ red_days = [
 ]
 
 reduced_days = [
+    date(2021, 1, 5),
+    date(2021, 4, 1),
+    date(2021, 4, 30),
+    date(2021, 11, 5),
+
+    date(2022, 1, 5),
+    date(2022, 4, 14),
+    date(2022, 11, 4),
+
     # these days are reduced by 3h, and start the 'WE' OB code as of 14:00
     # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+holidays+and+additional+days+off+%282023%29+Sweden
     date(2023, 1, 5),
@@ -127,6 +136,11 @@ def get_code_counts(shift: Shift) -> dict:
             counts['OB3'] = duration.seconds // 3600
             notAWEOrHoliday = False
     for rd in reduced_days:  # OB3 as of 14:00
+        if _check_if_date_or_adjacent_WE(shift.date, rd) and \
+                shift.slot.abbreviation == 'NWH':
+            counts['NWH'] = 5
+            notAWEOrHoliday = False
+            continue
         if _check_if_date_or_adjacent_WE(shift.date, rd) and \
                 shift.start >= datetime.combine(rd, time(14, 0)):
             counts['OB3'] = duration.seconds // 3600

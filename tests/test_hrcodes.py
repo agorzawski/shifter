@@ -8,6 +8,7 @@ HOURS_PM = {'OB1': 4, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 4}  #
 HOURS_NG = {'OB1': 2, 'OB2': 6, 'OB3': 0, 'OB4': 0, 'NWH': 0}  #
 HOURS_WE = {'OB1': 0, 'OB2': 0, 'OB3': 8, 'OB4': 0, 'NWH': 0}  # + normal holidays, like WE
 HOURS_BH = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 8, 'NWH': 0}  # special holidays
+HOURS_REDUCED = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 5}  # NWH during reduced hour day
 
 
 class HRCodes(TestCase):
@@ -89,6 +90,12 @@ class HRCodes(TestCase):
                           fancy_date=datetime.date(2023, 4, 6))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_AM)
+
+    def test_reduced_day_nwh(self):
+        shift = get_shift(slot=Slot.objects.get(abbreviation='NWH'),
+                          fancy_date=datetime.date(2023, 4, 6))
+        h = hrc.get_code_counts(shift)
+        self.compare(h, HOURS_REDUCED)
 
     def test_reduced_day_afternoon(self):  # a pm shift on a reduced day -> all OB3
         shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),

@@ -1,5 +1,4 @@
-import datetime
-from datetime import date, timedelta, time
+from datetime import date, timedelta, time, datetime
 from shifts.models import Shift, SIMPLE_DATE, SIMPLE_TIME, DATE_FORMAT
 
 codes = {'OB1': (time(hour=18, minute=00, second=00),
@@ -26,14 +25,19 @@ red_days = [
     date(2022, 6, 6),
 
     # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+holidays+and+additional+days+off+%282023%29+Sweden
-    # date(2023, 1, 5), # reduced 3
-    # date(2023, 4, 6), # reduced 3
     date(2023, 5, 1),
     date(2023, 5, 18),
     date(2023, 5, 19),
     date(2023, 6, 5),
     date(2023, 6, 6),
-    # date(2023, 11, 3), # reduced 3
+]
+
+reduced_days = [
+    # these days are reduced by 3h, and start the 'WE' OB code as of 14:00
+    # https://confluence.esss.lu.se/pages/viewpage.action?spaceKey=HR&title=Public+holidays+and+additional+days+off+%282023%29+Sweden
+    date(2023, 1, 5),
+    date(2023, 4, 6),
+    date(2023, 11, 3),
 ]
 
 # The ones that are counted as OB4
@@ -98,7 +102,7 @@ def get_date_code_counts(shifts):
     return result
 
 
-def _check_if_date_or_adjacent_WE(shiftDate: datetime.date, public_holiday: datetime.date):
+def _check_if_date_or_adjacent_WE(shiftDate: date, public_holiday: date):
     """
     To cover the holidays but also the adjacent WE (or long WE) around holidays
     """
@@ -120,6 +124,11 @@ def get_code_counts(shift: Shift) -> dict:
             notAWEOrHoliday = False
     for rd in red_days:  # OB3
         if _check_if_date_or_adjacent_WE(shift.date, rd):
+            counts['OB3'] = duration.seconds // 3600
+            notAWEOrHoliday = False
+    for rd in reduced_days:  # OB3 as of 14:00
+        if _check_if_date_or_adjacent_WE(shift.date, rd) and \
+                shift.start >= datetime.combine(rd, time(14, 0)):
             counts['OB3'] = duration.seconds // 3600
             notAWEOrHoliday = False
     weekno = shift.start.weekday()

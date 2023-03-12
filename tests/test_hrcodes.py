@@ -84,6 +84,24 @@ class HRCodes(TestCase):
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_WE)
 
+    def test_reduced_day_morning(self):  # a shift on a reduced day - no weird OB
+        shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
+                          fancy_date=datetime.date(2023, 4, 6))
+        h = hrc.get_code_counts(shift)
+        self.compare(h, HOURS_AM)
+
+    def test_reduced_day_afternoon(self):  # a pm shift on a reduced day -> all OB3
+        shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
+                          fancy_date=datetime.date(2023, 4, 6))
+        h = hrc.get_code_counts(shift)
+        self.compare(h, HOURS_WE)
+
+    def test_reduced_day_with_night_shift(self):  # a shift on a red day -> OB3
+        shift = get_shift(slot=Slot.objects.get(abbreviation='NG'),
+                          fancy_date=datetime.date(2023, 4, 6))
+        h = hrc.get_code_counts(shift)
+        self.compare(h, HOURS_WE)
+
     def compare(self, codes1, codes2):
         for oneCode in codes1.keys():
             self.assertEqual(codes1.get(oneCode), codes2.get(oneCode))

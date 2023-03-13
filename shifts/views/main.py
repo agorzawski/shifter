@@ -26,6 +26,8 @@ from shifts.contexts import prepare_default_context, prepare_user_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
 
+from django.utils import timezone
+
 
 @require_safe
 def index(request, team_id=-1):
@@ -558,7 +560,7 @@ class AssetsView(View):
         form = AssetBookingForm(request.POST, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
-            post.booking_created = datetime.datetime.now()  # timezone.now()
+            post.booking_created = timezone.localtime(timezone.now())
             post.booked_by = request.user
             post.save()
             message = "Booking for {} on {}, is added!".format(post.member.first_name, post.use_start)
@@ -576,7 +578,7 @@ def assets_close(request):
     if form.is_valid():
         comment = form.cleaned_data['after_comment']
         current_booking = get_object_or_404(AssetBooking, id=booking_id)
-        current_booking.booking_finished = datetime.datetime.now()
+        current_booking.booking_finished = timezone.localtime(timezone.now())
         current_booking.after_comment = comment
         current_booking.state = AssetBooking.BookingState.RETURNED
         current_booking.finished_by = request.user

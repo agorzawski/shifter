@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
+from django.utils import timezone
 from django.db.models import DO_NOTHING
 import datetime
 from members.models import Member
@@ -178,19 +179,19 @@ class StudyRequest(models.Model):
 
     @cached_property
     def study_start(self) -> str:
-        return self.slot_start.strftime(DATE_FORMAT_FULL)
+        return timezone.localtime(self.slot_start).strftime(DATE_FORMAT_FULL)
 
     @cached_property
     def study_end(self) -> str:
-        return self.slot_end.strftime(DATE_FORMAT_FULL)
+        return timezone.localtime(self.slot_end).strftime(DATE_FORMAT_FULL)
 
     @cached_property
     def study_time_start(self) -> str:
-        return self.slot_start.strftime(SIMPLE_TIME)
+        return timezone.localtime(self.slot_start).strftime(SIMPLE_TIME)
 
     @cached_property
     def study_time_end(self) -> str:
-        return self.slot_end.strftime(SIMPLE_TIME)
+        return timezone.localtime(self.slot_end).strftime(SIMPLE_TIME)
 
     def get_study_as_json(self) -> dict:
         return {

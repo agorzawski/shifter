@@ -4,6 +4,7 @@ from studies.models import *
 from studies.forms import StudyRequestForm, StudyRequestFormClosing
 import django.contrib.messages as messages
 from django.views import View
+from django.utils import timezone
 
 
 def page_not_found(request, exception):
@@ -21,7 +22,7 @@ class StudyView(View):
         if form.is_valid():
             col = form.cleaned_data['collaborators']
             post = form.save(commit=False)
-            post.booking_created = datetime.datetime.now()
+            post.booking_created = timezone.localtime(timezone.now())
             post.booked_by = request.user
             post.save()
             post.collaborators.set(col)
@@ -42,7 +43,7 @@ def studies_close(request):
         link = form.cleaned_data['logbook_link']
         status = form.cleaned_data['status']
         current_booking = get_object_or_404(StudyRequest, id=booking_id)
-        current_booking.booking_finished = datetime.datetime.now()
+        current_booking.booking_finished = timezone.localtime(timezone.now())
         current_booking.after_comment = comment
         current_booking.logbook_link = link
         current_booking.state = status

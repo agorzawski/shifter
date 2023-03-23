@@ -127,6 +127,19 @@ def todays(request):
                'currentTeam': activeShift['currentTeam'],
                'shiftID': activeShift['shiftID'],
                'activeStudies': scheduled_studies}
+    nowShift = None
+    for one in activeShift['currentTeam']:
+        nowShift = one
+    if nowShift is not None:
+        nextTeam = Shift.objects.filter(revision=nowShift.revision,
+                                        date=nowShift.end,
+                                        slot__hour_start=nowShift.slot.hour_end)
+        nextSlot = None
+        for one in nextTeam:
+            nextSlot = one.slot
+        if nextSlot is not None:
+            context['nextSlot'] = nextSlot
+            context['nextTeam'] = nextTeam
     return render(request, 'today.html', prepare_default_context(request, context))
 
 

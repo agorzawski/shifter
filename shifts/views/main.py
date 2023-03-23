@@ -27,6 +27,8 @@ from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
 from shifts.exchanges import is_valid_for_hours_constraints, perform_exchange_and_save_backup
 
+from django.utils import timezone
+
 
 @require_safe
 def index(request, team_id=-1):
@@ -130,6 +132,19 @@ def todays(request):
                'currentTeam': activeShift['currentTeam'],
                'shiftID': activeShift['shiftID'],
                'activeStudies': scheduled_studies}
+    nowShift = None
+    for one in activeShift['currentTeam']:
+        nowShift = one
+    if nowShift is not None:
+        nextTeam = Shift.objects.filter(revision=nowShift.revision,
+                                        date=nowShift.end,
+                                        slot__hour_start=nowShift.slot.hour_end)
+        nextSlot = None
+        for one in nextTeam:
+            nextSlot = one.slot
+        if nextSlot is not None:
+            context['nextSlot'] = nextSlot
+            context['nextTeam'] = nextTeam
     return render(request, 'today.html', prepare_default_context(request, context))
 
 
@@ -613,7 +628,7 @@ class AssetsView(View):
         form = AssetBookingForm(request.POST, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
-            post.booking_created = datetime.datetime.now()  # timezone.now()
+            post.booking_created = timezone.localtime(timezone.now())
             post.booked_by = request.user
             post.save()
             message = "Booking for {} on {}, is added!".format(post.member.first_name, post.use_start)
@@ -631,7 +646,7 @@ def assets_close(request):
     if form.is_valid():
         comment = form.cleaned_data['after_comment']
         current_booking = get_object_or_404(AssetBooking, id=booking_id)
-        current_booking.booking_finished = datetime.datetime.now()
+        current_booking.booking_finished = timezone.localtime(timezone.now())
         current_booking.after_comment = comment
         current_booking.state = AssetBooking.BookingState.RETURNED
         current_booking.finished_by = request.user

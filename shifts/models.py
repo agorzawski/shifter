@@ -93,7 +93,7 @@ class Campaign(models.Model):
 
     @cached_property
     def start_text(self):
-        return self.date_start.strftime(SIMPLE_DATE) # %H:%M:%S
+        return self.date_start.strftime(SIMPLE_DATE)  # %H:%M:%S
 
     @cached_property
     def end_text(self):
@@ -186,10 +186,10 @@ class Shift(models.Model):
     slot = models.ForeignKey(Slot, on_delete=DO_NOTHING)
     member = models.ForeignKey(Member, on_delete=DO_NOTHING)
     revision = models.ForeignKey(Revision, on_delete=DO_NOTHING)
-    shiftID = models.ForeignKey(ShiftID, on_delete=DO_NOTHING, null=True, blank=True,)
+    shiftID = models.ForeignKey(ShiftID, on_delete=DO_NOTHING, null=True, blank=True, )
 
     role = models.ForeignKey(ShiftRole, blank=True, null=True, on_delete=DO_NOTHING)
-    csv_upload_tag = models.CharField(max_length=200, blank=True, null=True,)
+    csv_upload_tag = models.CharField(max_length=200, blank=True, null=True, )
 
     class Meta:
         unique_together = (("date", "slot", "member", "role", "campaign", "revision"),)
@@ -226,7 +226,7 @@ class Shift(models.Model):
                  'url': reverse('shifter:users') + f'?u={self.member.id}',
                  'color': self.slot.color_in_calendar,
                  'borderColor': 'black',
-                 'textColor':'black',
+                 'textColor': 'black',
                  }
         return event
 
@@ -251,7 +251,44 @@ class Shift(models.Model):
         if moment == self.Moment.END:
             timeToUse = self.slot.hour_end
         deltaToAdd = 0
-        diff = datetime.datetime.combine(self.date, self.slot.hour_start) - datetime.datetime.combine(self.date, self.slot.hour_end)
+        diff = datetime.datetime.combine(self.date, self.slot.hour_start) - datetime.datetime.combine(self.date,
+                                                                                                      self.slot.hour_end)
         if diff > datetime.timedelta(minutes=0) and moment == self.Moment.END:
             deltaToAdd = 1
         return datetime.datetime.combine(self.date, timeToUse) + datetime.timedelta(days=deltaToAdd)
+
+
+class ShiftExchangePair(models.Model):
+    shift = models.ForeignKey(Shift, on_delete=DO_NOTHING)
+    shift_for_exchange = models.ForeignKey(Shift, on_delete=DO_NOTHING, related_name='for_exchange')
+
+    def __str__(self):
+        return '{} for {}'.format(self.shift, self.shift_for_exchange)
+
+
+class ShiftExchange(models.Model):
+    requestor = models.ForeignKey(Member, on_delete=DO_NOTHING)
+    requested = models.DateTimeField()
+
+    approver = models.ForeignKey(Member, blank=True, null=True, on_delete=DO_NOTHING, related_name='approver')
+    approved = models.DateTimeField(blank=True, null=True, )
+
+    shifts = models.ManyToManyField(ShiftExchangePair, blank=True)
+    applicable = models.BooleanField(default=False)
+    backupRevision = models.ForeignKey(Revision, on_delete=DO_NOTHING, related_name='revision')
+    implemented = models.BooleanField(default=False)
+
+    def __str__(self):
+        return '{} on {} for {} shifts swap; implemented:{}'.format(self.requestor,
+                                                                    self.requested.strftime(SIMPLE_DATE),
+                                                                    self.shifts.all().count(),
+                                                                    self.implemented)
+
+    @cached_property
+    def requested_date(self) -> str:
+        return self.requested.strftime(DATE_FORMAT_FULL)
+
+    @cached_property
+    def approved_date(self) -> str:
+        return self.approved.strftime(DATE_FORMAT_FULL)
+

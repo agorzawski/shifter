@@ -3,7 +3,8 @@ from django.utils.translation import ngettext
 from django.contrib import messages
 # Register your models here.
 
-from shifts.models import ShifterMessage, Revision, Campaign, Slot, Shift, ShiftRole, ShiftID, Contact
+from shifts.models import ShifterMessage, Revision, Campaign, Slot, Shift, ShiftRole, ShiftID, Contact, \
+    ShiftExchangePair, ShiftExchange
 
 
 @admin.register(Contact)
@@ -174,3 +175,24 @@ def _copy_shift(oldShift, last_rev):
     shift.csv_upload_tag = oldShift.csv_upload_tag
     shift.save()
     return shift
+
+
+@admin.register(ShiftExchangePair)
+class ShiftExchangePairAdmin(admin.ModelAdmin):
+    model = ShiftExchangePair
+    list_display = [
+        'shift',
+        'shift_for_exchange',
+    ]
+
+
+@admin.register(ShiftExchange)
+class ShiftExchangeAdmin(admin.ModelAdmin):
+    model = ShiftExchange
+    list_display = [
+        'requestor',
+        'requested',
+        'approver',
+        'approved',
+        'implemented',
+    ]

@@ -1,12 +1,17 @@
+"""
+Simplified shift test environment, only few slots, base revision, campaign and one member.
+Additionally, a method to create a shift is provided.
+"""
 from shifts.models import *
 
-def get_shift(slot=None, fancy_date=None):
+
+def get_shift(slot=None, fancy_date=None, username='test'):
     shift = Shift()
     shift.role = None
     shift.revision = Revision.objects.all()[0]
     shift.date = fancy_date
     shift.slot = slot
-    shift.member = Member.objects.get(username='test')
+    shift.member = Member.objects.get(username=username)
     shift.csv_upload_tag = 'TEST'
     shift.campaign = Campaign.objects.get(name='test')
     return shift

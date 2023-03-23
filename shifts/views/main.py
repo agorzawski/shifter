@@ -25,6 +25,7 @@ from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
+from shifts.exchanges import is_valid_for_hours_constraints, perform_exchange_and_save_backup
 
 
 @require_safe
@@ -63,9 +64,12 @@ def prepare_main_page(request, revisions, team, revision=None, filtered_campaign
         'team': team,
         'my_team': my_team,
         'shift_slots': [] if not my_team else Slot.objects.filter(used_for_lookup=True).order_by('hour_start'),
-        'current_month': [-1, ""] if not my_team else [month_as_int, datetime.date(1900, month_as_int, 1).strftime('%B')],
-        'previous_month': [-1, ""] if not my_team else [previous_month_as_int, datetime.date(1900, previous_month_as_int, 1).strftime('%B')],
-        'next_month': [-1, ""] if not my_team else [next_month_as_int, datetime.date(1900, next_month_as_int, 1).strftime('%B')]
+        'current_month': [-1, ""] if not my_team else [month_as_int,
+                                                       datetime.date(1900, month_as_int, 1).strftime('%B')],
+        'previous_month': [-1, ""] if not my_team else [previous_month_as_int,
+                                                        datetime.date(1900, previous_month_as_int, 1).strftime('%B')],
+        'next_month': [-1, ""] if not my_team else [next_month_as_int,
+                                                    datetime.date(1900, next_month_as_int, 1).strftime('%B')]
     }
     return render(request, 'team_view.html', prepare_default_context(request, context))
 
@@ -115,9 +119,10 @@ def todays(request):
                                       slotToGo=slotToGo,
                                       hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
-    todayAM=datetime.datetime.today().replace(hour=0, minute=0, second=1, microsecond=0)
+    todayAM = datetime.datetime.today().replace(hour=0, minute=0, second=1, microsecond=0)
     todayPM = datetime.datetime.today().replace(hour=23, minute=59, second=00, microsecond=0)
-    scheduled_studies = StudyRequest.objects.filter(state__in=["B","D"],slot_start__gte=todayAM,slot_end__lte=todayPM).order_by('slot_start', 'priority')
+    scheduled_studies = StudyRequest.objects.filter(state__in=["B", "D"], slot_start__gte=todayAM,
+                                                    slot_end__lte=todayPM).order_by('slot_start', 'priority')
     context = {'today': activeShift['today'],
                'checkTime': activeShift['today'].time(),
                'activeSlot': activeShift['activeSlot'],
@@ -135,7 +140,8 @@ def user(request, u=None, rid=None):
         member = request.user
     else:
         member = Member.objects.filter(id=u).first()
-    ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
+    ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(
+        member=member)
 
     today = datetime.datetime.now()
     year = today.year
@@ -157,12 +163,60 @@ def user(request, u=None, rid=None):
     if rid is not None:
         requested_revision = get_object_or_404(Revision, number=rid)
         revision = Revision.objects.filter(valid=True).order_by("-number").first()
-        if requested_revision not in Revision.objects.filter(date_start__gt=revision.date_start).filter(ready_for_preview=True).filter(merged=False).order_by("-number"):
+        if requested_revision not in Revision.objects.filter(date_start__gt=revision.date_start).filter(
+                ready_for_preview=True).filter(merged=False).order_by("-number"):
             raise Http404
-        messages.warning(request, "On top of the current schedule, you're seeing revision '{}'".format(requested_revision))
+        messages.warning(request,
+                         "On top of the current schedule, you're seeing revision '{}'".format(requested_revision))
         context['requested_future_rev_id'] = rid
 
+    shiftExchanges = ShiftExchange.objects.filter(Q(requestor=member) |
+                                                  Q(shifts__shift_for_exchange__member__exact=member)) \
+        .order_by('-requested')
+
+    # FIXME this one is to clear the 'over select' from the query above that
+    shiftExchangesUnique = []
+    for se in shiftExchanges:
+        if se not in shiftExchangesUnique:
+            shiftExchangesUnique.append(se)
+
+    for se in shiftExchangesUnique:
+        bb = is_valid_for_hours_constraints(shiftExchange=se, member=member,
+                                            baseRevision=Revision.objects.filter(valid=True).order_by(
+                                                "-number").first())
+        se.applicable = bb[0]
+        se.save()
+    context['shift_exchanges_requested'] = shiftExchangesUnique
+    context['exchanges_total'] = len(shiftExchangesUnique)
     return render(request, 'user.html', prepare_default_context(request, context))
+
+
+@login_required
+def shiftexchange(request, ex_id=None):
+    # print("-----------------")
+    # print(request.user)
+    # print('proceeding with {}'.format(ex_id))
+    # print("-----------------")
+    shiftExchanges = ShiftExchange.objects.filter(id=ex_id, implemented=False)
+    if shiftExchanges.count() == 0:
+        messages.error(request,
+                       "This shift exchange either does not exits or was already finalised!"
+                       )
+        return user(request)
+    shift_exchange = shiftExchanges.first()
+    # print(shift_exchange)
+    if shift_exchange.approver == request.user:
+        perform_exchange_and_save_backup(shift_exchange,
+                                         approver=request.user,
+                                         revisionBackup=shift_exchange.backupRevision)
+        messages.success(request,
+                         "Requested shift exchange is now successfully implemented. If you need to revert it please "
+                         "contact rota maker.")
+    else:
+        messages.error(request,
+                       "This Exchange can only be approved by {}".format(shift_exchange.approver)
+                       )
+    return user(request)
 
 
 @login_required()
@@ -254,7 +308,8 @@ def icalendar_view(request):
 
     StudyFirstDay = datetime.datetime.combine(monthFirstDay, datetime.time(hour=0, minute=0, second=1, microsecond=0))
     StudyLasttDay = datetime.datetime.combine(monthLastDay, datetime.time(hour=23, minute=59, second=59, microsecond=0))
-    studies = StudyRequest.objects.filter(slot_end__lte=StudyLasttDay, slot_start__gte=StudyFirstDay).filter(member=member,state__in=["B","D"])
+    studies = StudyRequest.objects.filter(slot_end__lte=StudyLasttDay, slot_start__gte=StudyFirstDay).filter(
+        member=member, state__in=["B", "D"])
 
     context = {
         'campaign': 'Exported Shifts',
@@ -321,16 +376,16 @@ def scheduled_work_time(request):
         if request.GET.get('end', None) is not None:
             endDate = datetime.datetime.strptime(request.GET.get('end'), DATE_FORMAT)
         if request.GET.get('rev', None) is not None:
-            revId=int(request.GET.get('rev'))
+            revId = int(request.GET.get('rev'))
             rev = Revision.objects.filter(valid=True).filter(number=revId)[0]
     except ValueError:
         pass
-    scheduled_shifts = Shift.objects.filter(revision=rev)\
-                                    .filter(member__role__abbreviation='SL') \
-                                    .order_by('date', 'slot__hour_start', 'member__role__priority')
+    scheduled_shifts = Shift.objects.filter(revision=rev) \
+        .filter(member__role__abbreviation='SL') \
+        .order_by('date', 'slot__hour_start', 'member__role__priority')
     if startDate is not None and endDate is not None:
         scheduled_shifts = scheduled_shifts.filter(date__gte=startDate) \
-                                            .filter(date__lte=endDate)
+            .filter(date__lte=endDate)
     dataToReturn = find_working_hours(scheduled_shifts, startDate=startDate, endDate=endDate)
     return JsonResponse(dataToReturn)
 
@@ -363,7 +418,7 @@ def shifts_update_post(request):
     daysDelta = newStartDate - oldStartDate
     deltaToApply = datetime.timedelta(days=daysDelta.days)
     messages.info(request, 'Found {} difference to update'.format(daysDelta))
-    shifts_to_update = Shift.objects.filter(campaign=campaign, revision=campaign.revision)
+    shifts_to_update = Shift.objects.filter(campaign=campaign, revision=campaign.revisionBackup)
     messages.info(request, 'Found {} shifts to update'.format(len(shifts_to_update)))
     doneCounter = 0
     for oldShift in shifts_to_update:
@@ -386,7 +441,7 @@ def shifts_update_post(request):
             messages.error(request, 'Cannot update old shift {}, skipping!'.format(oldShift))
 
     # at last, update the actual campaign data
-    campaign.revision = revision
+    campaign.revisionBackup = revision
     campaign.date_start = campaign.date_start + deltaToApply
     campaign.date_end = campaign.date_end + deltaToApply
     campaign.save()

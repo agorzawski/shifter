@@ -21,6 +21,7 @@ urlpatterns = [
     path('ioc-update', views.ioc_update, name='ioc-update'),
     path('scheduled-work-time', views.scheduled_work_time, name='scheduled_work_time'),
     path('shifts', views.shifts, name='shifts'),
+    path('shift-exchange/<int:ex_id>', views.shiftexchange, name='shift-exchange'),
     path('shift-upload-csv', views.shifts_upload, name="shift-upload"),
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),
     path('shift-update', views.shifts_update, name="shift-update"),

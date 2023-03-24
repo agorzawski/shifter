@@ -1,6 +1,7 @@
 """
 A common part for many test, a standard test
 """
+from django.db import IntegrityError
 
 from members.models import Role
 from shifts.models import *
@@ -137,20 +138,40 @@ def create_two_test_roles():
 
 
 def create_four_test_slots():
-    AM = Slot(name='Morning',
-              hour_start=datetime.time(7, 0, 0), hour_end=datetime.time(15, 00, 0),
-              abbreviation='AM')
-    AM.save()
-    PM = Slot(name='Evening',
-              hour_start=datetime.time(14, 0, 0), hour_end=datetime.time(22, 00, 00),
-              abbreviation='PM', id_code='B')
-    PM.save()
-    NG = Slot(name='Night',
-              hour_start=datetime.time(22, 0, 0), hour_end=datetime.time(6, 0, 0),
-              abbreviation='NG', id_code='C')
-    NG.save()
-    NWH = Slot(name='NormalWH',
-               hour_start=datetime.time(8, 0, 0), hour_end=datetime.time(16, 30, 0),
-               abbreviation='NWH')
-    NWH.save()
+    try:
+        AM = Slot.objects.get(abbreviation='AM')
+    except Slot.DoesNotExist:
+        AM = Slot(name='Morning',
+                  hour_start=datetime.time(7, 0, 0), hour_end=datetime.time(15, 00, 0),
+                  abbreviation='AM')
+        AM.id_code = "A"
+        AM.save()
+        print(AM, AM.id_code)
+    try:
+        PM = Slot.objects.get(abbreviation='PM')
+    except Slot.DoesNotExist:
+        print('create pm')
+        PM = Slot(name='Evening',
+                  hour_start=datetime.time(14, 0, 0), hour_end=datetime.time(22, 00, 00),
+                  abbreviation='PM')
+        PM.id_code = "B"
+        PM.save()
+        print(PM, PM.id_code)
+    try:
+        NG = Slot.objects.get(abbreviation='NG')
+    except Slot.DoesNotExist:
+        print('create night')
+        NG = Slot(name='Night',
+                  hour_start=datetime.time(22, 0, 0), hour_end=datetime.time(6, 0, 0),
+                  abbreviation='NG',)
+        NG.id_code = "C"
+        NG.save()
+        print(NG, NG.id_code)
+    try:
+        NWH = Slot.objects.get(abbreviation='NWH')
+    except Slot.DoesNotExist:
+        NWH = Slot(name='NormalWH',
+                   hour_start=datetime.time(8, 0, 0), hour_end=datetime.time(16, 30, 0),
+                   abbreviation='NWH')
+        NWH.save()
     return AM, PM, NG, NWH

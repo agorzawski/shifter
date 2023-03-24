@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
+from django.utils import timezone
 from django.db.models import DO_NOTHING
 import datetime
 from members.models import Member
@@ -127,6 +128,7 @@ class StudyRequest(models.Model):
     ]
 
     BOOKING_STATE_CHOICES = [
+        ('P', 'Planned'),
         ('R', 'Requested'),
         ('B', 'Booked'),
         ('C', 'Canceled'),
@@ -149,7 +151,7 @@ class StudyRequest(models.Model):
     beam_destination = models.CharField(default='LEBT', choices=BEAM_DESTINATION_CHOICES, blank=True, null=True, max_length=200, help_text='Beam Destination')
     beam_reprate = models.IntegerField(default=1, choices=REP_RATE_CHOICES, blank=True, null=True,
                                        help_text='Max. beam repetition rate (Hz)')
-    jira = models.URLField(blank=True, null=True, help_text='Add a JIRA link if possible')
+    jira = models.URLField(blank=True, null=True, help_text='Add a JIRA link (or any other link connect to the study) if possible')
     duration = models.IntegerField(default=1, choices=STUDY_DURANTION_CHOICES, null=False, blank=False, help_text='Study duration (30 min steps)')
 
     #Admin variables
@@ -159,11 +161,12 @@ class StudyRequest(models.Model):
 
     state = models.CharField(max_length=1,
                              choices=BOOKING_STATE_CHOICES,
-                             default='R', )
+                             default='P', )
 
     booking_created = models.DateTimeField(blank=False)
     booking_finished = models.DateTimeField(blank=True, null=True, )
     after_comment = models.TextField(max_length=2000, blank=True, default=None, null=True)
+    logbook_link = models.URLField(blank=True, null=True, help_text='Add an logbook link with study summary if possible')
 
     def search_display(self):
         return "Study: " + self.title
@@ -176,19 +179,30 @@ class StudyRequest(models.Model):
 
     @cached_property
     def study_start(self) -> str:
-        return self.slot_start.strftime(DATE_FORMAT_FULL)
+        return timezone.localtime(self.slot_start).strftime(DATE_FORMAT_FULL)
 
     @cached_property
     def study_end(self) -> str:
-        return self.slot_end.strftime(DATE_FORMAT_FULL)
+        return timezone.localtime(self.slot_end).strftime(DATE_FORMAT_FULL)
 
     @cached_property
     def study_time_start(self) -> str:
-        return self.slot_start.strftime(SIMPLE_TIME)
+        return timezone.localtime(self.slot_start).strftime(SIMPLE_TIME)
 
     @cached_property
     def study_time_end(self) -> str:
-        return self.slot_end.strftime(SIMPLE_TIME)
+        return timezone.localtime(self.slot_end).strftime(SIMPLE_TIME)
+
+    def get_study_as_json(self) -> dict:
+        return {
+            'title': self.title,
+            'lead': self.member.name,
+            'leadEmail': self.member.email,
+            'leadPhone': self.member.mobile,
+            'team': [m.name for m in self.collaborators.all()],
+            'start': self.study_start,
+            'end': self.study_end,
+        }
 
     def get_study_as_json_event(self) -> dict:
         event = {'id': self.id,
@@ -214,19 +228,24 @@ class StudyRequest(models.Model):
         if self.state == 'R':
             data['state']['display'] = '<span class="badge text-bg-primary">Requested</span>'
         elif self.state == 'B':
-            data['state']['display'] = '<span class="badge text-bg-success">Booked</span>'
+            data['state']['display'] = '<span class="badge text-bg-warning">Booked</span>'
         elif self.state == 'C':
-            data['state']['display'] = '<span class="badge text-bg-danger">Canceled</span>'
+            data['state']['display'] = '<span class="badge text-bg-secondary">Canceled</span>'
         elif self.state == 'D':
-            data['state']['display'] = '<span class="badge text-bg-info">Done</span>'
+            data['state']['display'] = '<span class="badge text-bg-success">Done</span>'
+        elif self.state == 'P':
+            data['state']['display'] = '<span class="badge text-bg-primary">Planned</span>'
         else:
-            data['state']['display'] = '<span class="badge text-bg-warning">Unknown</span>'
+            data['state']['display'] = '<span class="badge text-bg-info">Unknown</span>'
 
         if self.state == 'D' or self.state == 'C':
-            data['booking'] = f"<span class='badge bg-success'>Booking over</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}"
+            if self.logbook_link is None:
+                data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}<br>"
+            else:
+                data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}<br><a href={self.logbook_link}>Logbook Link</a>"
         else:
             if self.member != user and not user.is_staff:
                 data['booking'] = data['state']['display']
             else:
-                data['booking'] = f"<a class='btn btn-outline-success' data-book_id={self.id} data-name='{self.title}' onclick='test(event)'> Edit booking </a>"
+                data['booking'] = f"<a class='btn btn-outline-dark' data-book_id={self.id} data-name='{self.title}' onclick='test(event)'> Edit study request</a>"
         return data

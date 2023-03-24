@@ -1,7 +1,7 @@
 function test(event) {
     $('#closing_booking_modal').modal('show');
     $("#closed_booking_id_to_set").val($(event.target).data('book_id'))
-    $("#asset_title").html("Close booking for : " + $(event.target).data('name'))
+    $("#asset_title").html("Edit study request for : " + $(event.target).data('name'))
 
 }
 

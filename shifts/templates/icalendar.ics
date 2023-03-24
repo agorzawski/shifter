@@ -11,15 +11,23 @@ DTEND:{{ s.end|utc|date:"Ymd\THis\Z" }}
 SUMMARY:{{s.member}} {% if s.role != null %}{%else%}as {{s.member.role}}{%endif%}
 LOCATION: {% if s.role != null %} {{s.role}} {%else%} ESS/ Main Control Room {%endif%}
 END:VEVENT
-{% endfor %}
-{% for s in studies %}BEGIN:VEVENT
-UID:{{ forloop.counter }}
+{% endfor %}{% localtime on %}{% for s in studies %}BEGIN:VEVENT
+UID:666{{ forloop.counter }}
 STATUS:CONFIRMED
 DTSTAMP:{{ s.booked_slot|utc|date:"Ymd\THis\Z" }}
 DTSTART:{{ s.slot_start|utc|date:"Ymd\THis\Z" }}
 DTEND:{{ s.slot_end|utc|date:"Ymd\THis\Z" }}
-SUMMARY:{{s.member}} for {{s.title}}
+SUMMARY:{{s.title}} requested by {{s.member}}
 LOCATION: ESS/ Main Control Room
 END:VEVENT
-{% endfor %}
+{% endfor %}{% for s in studies_as_collaborator %}BEGIN:VEVENT
+UID:555{{ forloop.counter }}
+STATUS:CONFIRMED
+DTSTAMP:{{ s.booked_slot|utc|date:"Ymd\THis\Z" }}
+DTSTART:{{ s.slot_start|utc|date:"Ymd\THis\Z" }}
+DTEND:{{ s.slot_end|utc|date:"Ymd\THis\Z" }}
+SUMMARY:{{s.title}} (as Collaborator)
+LOCATION: ESS/ Main Control Room
+END:VEVENT
+{% endfor %}{% endlocaltime %}
 END:VCALENDAR

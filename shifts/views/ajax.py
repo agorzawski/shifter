@@ -8,11 +8,13 @@ from studies.models import *
 import datetime
 from members.models import Team
 from assets.models import AssetBooking
-from shifts.hrcodes import public_holidays, public_holidays_special
+from shifts.hrcodes import red_days, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
 import json
 from watson import search as watson
+from guardian.shortcuts import get_objects_for_user
+from django.core.exceptions import PermissionDenied
 
 
 def _get_member(request: HttpRequest):
@@ -130,7 +132,7 @@ def get_holidays(request: HttpRequest) -> HttpResponse:
     start = datetime.datetime.fromisoformat(request.GET.get('start')).date()
     end = datetime.datetime.fromisoformat(request.GET.get('end')).date()
 
-    ph = [x for x in public_holidays_special + public_holidays if start <= x <= end]
+    ph = [x for x in public_holidays_special + red_days if start <= x <= end]
     ph.sort()
 
     calendar_events = [{'start': d.strftime(format=SIMPLE_DATE),
@@ -168,6 +170,37 @@ def get_hr_codes(request: HttpRequest) -> HttpResponse:
     for date, item in shift2codes.items():
         a_row = [date, item['OB1'], item['OB2'], item['OB3'], item['OB4'], item['NWH']]
         data.append(a_row)
+
+    return HttpResponse(json.dumps({'data': data}), content_type="application/json")
+
+
+@require_safe
+@login_required()
+def get_team_hr_codes(request: HttpRequest) -> HttpResponse:
+    logged_user = request.user
+    logged_user_manage = get_objects_for_user(logged_user, 'members.view_desiderata')
+
+    default_start = datetime.datetime.strptime(request.GET.get('start', '2022/01/01'), '%Y-%m-%d').date()
+    default_end = datetime.datetime.strptime(request.GET.get('end', '2022/01/01'), '%Y-%m-%d').date()
+    team = request.GET.get('team', -1)
+    team = Team.objects.get(id=team)
+    if team not in logged_user_manage:
+        raise PermissionDenied
+    team_members = Member.objects.filter(team=team).filter(is_active=True)
+
+    revision = Revision.objects.filter(valid=True).order_by("-number").first()
+    data = []
+
+    for m in team_members:
+        filter_dic = {'date__gte': default_start, 'date__lte': default_end, 'revision': revision, 'member': m}
+
+        scheduled_shifts = Shift.objects.filter(**filter_dic).order_by("-date")
+
+        shift2codes = get_date_code_counts(scheduled_shifts)
+
+        for date, item in shift2codes.items():
+            a_row = [date, str(m), item['OB1'], item['OB2'], item['OB3'], item['OB4'], item['NWH']]
+            data.append(a_row)
 
     return HttpResponse(json.dumps({'data': data}), content_type="application/json")
 

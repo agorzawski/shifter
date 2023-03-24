@@ -1,4 +1,9 @@
 {% extends 'template_main.html'%}
+
+{% block head %}
+<meta http-equiv="refresh" content="120">
+{% endblock head %}
+
 {% block body %}
 
 <!-- Now on shift -->
@@ -27,6 +32,11 @@
         {%  endfor %}
         {% endfor %}
     </div>
+    <hr>
+    <h5 class="text-center mb-3">
+       Next:  <span class="fa-stack fa-x"><i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
+            <i class="fa-solid fa-hourglass-1 fa-stack-1x fa-inverse"></i></span>
+        {{nextSlot}} {%for one in nextTeam%}{{one.member}}, {%endfor%}</h5>
 
     <hr>
 

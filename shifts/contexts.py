@@ -28,7 +28,7 @@ def prepare_default_context(request, contextToAdd):
     context = {
         'logged_user': request.user.is_authenticated,
         'defaultDate': date.strftime(DATE_FORMAT),
-        'slots': Slot.objects.all().order_by('hour_start'),
+        'slots': Slot.objects.filter(op=True).order_by('hour_start'),
         'teams': Team.objects.all().order_by('name'),
         'latest_revision': latest_revision,
         'displayed_revision': latest_revision,

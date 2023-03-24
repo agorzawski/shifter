@@ -10,6 +10,7 @@ import django.contrib.messages as messages
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods, require_safe
 from django.db import IntegrityError
+from django.db.models import Q
 from django.views import View
 
 import members.models
@@ -24,6 +25,8 @@ from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
+
+from django.utils import timezone
 
 
 @require_safe
@@ -124,6 +127,19 @@ def todays(request):
                'currentTeam': activeShift['currentTeam'],
                'shiftID': activeShift['shiftID'],
                'activeStudies': scheduled_studies}
+    nowShift = None
+    for one in activeShift['currentTeam']:
+        nowShift = one
+    if nowShift is not None:
+        nextTeam = Shift.objects.filter(revision=nowShift.revision,
+                                        date=nowShift.end,
+                                        slot__hour_start=nowShift.slot.hour_end)
+        nextSlot = None
+        for one in nextTeam:
+            nextSlot = one.slot
+        if nextSlot is not None:
+            context['nextSlot'] = nextSlot
+            context['nextTeam'] = nextTeam
     return render(request, 'today.html', prepare_default_context(request, context))
 
 
@@ -166,7 +182,10 @@ def user(request, u=None, rid=None):
 
 @login_required()
 def users(request):
-    users_list = Member.objects.all()
+    # Requesting all ACTIVES user, but anonymous
+    first_name = Q(first_name__exact='')
+    last_name = Q(last_name__exact='')
+    users_list = Member.objects.filter(is_active=True).exclude(first_name & last_name)
     users_requested = request.GET.get('u', '')
     users_requested = users_requested.split(",")
     users_requested = [int(x) for x in users_requested] if users_requested != [''] else []
@@ -198,18 +217,22 @@ def icalendar(request):
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
 
     shifts = Shift.objects.filter(member=member, revision=revision)
-    studies = StudyRequest.objects.filter(member=member,state__in=["B", "D"])
+    studies = StudyRequest.objects.filter(member=member, state__in=["B", "D"])
+    studies_as_collaborator = StudyRequest.objects.filter(collaborators=member, state__in=["B", "D"])
     if team is not None:
         shifts = Shift.objects.filter(member__team=team, revision=revision)
-        studies = StudyRequest.objects.filter(member__team=team,state__in=["B", "D"])
+        studies = StudyRequest.objects.filter(member__team=team, state__in=["B", "D"])
+        studies_as_collaborator = None
     if team is None and member is None:
         shifts = Shift.objects.filter(revision=revision)
         studies = None
+        studies_as_collaborator = None
 
     context = {
         'campaign': 'Exported Shifts',
         'shifts': shifts,
         'studies': studies,
+        'studies_as_collaborator': studies_as_collaborator,
         'member': member,
         'team': team if not None else member.team,
     }
@@ -270,7 +293,11 @@ def ioc_update(request):
     fullUpdate = request.GET.get('fullUpdate', None) is not None
     activeShift = prepare_active_crew(dayToGo=dayToGo, slotToGo=slotToGo, hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
-    return JsonResponse(prepare_for_JSON(activeShift))
+    dayDate = activeShift.get('today', datetime.datetime.today()).date()
+    dayStudiesStart = datetime.datetime.combine(dayDate, datetime.time(hour=0, minute=0, second=1, microsecond=0))
+    dayStudiesEnd = datetime.datetime.combine(dayDate, datetime.time(hour=23, minute=59, second=59, microsecond=0))
+    studies = StudyRequest.objects.filter(state="B", slot_start__gte=dayStudiesStart, slot_start__lte=dayStudiesEnd)
+    return JsonResponse(prepare_for_JSON(activeShift, studies=studies))
 
 
 @require_safe
@@ -546,7 +573,7 @@ class AssetsView(View):
         form = AssetBookingForm(request.POST, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
-            post.booking_created = datetime.datetime.now()  # timezone.now()
+            post.booking_created = timezone.localtime(timezone.now())
             post.booked_by = request.user
             post.save()
             message = "Booking for {} on {}, is added!".format(post.member.first_name, post.use_start)
@@ -564,7 +591,7 @@ def assets_close(request):
     if form.is_valid():
         comment = form.cleaned_data['after_comment']
         current_booking = get_object_or_404(AssetBooking, id=booking_id)
-        current_booking.booking_finished = datetime.datetime.now()
+        current_booking.booking_finished = timezone.localtime(timezone.now())
         current_booking.after_comment = comment
         current_booking.state = AssetBooking.BookingState.RETURNED
         current_booking.finished_by = request.user

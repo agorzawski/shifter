@@ -1,7 +1,9 @@
-from django.http import HttpResponse, JsonResponse
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.db.models import Q
 from studies.models import *
+
 import json
+
 
 def _get_member(request: HttpRequest):
     member_id = request.GET.get('member', -1)
@@ -27,8 +29,11 @@ def get_studies(request: HttpRequest) -> HttpResponse:
     if team_id > 0:
         pass  # just omit the studies on the teams view
     if member_id > 0:
-        scheduled_studies = StudyRequest.objects.filter(member=_get_member(request),
-                                                        state__in=["B", "D"]).order_by('slot_start', 'priority')
+        member = _get_member(request)
+        scheduled_studies = StudyRequest.objects.filter(Q(member=member) | Q(collaborators=member),
+                                                        state__in=["B", "D"])\
+                                                        .order_by('slot_start', 'priority')\
+                                                        .distinct()
         studies_events = [d.get_study_as_json_event() for d in scheduled_studies]
 
     if not show_studies:

@@ -19,13 +19,22 @@ from guardian.shortcuts import get_objects_for_user
 @require_safe
 @login_required
 def team_view(request: HttpRequest, team_id: int) -> HttpResponse:
+    today = datetime.datetime.now()
+    year = today.year
+    month = today.month
+
+    default_start = datetime.date(year, month, 1)
+    default_end = datetime.date(year, month + 1, 1) + datetime.timedelta(days=-1)
+
     the_team = get_object_or_404(Team, id=team_id)
     logged_user = request.user
     logged_user_manage = get_objects_for_user(logged_user, 'members.view_desiderata')
     if the_team not in logged_user_manage:
         raise PermissionDenied
     # Here we are sure the team exists, and the user has the right to see the full desiderata
-    return render(request, 'team_desiderata.html', {'team': the_team})
+    return render(request, 'team_desiderata.html', {'team': the_team,
+                                                    'default_start': default_start,
+                                                    'default_end': default_end})
 
 
 @require_safe
@@ -111,12 +120,27 @@ def get_team_desiderata(request: HttpRequest) -> HttpResponse:
 
 @require_safe
 @login_required
+def get_team_desiderata_non_rota_maker(request: HttpRequest) -> HttpResponse:
+    the_team = get_object_or_404(Team, id=request.user.team.id)
+    to_show = request.GET.get('show', False)
+    if to_show == 'false':
+        return HttpResponse(json.dumps([]), content_type="application/json")
+    logged_user = request.user
+    if the_team != logged_user.team:
+        raise PermissionDenied
+    # Here we are sure the team exists, and the user has the right to see the full desiderata
+    calendar_events = get_desiderata_in_date_range_from_request(request, for_team=the_team, editable=False, exclude=request.user)
+    return HttpResponse(json.dumps(calendar_events), content_type="application/json")
+
+
+@require_safe
+@login_required
 def get_user_desiderata(request: HttpRequest) -> HttpResponse:
     calendar_events = get_desiderata_in_date_range_from_request(request)
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 
-def get_desiderata_in_date_range_from_request(request, for_team=None):
+def get_desiderata_in_date_range_from_request(request, for_team=None, editable=True, exclude=False):
     start_date = request.GET.get('start', None)
     end_date = request.GET.get('end', None)
 
@@ -141,11 +165,14 @@ def get_desiderata_in_date_range_from_request(request, for_team=None):
     the_date_filter = criterion1 & criterion2 | criterion3 & criterion4 | criterion5 & criterion6
 
     if for_team:
-        the_calendar = Desiderata.objects.filter(member__team__id=for_team.id).filter(the_date_filter)
+        if not exclude:
+            the_calendar = Desiderata.objects.filter(member__team__id=for_team.id).filter(the_date_filter)
+        else:
+            the_calendar = Desiderata.objects.filter(member__team__id=for_team.id).filter(the_date_filter).exclude(member=exclude)
     else:
         member = request.user
         the_calendar = Desiderata.objects.filter(member=member).filter(the_date_filter)
 
-    calendar_events = [d.get_as_json_event(team=True if for_team else False) for d in the_calendar]
+    calendar_events = [d.get_as_json_event(team=True if for_team else False, editable=editable) for d in the_calendar]
 
     return calendar_events

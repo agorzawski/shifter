@@ -177,7 +177,7 @@ def update_details_from_LDAP(shifterDuty, ldap, useLDAP=True):
         shifterDuty.member.save()
 
 
-def prepare_for_JSON(activeShift):
+def prepare_for_JSON(activeShift, studies=None):
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
                     '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift[
                         'activeSlot'].abbreviation,
@@ -185,6 +185,7 @@ def prepare_for_JSON(activeShift):
                     '_timeRequested': activeShift['now'],
                     '_PVPrefix': 'NSO:Ops:',
                     'SID': activeShift['shiftID'],
+                    'dayStudiesPlanned': [s.get_study_as_json() for s in studies] if studies is not None else []
                     }
     for oneRole in DEFAULT_SHIFTER_TO_JSON:
         dataToReturn[oneRole] = "N/A"

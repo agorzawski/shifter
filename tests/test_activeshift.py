@@ -159,4 +159,6 @@ def update_test_slots(slots):
     for opSlot in slots:
         slot = Slot.objects.get(abbreviation=opSlot)
         slot.op = True
+        if opSlot=='PM': slot.id_code = 'B'
+        if opSlot == 'NG': slot.id_code = 'C'
         slot.save()

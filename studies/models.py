@@ -216,7 +216,8 @@ class StudyRequest(models.Model):
         return event
 
     def study_as_datatable_json(self, user=None):
-        data = {'who': {'member': f'{self.member}', 'team': f'{self.member.team}'},
+        data = {'id' : f'{self.id}',
+                'who': {'member': f'{self.member}', 'team': f'{self.member.team}'},
                 'collaborators': [f'{m}' for m in self.collaborators.all()],
                 'title': self.title,
                 'description': self.description,

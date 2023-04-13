@@ -13,6 +13,12 @@ $(document).ready(function() {
             initCollapsed: true
         },
         "columns": [{
+              data: "id",
+              searchPanes: {
+                    show: false
+                }
+            },
+            {
                 data: "who",
                 render: {
                     _: function(data, type, row) {

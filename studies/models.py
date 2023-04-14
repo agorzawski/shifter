@@ -242,7 +242,7 @@ class StudyRequest(models.Model):
                 'booking': 'pass'}
         data['state']['display'] = self.state_badge()
         if self.state == 'D' or self.state == 'C':
-            if self.logbook_link is None:
+            if self.logbook_link is None or not bool(self.logbook_link.strip()):
                 data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}<br>"
             else:
                 data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}<br><a href={self.logbook_link}>Logbook Link</a>"

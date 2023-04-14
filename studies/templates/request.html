@@ -91,6 +91,39 @@
     </div>
   </div>
 </div>
+
+<!-- Study modal -->
+<div class="modal fade bd-example-modal-lg" id="study_modal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="study_title"><small>{{study.id}}</small> - {{study.title}} &nbsp;&nbsp;&nbsp;&nbsp; <small>{{study.state_badge | safe}}</small> </h2> <br>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+          <p>Booked by: {{study.booked_by}}</p>
+          <p>Collaborators: {%for one in study.collaborators.all%}{{one}}, {%endfor%}</p>
+          <h4>Study Description</h4>
+          <p>{{study.description}}</p>
+          <h5>Request details</h5>
+          <p>Slot: {{study.duration}} [h]</p>
+          <p>Beam:{{study.beam_destination}} / {{study.beam_reprate}}[Hz] / {{study.beam_pulse_length}} [us] / {{study.beam_current}} [mA] </p>
+          <h5>Additional comments regarding slot/time</h5>
+          <p>{{study.booking_comment}}</p>
+          {%if study.state == 'B' or study.state == 'D' %}<h5>Booking Status</h5><p> BOOKED or DONE on <strong> {{study.study_start}} - {{study.study_end}}</strong></p>{%endif%}
+          {%if study.state == 'C' or study.state == 'D' %}
+          <h5>Closing comments</h5>
+          <p>{{study.after_comment}}</p>
+          <p><a href={{self.logbook_link}}>Logbook Link</a></p>
+          {%endif%}
+      </div>
+      <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close window</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {%  block js %}
@@ -106,4 +139,9 @@
         $('#collaborators_field').select2();
     });
     </script>
+    {%if study is not null%}<script type="text/javascript">
+        $(window).on('load', function() {
+            $('#study_modal').modal('show');
+        });
+    </script>{%endif%}
 {% endblock %}

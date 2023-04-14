@@ -12,12 +12,19 @@ def page_not_found(request, exception):
 
 
 class StudyView(View):
-    def get(self, request):
+    def get(self, request, sid=None):
         form = StudyRequestForm({'member': request.user}, user=request.user)
         closing_form = StudyRequestFormClosing()
-        return render(request, 'request.html', {'form': form, 'closing_form': closing_form})
+        context = {'form': form, 'closing_form': closing_form}
+        if sid is not None:
+            try:
+                context['study'] = StudyRequest.objects.get(id=sid)
+            except StudyRequest.DoesNotExist:
+                messages.error(request, "No such study found with the given id={}".format(sid))
+                pass
+        return render(request, 'request.html', context)
 
-    def post(self, request):
+    def post(self, request, sid=None):
         form = StudyRequestForm(request.POST, user=request.user)
         if form.is_valid():
             col = form.cleaned_data['collaborators']

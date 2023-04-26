@@ -142,7 +142,8 @@ def get_code_counts(shift: Shift) -> dict:
             notAWEOrHoliday = False
             continue
         if _check_if_date_or_adjacent_WE(shift.date, rd) and \
-                shift.start >= datetime.combine(rd, time(14, 0)):
+                shift.start >= datetime.combine(rd, time(14, 0)) and \
+                notAWEOrHoliday:
             counts['OB3'] = duration.seconds // 3600
             notAWEOrHoliday = False
     weekno = shift.start.weekday()

@@ -13,6 +13,17 @@ $(document).ready(function() {
             initCollapsed: true
         },
         "columns": [{
+              data: "id",
+                render: {
+                    _: function(data, type, row) {
+                        return '<a class="link" href="' + data + '">' + data + '</a>';
+                    },
+                },
+              searchPanes: {
+                    show: false
+                }
+            },
+            {
                 data: "who",
                 render: {
                     _: function(data, type, row) {

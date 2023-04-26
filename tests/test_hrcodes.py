@@ -47,6 +47,12 @@ class HRCodes(TestCase):
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_BH)
 
+    def test_codes_BankHoliday_on_WE(self):  # on bank holiday over WE
+        shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
+                          fancy_date=datetime.date(2023, 4, 9))
+        h = hrc.get_code_counts(shift)
+        self.compare(h, HOURS_BH)
+
     def test_codes_BankHoliday_AdjWE(self):  # a WE after bank holiday
         shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
                           fancy_date=datetime.date(2021, 6, 27))

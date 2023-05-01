@@ -291,7 +291,9 @@ def ioc_update(request):
     dayDate = activeShift.get('today', datetime.datetime.today()).date()
     dayStudiesStart = datetime.datetime.combine(dayDate, datetime.time(hour=0, minute=0, second=1, microsecond=0))
     dayStudiesEnd = datetime.datetime.combine(dayDate, datetime.time(hour=23, minute=59, second=59, microsecond=0))
-    studies = StudyRequest.objects.filter(state="B", slot_start__gte=dayStudiesStart, slot_start__lte=dayStudiesEnd)
+    studies = StudyRequest.objects.filter(state="B", slot_start__gte=dayStudiesStart, slot_start__lte=dayStudiesEnd).\
+        order_by("slot_start")
+
     return JsonResponse(prepare_for_JSON(activeShift, studies=studies))
 
 

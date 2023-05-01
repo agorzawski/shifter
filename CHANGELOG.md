@@ -1,7 +1,11 @@
 # ESS OP Shifter Changelog
 
+### v.1.0.x
+- Bugfixes found with 1.0 
+- Refreshed Today page with upcoming shift
+- Study overviews, tables & views
 
-### v.1.x
+### v.1.0.0
 - Beam studies planner (ACCOP-337) first version,
 - Shifter's Desiderata for shift planning,
 - Shifter's view allow to display/compare with future plannings,

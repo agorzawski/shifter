@@ -1,0 +1,62 @@
+{% extends 'template_main.html'%}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'datatables.net-bs5/css/dataTables.bootstrap5.min.css'%}">
+<link rel="stylesheet" href="{% static 'datatables.net-searchpanes-bs5/css/searchPanes.bootstrap5.min.css'%}">
+<link rel="stylesheet" href="{% static 'select2/dist/css/select2.min.css'%}">
+{% endblock %}
+
+
+{% block body %}
+
+<div>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="study_title"><small>{{study.id}}</small> - {{study.title}} &nbsp;&nbsp;&nbsp;&nbsp; <small>{{study.state_badge | safe}}</small> </h2> <br>
+      </div>
+        <hr>
+      <div class="modal-body">
+          <p>Booked by: {{study.booked_by}}</p>
+          <p>Collaborators: {%for one in study.collaborators.all%}{{one}}, {%endfor%}</p>
+          <h4>Study Description</h4>
+          <p>{{study.description}}</p>
+          <h5>Request details</h5>
+          <p>Slot: {{study.duration}} [h]</p>
+          <p>Beam:{{study.beam_destination}} / {{study.beam_reprate}}[Hz] / {{study.beam_pulse_length}} [us] / {{study.beam_current}} [mA] </p>
+          <h5>Additional comments regarding slot/time</h5>
+          <p>{{study.booking_comment}}</p>
+          {%if study.state == 'B' or study.state == 'D' %}<h5>Booking Status</h5><p> BOOKED or DONE on <strong> {{study.study_start}} - {{study.study_end}}</strong></p>{%endif%}
+          {%if study.state == 'C' or study.state == 'D' %}
+          <h5>Closing comments</h5>
+          <p>{{study.after_comment}}</p>
+          <p><a href={{self.logbook_link}}>Logbook Link</a></p>
+          {%endif%}
+      </div>
+        <hr>
+      <div class="modal-footer">
+          <a href="{% url 'studies:study_request' %}" class="btn btn-secondary">Back to studies</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{%  block js %}
+    <script type="text/javascript" src="{% static 'datatables.net/js/jquery.dataTables.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'datatables.net-select/js/dataTables.select.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'datatables.net-searchpanes/js/dataTables.searchPanes.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'datatables.net-searchpanes-bs5/js/searchPanes.bootstrap5.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/studies_booking.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
+    <script>
+    $(document).ready(function() {
+        $('#collaborators_field').select2();
+    });
+    </script>
+
+{% endblock %}

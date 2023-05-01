@@ -174,6 +174,20 @@ class StudyRequest(models.Model):
     def search_url(self):
         return reverse('studies:study_request')
 
+    def state_badge(self):
+        if self.state == 'R':
+            return '<span class="badge text-bg-primary">Requested</span>'
+        elif self.state == 'B':
+            return '<span class="badge text-bg-warning">Booked</span>'
+        elif self.state == 'C':
+            return '<span class="badge text-bg-secondary">Canceled</span>'
+        elif self.state == 'D':
+            return '<span class="badge text-bg-success">Done</span>'
+        elif self.state == 'P':
+            return '<span class="badge text-bg-primary">Planned</span>'
+        else:
+            return '<span class="badge text-bg-info">Unknown</span>'
+
     def __str__(self):
         return '{}'.format(self.member)
 
@@ -216,7 +230,8 @@ class StudyRequest(models.Model):
         return event
 
     def study_as_datatable_json(self, user=None):
-        data = {'who': {'member': f'{self.member}', 'team': f'{self.member.team}'},
+        data = {'id' : f'{self.id}',
+                'who': {'member': f'{self.member}', 'team': f'{self.member.team}'},
                 'collaborators': [f'{m}' for m in self.collaborators.all()],
                 'title': self.title,
                 'description': self.description,
@@ -225,21 +240,9 @@ class StudyRequest(models.Model):
                 'state': {'order': [tup for tup in self.BOOKING_STATE_CHOICES if tup[0] == self.state][0][1],
                           'display': ''},
                 'booking': 'pass'}
-        if self.state == 'R':
-            data['state']['display'] = '<span class="badge text-bg-primary">Requested</span>'
-        elif self.state == 'B':
-            data['state']['display'] = '<span class="badge text-bg-warning">Booked</span>'
-        elif self.state == 'C':
-            data['state']['display'] = '<span class="badge text-bg-secondary">Canceled</span>'
-        elif self.state == 'D':
-            data['state']['display'] = '<span class="badge text-bg-success">Done</span>'
-        elif self.state == 'P':
-            data['state']['display'] = '<span class="badge text-bg-primary">Planned</span>'
-        else:
-            data['state']['display'] = '<span class="badge text-bg-info">Unknown</span>'
-
+        data['state']['display'] = self.state_badge()
         if self.state == 'D' or self.state == 'C':
-            if self.logbook_link is None:
+            if self.logbook_link is None or not bool(self.logbook_link.strip()):
                 data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}<br>"
             else:
                 data['booking'] = f"<span class='badge bg-secondary'>Study request closed</span> <br>{self.booking_finished.strftime('%b. %d, %Y, %I:%M%p')}<br>{self.finished_by}<br>{self.after_comment}<br><a href={self.logbook_link}>Logbook Link</a>"

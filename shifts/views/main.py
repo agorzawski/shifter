@@ -150,7 +150,6 @@ def user(request, u=None, rid=None):
         member = request.user
     else:
         member = Member.objects.filter(id=u).first()
-    ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(member=member)
 
     today = datetime.datetime.now()
     year = today.year
@@ -158,12 +157,8 @@ def user(request, u=None, rid=None):
 
     default_start = datetime.date(year, month, 1)
     default_end = datetime.date(year, month + 1, 1) + datetime.timedelta(days=-1)
-    dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
-    weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
     context = prepare_user_context(member, revisionNext=rid)
-    context['dailyViolations'] = dailyViolations
-    context['weeklyViolations'] = weeklyViolations
-    context['violations_total'] = len(dailyViolations + weeklyViolations)
+    context['revisions'] = Revision.objects.order_by('-number')
     context['default_start'] = default_start
     context['default_end'] = default_end
     context['hide_campaign_selection'] = True

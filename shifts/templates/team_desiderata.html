@@ -21,6 +21,9 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="time_report-tab" data-bs-toggle="tab" data-bs-target="#time_report-tab-pane" type="button" role="tab" aria-controls="time_report-tab-pane" aria-selected="false">Time Report</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="shift-inconsistencies-tab" data-bs-toggle="tab" data-bs-target="#team-shift-inconsistencies-tab-pane" type="button" role="tab" aria-controls="time_report-tab-pane" aria-selected="false">Shift Inconsistencies</button>
+                </li>
             </ul>
             <div class="tab-content" id="user_tabs_content">
                 <div class="tab-pane fade show active" id="planning-tab-pane" role="tabpanel" aria-labelledby="planning-tab" tabindex=""0>
@@ -85,6 +88,27 @@
                         </div>
                     </div>
                 </div>
+                <!-- Tab displaying the time reporting breakdown -->
+                <div class="tab-pane fade" id="team-shift-inconsistencies-tab-pane" role="tabpanel" aria-labelledby="shift-inconsistencies-tab" tabindex="1">
+                    <div class='container'>
+                        <div class="row justify-content-center m-4">
+                            <div class="col">
+                                <h2 class="mb-3">Team Inconsistencies</h2>
+                                <div class="mb-3">
+                                    <select class="form-select" onchange="return fillInconsistenciesDiv(this.value)" name='revision' id='revision-for-inconsistencies' required>
+                                        {% for rev in revisions %}
+                                            <option value="{{rev.number}}" {% if rev == latest_revision %}selected="selected"{%endif%}>
+                                                {{rev}} (validity: {{rev.valid}}) </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div id="shift-inconsistencies"></div> <!-- Filled on change of combo box above-->
+                                <div><hr><h6>Legend</h6> <p><span class="badge text-bg-light">Passed occurrence </span><span class="badge text-bg-danger">Future occurrence </span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -104,5 +128,13 @@
 <script type="text/javascript" src="{% static 'daterangepicker/daterangepicker.js' %}"></script>
 <script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/desiderata_space.min.js' %}"></script>
-
+<script type="text/javascript">
+    function fillInconsistenciesDiv(rev){
+      $("#shift-inconsistencies").load("{%  url 'ajax.get_team_shift_inconsistencies' %}?revision="+rev);
+      return false;
+    }
+        $(document).ready(function() {
+        fillInconsistenciesDiv(-1)
+    });
+</script>
 {% endblock %}

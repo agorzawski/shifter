@@ -11,6 +11,7 @@ from assets.models import AssetBooking
 from shifts.hrcodes import red_days, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
+from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 import json
 from watson import search as watson
 from guardian.shortcuts import get_objects_for_user
@@ -26,6 +27,15 @@ def _get_member(request: HttpRequest):
     return member
 
 
+def _get_revision(request: HttpRequest):
+    revision = int(request.GET.get('revision', -1))
+    if revision == -1:
+        revision = Revision.objects.filter(valid=True).order_by("-number").first()
+    else:
+        revision = Revision.objects.get(number=revision)
+    return revision
+
+
 def _get_scheduled_shifts(request: HttpRequest):
     start_date = request.GET.get('start', None)
     end_date = request.GET.get('end', None)
@@ -33,7 +43,7 @@ def _get_scheduled_shifts(request: HttpRequest):
         return HttpResponse({}, content_type="application/json", status=500)
     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
-    return Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first())\
+    return Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()) \
         .filter(member=_get_member(request)).filter(date__gte=start).filter(date__lte=end)
 
 
@@ -61,7 +71,7 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     end_date = request.GET.get('end', None)
     all_roles = request.GET.get('all_roles', None)
     campaigns = request.GET.get('campaigns', None)
-    revision = request.GET.get('revision', None)
+    revision = _get_revision(request)
 
     if start_date is None or end_date is None or all_roles is None or campaigns is None or revision is None:
         return HttpResponse({}, content_type="application/json", status=500)
@@ -71,12 +81,6 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     all_roles = True if all_roles == "true" else False
     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
-    revision = int(revision)
-
-    if revision == -1:
-        revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    else:
-        revision = Revision.objects.get(valid=True, number=revision)
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
     filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns}
@@ -241,13 +245,71 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
             memberSummary.append(result.get(oneSlot.abbreviation, '--'))
         teamMembersSummary.append(memberSummary)
 
-    header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end -  datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
+    header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end - datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
 
     return HttpResponse(json.dumps({'data': teamMembersSummary, 'header': header}), content_type="application/json")
 
 
+def _get_inconsistencies_per_member(member, revision):
+    # TODO fix it with proper js file to build it out of JSON
+    # TODO once with json, return count of inconsistencies to enable badge
+    ss = Shift.objects.filter(revision=revision).filter(member=member)
+    dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
+    weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
+    toReturnHTML = ""
+    if len(dailyViolations):
+        toReturnHTML += "<dl class=\"row\">" \
+                                "<dt class=\"col-sm-3\">Daily shift issues:</dt>" \
+                                "<dd class=\"col-sm-9\">"
+        for oneD in dailyViolations:
+            label = 'light'
+            if oneD[0].start > datetime.datetime.now():
+                label = 'danger'
+            toReturnHTML += f"<p><span class=\"badge text-bg-{label}\">{oneD[0].get_shift_as_date_slot()}</span> - " \
+                            f"<span class=\"badge text-bg-{label}\">{oneD[1].get_shift_as_date_slot()} </span></p>"
+        toReturnHTML += "</dd></dl>"
+    if len(weeklyViolations):
+        toReturnHTML += "<dl class=\"row\">" \
+                        "<dt class=\"col-sm-3\">Weekly shift issues:</dt>" \
+                        "<dd class=\"col-sm-9\">"
+        for oneW in weeklyViolations:
+            for oneInW in oneW:
+                label = 'light'
+                if oneInW.start > datetime.datetime.now():
+                    label = 'danger'
+                toReturnHTML += f"<p><span class=\"badge text-bg-{label}\">{oneInW.get_shift_as_date_slot()}</span></p>"
+            toReturnHTML += "<hr>"
+        toReturnHTML += "</dd></dl>"
+    if len(dailyViolations) or len(weeklyViolations):
+        return toReturnHTML
+    else:
+        return None
+
+
+@login_required
+def get_shift_inconsistencies(request: HttpRequest) -> HttpResponse:
+    revision = _get_revision(request)
+    toReturnHTML = _get_inconsistencies_per_member(request.user, revision)
+    return HttpResponse(toReturnHTML, content_type="application/text")
+
+
+@login_required
+def get_team_shift_inconsistencies(request: HttpRequest) -> HttpResponse:
+    revision = _get_revision(request)
+    members = Member.objects.filter(team=request.user.team, is_active=True)
+    # TODO improve when _get_per_member's TODOs solved
+    toReturnHTML = ""
+    for member in members:
+        foundInconsistencies = _get_inconsistencies_per_member(member, revision)
+        if foundInconsistencies is not None:
+            toReturnHTML += "<hr><h5 class=\"mb-3\"><span class=\"badge text-bg-warning\"><i class=\"fa-solid " \
+                            "fa-warning\"></i>&nbsp;</span>{}</h5>".format(member)
+            toReturnHTML += foundInconsistencies
+    return HttpResponse(toReturnHTML, content_type="application/text")
+
+
 def search(request: HttpRequest) -> HttpResponse:
-    answer=[]
+    answer = []
     search = request.GET.get('search')
     search_results = watson.search(search, ranking=False)
     for result in search_results:

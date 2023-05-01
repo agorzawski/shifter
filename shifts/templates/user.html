@@ -33,12 +33,7 @@
                     <button class="nav-link" id="links-tab" data-bs-toggle="tab" data-bs-target="#links-tab-pane" type="button" role="tab" aria-controls="links-tab-pane" aria-selected="false">Calendar Links</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link position-relative" id="inconsistencies-tab" data-bs-toggle="tab" data-bs-target="#inconsistencies-tab-pane" type="button" role="tab" aria-controls="inconsistencies-tab-pane" aria-selected="false">
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            {{ violations_total }}
-                            <span class="visually-hidden">Inconsistencies</span>
-                        </span>
-                        Inconsistencies</button>
+                    <button class="nav-link position-relative" id="inconsistencies-tab" data-bs-toggle="tab" data-bs-target="#inconsistencies-tab-pane" type="button" role="tab" aria-controls="inconsistencies-tab-pane" aria-selected="false">Inconsistencies</button>
                 </li>
             </ul>
             <div class="tab-content" id="user_tabs_content">
@@ -191,29 +186,18 @@
                     <div class='container'>
                         <div class="row justify-content-center m-4">
                             <div class="col">
-                                <h2 class="mb-3">Some inconsistencies :</h2>
-                                {% if violations_total == 0 %}
-                                    <p>No inconsistencies in the current planning</p>
-                                {% else %}
-                                    <dl class="row">
-                                        <dt class="col-sm-3">Daily shift issues:</dt>
-                                        <dd class="col-sm-9">
-                                            {% for one in dailyViolations%}
-                                                <p><span class="badge text-bg-warning">{{one.0}}</span> - <span class="badge text-bg-warning">{{one.1}} </span></p>
-                                            {% empty %}
-                                                <p>No daily issues</p>
-                                            {%endfor%}
-                                        </dd>
-                                        <dt class="col-sm-3">Weekly shift issues:</dt>
-                                        <dd class="col-sm-9">
-                                            {% for one in weeklyViolations%}
-                                                <p><span class="badge text-bg-warning">{{one.0}}</span> - <span class="badge text-bg-warning">{{one.1}} </span></p>
-                                            {% empty %}
-                                                <p>No weekly issues</p>
-                                            {%endfor%}
-                                        </dd>
-                                    </dl>
-                                {% endif %}
+                                <h2 class="mb-3">Inconsistencies</h2>
+                                <div class="mb-3">
+                                    <select class="form-select" onchange="return fillInconsistenciesDiv(this.value)" name='revision' id='revision-for-inconsistencies' required>
+                                        {% for rev in revisions %}
+                                            <option value="{{rev.number}}" {% if rev == latest_revision %}selected="selected"{%endif%}>
+                                                {{rev}} (validity: {{rev.valid}}) </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div id="shift-inconsistencies"></div> <!-- Filled on change of combo box above-->
+                                <div><hr><h6>Legend</h6> <p><span class="badge text-bg-light">Passed occurrence </span><span class="badge text-bg-danger">Future occurrence </span></p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -248,9 +232,14 @@
 <script type="text/javascript" src="{% static 'daterangepicker/daterangepicker.js' %}"></script>
 <script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
     <script>
+    function fillInconsistenciesDiv(rev){
+      $("#shift-inconsistencies").load("{%  url 'ajax.get_shift_inconsistencies' %}?revision="+rev);
+      return false;
+    }
     $(document).ready(function() {
     $('#displayed_campaigns').select2();
     $('#displayed_revision').select2();
+    fillInconsistenciesDiv(-1);
 });</script>
 
 {% endblock %}

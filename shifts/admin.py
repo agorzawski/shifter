@@ -104,7 +104,17 @@ class ShiftAdmin(admin.ModelAdmin):
             '%d moved to the latest revision',
             updated,
         ) % updated, messages.SUCCESS)
-        self.description = 'Move selected shifts to the latest revision'
+        self.description = 'Move selected shifts to the latest VALID revision'
+
+    def MOVE_to_newest_TEMP_revision(self, request, queryset):
+        last_temp_rev = Revision.objects.filter(valid=False).order_by('-number').first()
+        updated = queryset.update(revision=last_temp_rev)
+        self.message_user(request, ngettext(
+            '%d moved to the latest TEMP revision.',
+            '%d moved to the latest TEMP revision',
+            updated,
+        ) % updated, messages.SUCCESS)
+        self.description = 'Move selected shifts to the latest TEMP revision'
 
     def COPY_to_newest_TEMP_revision(self, request, queryset):
         last_rev = Revision.objects.order_by('-number').first()
@@ -145,6 +155,7 @@ class ShiftAdmin(admin.ModelAdmin):
     actions = (UPDATE_to_default_slot_NWH,
                MOVE_to_newest_VALID_revision,
                MERGE_to_newest_VALID_revision,
+               MOVE_to_newest_TEMP_revision,
                COPY_to_newest_TEMP_revision)
 
     def _member(self, object):

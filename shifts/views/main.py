@@ -410,7 +410,7 @@ def shifts_update_post(request):
 @login_required
 def shifts_upload(request):
     data = {'campaigns': Campaign.objects.all(),
-            'revisions': Revision.objects.all(),
+            'revisions': Revision.objects.filter(merged=False),
             'roles': ShiftRole.objects.all(),
             }
     return render(request, "shifts_upload.html", prepare_default_context(request, data))
@@ -426,7 +426,13 @@ def shifts_upload_post(request):
             'roles': ShiftRole.objects.all(),
             }
     totalLinesAdded = 0
-    revision = Revision.objects.filter(number=request.POST['revision']).first()
+    if int(request.POST['revision']) < 1:
+        revision = Revision(name=request.POST['new-revision-name'],
+                            valid=False,
+                            date_start=timezone.now())
+        revision.save()
+    else:
+        revision = Revision.objects.filter(number=request.POST['revision']).first()
     campaign = Campaign.objects.filter(id=request.POST['camp']).first()
     defaultShiftRole = None
     if int(request.POST['role']) > 0:

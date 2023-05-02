@@ -55,8 +55,10 @@ class AssetBooking(models.Model):
     def asset_as_json(self, user=None):
         data = {'who': {'member': f'{self.member}', 'team': f'{self.member.team}'},
                 'asset': {'type': f'{self.asset.asset_type.name}', 'name': f'{self.asset.name}'},
-                'use_start': {'display': timezone.localtime(self.use_start).strftime('%b. %d, %Y, %I:%M%p'), 'order': self.use_start.second},
-                'use_end': {'display': timezone.localtime(self.use_end).strftime('%b. %d, %Y, %I:%M%p'), 'order': self.use_end.second},
+                'use_start': {'display': timezone.localtime(self.use_start).strftime('%b. %d, %Y, %I:%M%p'),
+                              'order': self.use_start.timestamp()},
+                'use_end': {'display': timezone.localtime(self.use_end).strftime('%b. %d, %Y, %I:%M%p'),
+                            'order': self.use_end.timestamp()},
                 'active': "Active" if self.state != AssetBooking.BookingState.RETURNED else "Over",
                 'comment': f'<small> {timezone.localtime(self.booking_created).strftime("%b. %d, %Y, %I:%M%p")} / {self.booked_by}'
                            f'</small><br> {self.initial_comment}'}

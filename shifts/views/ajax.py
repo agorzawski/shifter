@@ -296,14 +296,17 @@ def get_shift_inconsistencies(request: HttpRequest) -> HttpResponse:
 @login_required
 def get_team_shift_inconsistencies(request: HttpRequest) -> HttpResponse:
     revision = _get_revision(request)
-    members = Member.objects.filter(team=request.user.team, is_active=True)
+    team = request.user.team
+    teamId = int(request.GET.get('tid', -1))
+    if teamId > 0:
+        team = Team.objects.get(id=teamId)
+    members = Member.objects.filter(team=team, is_active=True)
     # TODO improve when _get_per_member's TODOs solved
     toReturnHTML = ""
     for member in members:
         foundInconsistencies = _get_inconsistencies_per_member(member, revision)
         if foundInconsistencies is not None:
-            toReturnHTML += "<hr><h5 class=\"mb-3\"><span class=\"badge text-bg-warning\"><i class=\"fa-solid " \
-                            "fa-warning\"></i>&nbsp;</span>{}</h5>".format(member)
+            toReturnHTML += "<hr><h5 class=\"mb-3\">{}</h5>".format(member)
             toReturnHTML += foundInconsistencies
     return HttpResponse(toReturnHTML, content_type="application/text")
 

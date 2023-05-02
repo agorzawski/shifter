@@ -24,6 +24,10 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="shift-inconsistencies-tab" data-bs-toggle="tab" data-bs-target="#team-shift-inconsistencies-tab-pane" type="button" role="tab" aria-controls="time_report-tab-pane" aria-selected="false">Shift Inconsistencies</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="team-planning-tab" data-bs-toggle="tab" data-bs-target="#team-planning-tab-pane" type="button" role="tab" aria-controls="time_report-tab-pane" aria-selected="false">Planning edits</button>
+                </li>
+
             </ul>
             <div class="tab-content" id="user_tabs_content">
                 <div class="tab-pane fade show active" id="planning-tab-pane" role="tabpanel" aria-labelledby="planning-tab" tabindex=""0>
@@ -88,7 +92,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- Tab displaying the time reporting breakdown -->
+                <!-- Tab displaying the inconsitencies -->
                 <div class="tab-pane fade" id="team-shift-inconsistencies-tab-pane" role="tabpanel" aria-labelledby="shift-inconsistencies-tab" tabindex="1">
                     <div class='container'>
                         <div class="row justify-content-center m-4">
@@ -109,6 +113,74 @@
                         </div>
                     </div>
                 </div>
+                <!-- Tab for planning and editing -->
+                <div class="tab-pane fade" id="team-planning-tab-pane" role="tabpanel" aria-labelledby="team-planning-tab" tabindex="1">
+                    <div class='container'>
+                        <div class="row justify-content-center m-4">
+                            <div class="col">
+                                <h2 class="mb-3">Plannings admin actions</h2>
+                                <hr>
+                                <h5 class="mb-3">Merge revisions</h5>
+                                <p>This action will merge revision into another upon removing the schedules as of indicated date (in the target revision)</p>
+                                 <form action="{% url 'shifter:shift-update-post' %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <select name='revision-to-move' id='revision-to-move' class="form-select" required>
+                                          <option value="">Revision to take</option>
+                                            {% for rev in revisions %}
+                                                <option value="{{rev.number}}">{{rev}} [validity: {{rev.valid}} | ready: {{rev.ready_for_preview}} | merged: {{rev.merged}}] </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="invalid-feedback">Example invalid custom select feedback</div>
+                                    </div>
+                                    <div class="mb-3">
+                                       <select name='revision-to-merge-in' id='revision-to-merge-in' class="form-select" required>
+                                          <option value="">Revision to merge in</option>
+                                            {% for rev in revisions %}
+                                                <option value="{{rev.number}}">{{rev}} (validity: {{rev.valid}}) </option>
+                                            {% endfor %}
+                                       </select>
+                                       <div class="invalid-feedback">Example invalid custom select feedback</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="date-merge-from" class="col-2 col-form-label">New start date</label>
+                                        <input name="date-to-merge-from" class="form-control" type="date" value="{{today}}" id="date-merge-from">
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="col-md-3 col-sm-3 col-xs-12 col-md-offset-3" style="margin-bottom:10px;">
+                                             <button class="btn btn-danger"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;"></span>Merge revisions</button>
+                                        </div>
+                                    </div>
+                                 </form>
+                                 <hr>
+                                <h5 class="mb-3">Remove schedules</h5>
+                                <p>This action removes schedules in the selected revision after (and including) selected date</p>
+                                <form action="{% url 'shifter:shift-update-post' %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label for="date-delete-from" class="col-2 col-form-label">Remove schedules from</label>
+                                        <input name="date-to-delete-from" class="form-control" type="date" value="{{today}}" id="date-delete-from">
+                                    </div>
+                                    <div class="mb-3">
+                                       <select name='revision-to-cut' id='revision-to-cut' class="form-select" required>
+                                          <option value="">Apply in revision</option>
+                                            {% for rev in revisions %}
+                                                <option value="{{rev.number}}">{{rev}} (validity: {{rev.valid}}) </option>
+                                            {% endfor %}
+                                       </select>
+                                       <div class="invalid-feedback">Example invalid custom select feedback</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="col-md-3 col-sm-3 col-xs-12 col-md-offset-3" style="margin-bottom:10px;">
+                                             <button class="btn btn-danger"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;"></span>Remove</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -130,7 +202,7 @@
 <script type="text/javascript" src="{% static 'js/desiderata_space.min.js' %}"></script>
 <script type="text/javascript">
     function fillInconsistenciesDiv(rev){
-      $("#shift-inconsistencies").load("{%  url 'ajax.get_team_shift_inconsistencies' %}?revision="+rev);
+      $("#shift-inconsistencies").load("{%  url 'ajax.get_team_shift_inconsistencies' %}?revision="+rev+"&tid={{ team.id }}");
       return false;
     }
         $(document).ready(function() {

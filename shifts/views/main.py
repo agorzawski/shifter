@@ -65,9 +65,12 @@ def prepare_main_page(request, revisions, team, revision=None, filtered_campaign
         'team': team,
         'my_team': my_team,
         'shift_slots': [] if not my_team else Slot.objects.filter(used_for_lookup=True).order_by('hour_start'),
-        'current_month': [-1, ""] if not my_team else [month_as_int, datetime.date(1900, month_as_int, 1).strftime('%B')],
-        'previous_month': [-1, ""] if not my_team else [previous_month_as_int, datetime.date(1900, previous_month_as_int, 1).strftime('%B')],
-        'next_month': [-1, ""] if not my_team else [next_month_as_int, datetime.date(1900, next_month_as_int, 1).strftime('%B')]
+        'current_month': [-1, ""] if not my_team else [month_as_int,
+                                                       datetime.date(1900, month_as_int, 1).strftime('%B')],
+        'previous_month': [-1, ""] if not my_team else [previous_month_as_int,
+                                                        datetime.date(1900, previous_month_as_int, 1).strftime('%B')],
+        'next_month': [-1, ""] if not my_team else [next_month_as_int,
+                                                    datetime.date(1900, next_month_as_int, 1).strftime('%B')]
     }
     return render(request, 'team_view.html', prepare_default_context(request, context))
 
@@ -117,9 +120,10 @@ def todays(request):
                                       slotToGo=slotToGo,
                                       hourToGo=hourToGo,
                                       fullUpdate=fullUpdate)
-    todayAM=datetime.datetime.today().replace(hour=0, minute=0, second=1, microsecond=0)
+    todayAM = datetime.datetime.today().replace(hour=0, minute=0, second=1, microsecond=0)
     todayPM = datetime.datetime.today().replace(hour=23, minute=59, second=00, microsecond=0)
-    scheduled_studies = StudyRequest.objects.filter(state__in=["B","D"],slot_start__gte=todayAM,slot_end__lte=todayPM).order_by('slot_start', 'priority')
+    scheduled_studies = StudyRequest.objects.filter(state__in=["B", "D"], slot_start__gte=todayAM,
+                                                    slot_end__lte=todayPM).order_by('slot_start', 'priority')
     context = {'today': activeShift['today'],
                'checkTime': activeShift['today'].time(),
                'activeSlot': activeShift['activeSlot'],
@@ -167,9 +171,11 @@ def user(request, u=None, rid=None):
     if rid is not None:
         requested_revision = get_object_or_404(Revision, number=rid)
         revision = Revision.objects.filter(valid=True).order_by("-number").first()
-        if requested_revision not in Revision.objects.filter(date_start__gt=revision.date_start).filter(ready_for_preview=True).filter(merged=False).order_by("-number"):
+        if requested_revision not in Revision.objects.filter(date_start__gt=revision.date_start).filter(
+                ready_for_preview=True).filter(merged=False).order_by("-number"):
             raise Http404
-        messages.warning(request, "On top of the current schedule, you're seeing revision '{}'".format(requested_revision))
+        messages.warning(request,
+                         "On top of the current schedule, you're seeing revision '{}'".format(requested_revision))
         context['requested_future_rev_id'] = rid
 
     return render(request, 'user.html', prepare_default_context(request, context))
@@ -264,7 +270,8 @@ def icalendar_view(request):
 
     StudyFirstDay = datetime.datetime.combine(monthFirstDay, datetime.time(hour=0, minute=0, second=1, microsecond=0))
     StudyLasttDay = datetime.datetime.combine(monthLastDay, datetime.time(hour=23, minute=59, second=59, microsecond=0))
-    studies = StudyRequest.objects.filter(slot_end__lte=StudyLasttDay, slot_start__gte=StudyFirstDay).filter(member=member,state__in=["B","D"])
+    studies = StudyRequest.objects.filter(slot_end__lte=StudyLasttDay, slot_start__gte=StudyFirstDay).filter(
+        member=member, state__in=["B", "D"])
 
     context = {
         'campaign': 'Exported Shifts',
@@ -291,7 +298,7 @@ def ioc_update(request):
     dayDate = activeShift.get('today', datetime.datetime.today()).date()
     dayStudiesStart = datetime.datetime.combine(dayDate, datetime.time(hour=0, minute=0, second=1, microsecond=0))
     dayStudiesEnd = datetime.datetime.combine(dayDate, datetime.time(hour=23, minute=59, second=59, microsecond=0))
-    studies = StudyRequest.objects.filter(state="B", slot_start__gte=dayStudiesStart, slot_start__lte=dayStudiesEnd).\
+    studies = StudyRequest.objects.filter(state="B", slot_start__gte=dayStudiesStart, slot_start__lte=dayStudiesEnd). \
         order_by("slot_start")
 
     return JsonResponse(prepare_for_JSON(activeShift, studies=studies))
@@ -333,16 +340,16 @@ def scheduled_work_time(request):
         if request.GET.get('end', None) is not None:
             endDate = datetime.datetime.strptime(request.GET.get('end'), DATE_FORMAT)
         if request.GET.get('rev', None) is not None:
-            revId=int(request.GET.get('rev'))
+            revId = int(request.GET.get('rev'))
             rev = Revision.objects.filter(valid=True).filter(number=revId)[0]
     except ValueError:
         pass
-    scheduled_shifts = Shift.objects.filter(revision=rev)\
-                                    .filter(member__role__abbreviation='SL') \
-                                    .order_by('date', 'slot__hour_start', 'member__role__priority')
+    scheduled_shifts = Shift.objects.filter(revision=rev) \
+        .filter(member__role__abbreviation='SL') \
+        .order_by('date', 'slot__hour_start', 'member__role__priority')
     if startDate is not None and endDate is not None:
         scheduled_shifts = scheduled_shifts.filter(date__gte=startDate) \
-                                            .filter(date__lte=endDate)
+            .filter(date__lte=endDate)
     dataToReturn = find_working_hours(scheduled_shifts, startDate=startDate, endDate=endDate)
     return JsonResponse(dataToReturn)
 
@@ -362,48 +369,41 @@ def shifts_update(request):
 @csrf_protect
 @login_required
 def shifts_update_post(request):
-    # add campaigns and revisions
-    data = {'campaigns': Campaign.objects.all(),
-            'revisions': Revision.objects.all(),
-            'today': datetime.datetime.now().strftime(DATE_FORMAT)
-            }
-
-    revision = Revision.objects.filter(number=request.POST['revision']).first()
-    campaign = Campaign.objects.filter(id=request.POST['camp']).first()
-    oldStartDate = campaign.date_start
-    newStartDate = datetime.datetime.strptime(request.POST['new-date'], DATE_FORMAT).date()
-    daysDelta = newStartDate - oldStartDate
-    deltaToApply = datetime.timedelta(days=daysDelta.days)
-    messages.info(request, 'Found {} difference to update'.format(daysDelta))
-    shifts_to_update = Shift.objects.filter(campaign=campaign, revision=campaign.revision)
-    messages.info(request, 'Found {} shifts to update'.format(len(shifts_to_update)))
-    doneCounter = 0
-    for oldShift in shifts_to_update:
-        shift = Shift()
-        shift.member = oldShift.member
-        shift.campaign = campaign
-        shift.slot = oldShift.slot
-        shift.role = oldShift.role
-        tag = oldShift.csv_upload_tag
-        if tag is None:
-            tag = ""
-        shift.csv_upload_tag = tag + '_update'
-        # updated info
-        shift.revision = revision
-        shift.date = oldShift.date + deltaToApply
-        try:
-            shift.save()
-            doneCounter += 1
-        except Exception:
-            messages.error(request, 'Cannot update old shift {}, skipping!'.format(oldShift))
-
-    # at last, update the actual campaign data
-    campaign.revision = revision
-    campaign.date_start = campaign.date_start + deltaToApply
-    campaign.date_end = campaign.date_end + deltaToApply
-    campaign.save()
-    messages.info(request, 'Done OK with {} shifts'.format(doneCounter))
-    return HttpResponseRedirect(reverse("shifter:shift-update"))
+    # merge one into another
+    rev1Id = request.POST.get('revision-to-move', None)
+    rev2Id = request.POST.get('revision-to-merge-in', None)
+    mergeFrom = request.POST.get('date-to-merge-from', None)
+    # delete from one revision
+    trimFrom = request.POST.get('date-to-delete-from', None)
+    revToTrimId = request.POST.get('revision-to-cut', None)
+    if rev2Id is not None and rev1Id is not None and mergeFrom is not None:
+        d = datetime.datetime.strptime(mergeFrom, DATE_FORMAT).date()
+        rev1 = Revision.objects.get(number=rev1Id)
+        rev2 = Revision.objects.get(number=rev2Id)
+        s1 = Shift.objects.filter(revision=rev1, date__gte=d)
+        s2 = Shift.objects.filter(revision=rev2, date__gte=d)
+        backupRevision = Revision.objects.filter(name__startswith='BACKUP').first()
+        print(backupRevision)
+        for shiftToBackup in s2:
+            shiftToBackup.revision = backupRevision
+            shiftToBackup.save()
+        for shiftToMerge in s1:
+            shiftToMerge.revision = rev2
+            shiftToMerge.save()
+        rev1.merged = True
+        rev1.save()
+        messages.success(request, 'Merged {} shifts from Revision {} in Revision: {} starting on date: {}'.
+                         format(s1.count(), rev1, rev2, d))
+    if revToTrimId is not None and trimFrom is not None:
+        d = datetime.datetime.strptime(trimFrom, DATE_FORMAT).date()
+        revToTrim = Revision.objects.get(number=revToTrimId)
+        s = Shift.objects.filter(revision=revToTrim, date__gte=d)
+        for shiftToDelete in s:
+            shiftToDelete.delete()
+        messages.success(request, 'Deleted {} shifts as from {} in Revision: {}'.
+                         format(s.count(), d, revToTrim))
+    return HttpResponseRedirect(reverse("desiderata.team_view",
+                                        kwargs={'team_id': request.user.team.id}))
 
 
 @require_safe

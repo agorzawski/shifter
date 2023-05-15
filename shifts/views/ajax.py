@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.http import HttpRequest
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_safe
 from shifts.models import *
@@ -244,6 +244,17 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
     header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end -  datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
 
     return HttpResponse(json.dumps({'data': teamMembersSummary, 'header': header}), content_type="application/json")
+
+
+@login_required
+def get_shifts_for_exchange(request: HttpRequest) -> HttpResponse:
+    member = request.user
+    futureMy = Shift.objects.filter(member=member, date__gte=timezone.now()).order_by("date")
+    futureOther = Shift.objects.filter(~Q(member=member), date__gte=timezone.now()).order_by("date")
+    toReturn = [s.get_simplified_as_json() for s in futureMy]
+    if request.GET.get('option', 'my') == 'them':
+        toReturn = [s.get_simplified_as_json() for s in futureOther]
+    return HttpResponse(json.dumps(toReturn), content_type="application/json")
 
 
 def search(request: HttpRequest) -> HttpResponse:

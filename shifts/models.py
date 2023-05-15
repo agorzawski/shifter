@@ -230,6 +230,9 @@ class Shift(models.Model):
                  }
         return event
 
+    def get_simplified_as_json(self):
+        return {'id': self.id, 'title': self.__str__()}
+
     @cached_property
     def start(self) -> datetime:
         return self.get_proper_times(self.Moment.START)

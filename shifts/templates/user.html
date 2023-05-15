@@ -232,48 +232,87 @@
                     <div class='container'>
                         <div class="row justify-content-center m-4">
                             <div class="col">
-                                <h2 class="mb-3">Shift exchange requests :</h2>
+                            <h2 class="mb-3">New Request:</h2>
+                                <form action="{% url 'shifter:shift-exchange-request' %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+                                    {% csrf_token %}
+                                    <div class="col">
+                                        <div class="mb-3">
+                                            <label for="futureMy" class="form-label">Future shifts of mine: </label>
+                                            <select class="form-select" name='futureMy' id='futureMy' required>
+                                                <option value="">select me</option>
+<!--                                                fill with ajax-->
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="futureOther" class="form-label">Other shifts to change: </label>
+                                            <select class="form-select" name='futureOther' id='futureOther' required>
+                                                <option value="">select me</option>
+<!--                                                fill with ajax-->
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-secondary"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;"></span>Add more to Request</button>
+                                        <button class="btn btn-success"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;" disabled></span>Create Request</button>
+                                     </div>
+                                    <div class="col">
+                                        <div class="mb-3">
+                                        </div>
+                                    </div>
+                                </form>
                                 <hr>
+                                <h2 class="mb-3">Shift exchange requests</h2>
+                                <div class="accordion" id="accordionShiftExchanges">
                                 {% if exchanges_total == 0 %}
                                     <p>No exchanges in the current planning</p>
                                 {% else %}
                                     {% for oneSE in shift_exchanges_requested%}
-                                    <dl class="row">
-                                        <dt class="col-sm-3">{{oneSE.requestor}} <br> <small>requested on {{oneSE.requested_date}}</small> <br>
-                                            <span class="badge text-bg-{%if oneSE.applicable%}success">APPLICABLE{%else%}danger">NOT APPLICABLE{%endif%}</span><br>
-                                            <span class="badge text-bg-{%if oneSE.implemented%}success">IMPLEMENTED{%else%}danger">NOT IMPLEMENTED{%endif%}</span> <br>
-                                        </dt>
-                                        <dd class="col-sm-8">
-                                                {% for onePair in oneSE.shifts.all%}
-                                                <p><span class="badge text-bg-light">{{onePair}}</span></p>
-                                                {%endfor%}
-                                        </dd>
-                                        <dd class="col-sm-1">
-                                            {%if oneSE.implemented%}<span class="fa-stack">
-                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
-                                            <i class="fa-solid fa-database fa-stack-1x fa-inverse"></i>
-                                            </span>{%endif%}
-                                            {%if not oneSE.implemented and oneSE.applicable %}
-                                            {%if oneSE.approver == member%}
-                                            <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange' oneSE.id %}>Approve
-                                            <span class="fa-stack">
-                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
-                                            <i class="fa-solid fa-thumbs-up fa-stack-1x fa-inverse"></i>
-                                            </span> </a> {%else%}
-                                            <span class="fa-stack">
-                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754">{{oneSE.approver.first_name}}</i>
-                                            <i class="fa-solid fa-hourglass-1 fa-stack-1x fa-inverse"></i>
-                                            {%endif%}{%endif%}
-                                        </dd>
-                                    </dl>
-                                    <hr>
+                                      <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingOne">
+                                          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{oneSE.id}}" aria-expanded="true" aria-controls="collapse{{oneSE.id}}">
+                                            {{oneSE.requestor}} <br> <small>&nbsp;requested on {{oneSE.requested_date}}</small>&nbsp;
+                                              <span class="badge text-bg-{%if oneSE.implemented%}success">IMPLEMENTED{%else%}primary">NOT IMPLEMENTED{%endif%}</span>&nbsp;
+                                              <span class="badge text-bg-{%if oneSE.applicable%}success">APPLICABLE{%else%}danger">NOT APPLICABLE{%endif%}</span>
+                                          </button>
+                                        </h2>
+                                        <div id="collapse{{oneSE.id}}" class="accordion-collapse collapse {%if oneSE.applicable and not oneSE.implemented%}show{%endif%}" aria-labelledby="heading{{oneSE.id}}" data-bs-parent="#accordionShiftExchanges">
+                                        <div class="accordion-body">
+                                        <dl class="row">
+                                            <dt class="col-sm-3">{{oneSE.requestor}} <br> <small> requested on {{oneSE.requested_date}}</small> <br>
+                                            </dt>
+                                            <dd class="col-sm-8">
+                                                    {% for onePair in oneSE.shifts.all%}
+                                                    <p><span class="badge text-bg-light">{{onePair}}</span></p>
+                                                    {%endfor%}
+                                            </dd>
+                                        </dl>
+                                        <dl class="row">
+                                            <dd class="col-sm-1">
+                                                {%if oneSE.implemented%}<span class="fa-stack">
+                                                <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
+                                                <i class="fa-solid fa-database fa-stack-1x fa-inverse"></i>
+                                                </span>{%endif%}
+                                                {%if not oneSE.implemented and oneSE.applicable %}
+                                                {%if oneSE.approver == member%}
+                                                <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange' oneSE.id %}>Approve
+                                                <span class="fa-stack">
+                                                <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
+                                                <i class="fa-solid fa-thumbs-up fa-stack-1x fa-inverse"></i>
+                                                </span> </a> {%else%}
+                                                <span class="fa-stack">
+                                                <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754">{{oneSE.approver.first_name}}</i>
+                                                <i class="fa-solid fa-hourglass-1 fa-stack-1x fa-inverse"></i>
+                                                {%endif%}{%endif%}
+                                            </dd>
+                                          </dl>
+                                         </div>
+                                        </div>
+                                      </div>
                                     {%endfor%}
                                 {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
@@ -303,10 +342,37 @@
 <script type="text/javascript" src="{% static 'moment/min/moment-with-locales.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'daterangepicker/daterangepicker.js' %}"></script>
 <script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
-    <script>
-    $(document).ready(function() {
-    $('#displayed_campaigns').select2();
-    $('#displayed_revision').select2();
-});</script>
+<script>
+$(document).ready(function() {
+$('#displayed_campaigns').select2();
+$('#displayed_revision').select2();
+});
+$("#futureMy").click(function () {
+    $.ajax({
+        type: "GET",
+        url: '{% url "ajax.get_shifts_for_exchange"%}?option=my',
+        success: function (data) {
+            let html_data = '<option value="">---------</option>';
+            data.forEach(function (data) {
+                html_data += `<option value="${data.id}">${data.title}</option>`
+            });
+            $("#futureMy").html(html_data);
+        }
+    });
+});
+$("#futureOther").click(function () {
+    $.ajax({
+        type: "GET",
+        url: '{% url "ajax.get_shifts_for_exchange"%}?option=them',
+        success: function (data) {
+            let html_data = '<option value="">---------</option>';
+            data.forEach(function (data) {
+                html_data += `<option value="${data.id}">${data.title}</option>`
+            });
+            $("#futureOther").html(html_data);
+        }
+    });
+});
+</script>
 
 {% endblock %}

@@ -188,26 +188,26 @@ def user(request, u=None, rid=None):
     shiftExchanges = ShiftExchange.objects.filter(Q(requestor=member) |
                                                   Q(shifts__shift_for_exchange__member__exact=member)) \
         .order_by('-requested')
-
     # FIXME this one is to clear the 'over select' from the query above that
     shiftExchangesUnique = []
     for se in shiftExchanges:
         if se not in shiftExchangesUnique:
             shiftExchangesUnique.append(se)
-
+    pendingRequests = 0
     for se in shiftExchangesUnique:
         bb = is_valid_for_hours_constraints(shiftExchange=se, member=member,
                                             baseRevision=Revision.objects.filter(valid=True).order_by(
                                                 "-number").first())
         se.applicable = bb[0]
         se.save()
+        if se.applicable and not se.implemented: pendingRequests += 1
     context['shift_exchanges_requested'] = shiftExchangesUnique
-    context['exchanges_total'] = len(shiftExchangesUnique)
+    context['exchanges_total'] = pendingRequests
     return render(request, 'user.html', prepare_default_context(request, context))
 
 
 @login_required
-def shiftexchange(request, ex_id=None):
+def shiftExchange(request, ex_id=None):
     # print("-----------------")
     # print(request.user)
     # print('proceeding with {}'.format(ex_id))
@@ -232,6 +232,30 @@ def shiftexchange(request, ex_id=None):
                        "This Exchange can only be approved by {}".format(shift_exchange.approver)
                        )
     return user(request)
+
+
+@require_http_methods(["POST"])
+@csrf_protect
+@login_required
+def shiftExchangeRequest(request, ex_id=None):
+    s1ID = int(request.POST.get("futureMy", -1))
+    s2ID = int(request.POST.get("futureOther", -1))
+    if s1ID < 1 or s2ID < 1:
+        messages.error(request, "There was an issue with the selected shifts")
+        return HttpResponseRedirect(reverse("shifter:user"))
+
+    sPair = ShiftExchangePair.objects.create(shift=Shift.objects.get(id=s1ID),
+                                             shift_for_exchange=Shift.objects.get(id=s2ID))
+    sPair.save()
+    sEx = ShiftExchange()
+    sEx.requestor = request.user
+    sEx.backupRevision = Revision.objects.filter(number=1).first()
+    sEx.requested = timezone.now()
+    sEx.save()
+    sEx.shifts.add(sPair)
+    sEx.save()
+    messages.success(request, "Created the Exchange request {}".format(sEx))
+    return HttpResponseRedirect(reverse("shifter:user"))
 
 
 @login_required()

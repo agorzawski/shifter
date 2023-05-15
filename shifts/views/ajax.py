@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.http import HttpRequest
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_safe
 from shifts.models import *
@@ -11,6 +11,7 @@ from assets.models import AssetBooking
 from shifts.hrcodes import red_days, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
+from shifter.settings import DEFAULT_SPECIAL_SHIFT_ROLES
 import json
 from watson import search as watson
 from guardian.shortcuts import get_objects_for_user
@@ -33,7 +34,7 @@ def _get_scheduled_shifts(request: HttpRequest):
         return HttpResponse({}, content_type="application/json", status=500)
     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
-    return Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first())\
+    return Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()) \
         .filter(member=_get_member(request)).filter(date__gte=start).filter(date__lte=end)
 
 
@@ -79,12 +80,14 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
         revision = Revision.objects.get(valid=True, number=revision)
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
-    filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns}
-    if not all_roles:
-        filter_dic['role'] = None
-    filter_dic['member_id__in'] = users_requested
-    scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+    filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns,
+                  'member_id__in': users_requested}
 
+    scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+    if not all_roles:
+        scheduled_shifts = scheduled_shifts.filter(Q(role=None) |
+                                                   Q(role__in=[one for one in ShiftRole.objects.filter(
+                                                       abbreviation__in=DEFAULT_SPECIAL_SHIFT_ROLES)]))
     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
@@ -115,12 +118,14 @@ def get_events(request: HttpRequest) -> HttpResponse:
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
     filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns}
-    if not all_roles:
-        filter_dic['role'] = None
     if int(team_id) > 0:
         team = Team.objects.get(id=team_id)
         filter_dic['member__team'] = team
     scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+    if not all_roles:
+        scheduled_shifts = scheduled_shifts.filter(Q(role=None) |
+                                                   Q(role__in=[one for one in ShiftRole.objects.filter(
+                                                       abbreviation__in=DEFAULT_SPECIAL_SHIFT_ROLES)]))
 
     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
 
@@ -241,13 +246,13 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
             memberSummary.append(result.get(oneSlot.abbreviation, '--'))
         teamMembersSummary.append(memberSummary)
 
-    header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end -  datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
+    header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end - datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
 
     return HttpResponse(json.dumps({'data': teamMembersSummary, 'header': header}), content_type="application/json")
 
 
 def search(request: HttpRequest) -> HttpResponse:
-    answer=[]
+    answer = []
     search = request.GET.get('search')
     search_results = watson.search(search, ranking=False)
     for result in search_results:

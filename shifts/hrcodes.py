@@ -52,6 +52,11 @@ reduced_days = [
 # The ones that are counted as OB4
 # From 18:00 on Maundy Thursday and from 07:00 on Whitsun Eve, Midsummer Eve,
 # Christmas Eve and New Year's Eve until midnight before the first weekday after the holiday.
+# the first group is to cover the 'special' earlier 18:00 in Maundy Thu
+public_holidays_special_exception = [
+    (date(2022, 4, 14), time(18, 0, 0)),
+    (date(2023, 4, 6), time(18, 0, 0))
+]
 public_holidays_special = [
     date(2021, 6, 25),
     date(2021, 12, 24),
@@ -123,19 +128,37 @@ def _check_if_date_or_adjacent_WE(shiftDate: date, public_holiday: date):
     return False
 
 
-def get_code_counts(shift: Shift) -> dict:
+def get_code_counts(shift: Shift, verbose=False) -> dict:
     counts = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 0}
     duration = shift.end - shift.start
     notAWEOrHoliday = True
-    for ph in public_holidays_special:  # OB4
+    for ph in public_holidays_special:  # OB4 special holidays: Easter, Xmas, New Years and Midsommar
         if _check_if_date_or_adjacent_WE(shift.date, ph):
             counts['OB4'] = duration.seconds // 3600
             notAWEOrHoliday = False
-    for rd in red_days:  # OB3
+    for ph in public_holidays_special_exception:  # OB4 for few hours in special case (refer to the link above)
+        breakDown = datetime.combine(ph[0], ph[1])
+        if abs(shift.end - breakDown) > timedelta(hours=13) or shift.end < breakDown:
+            continue
+        if verbose:
+            print("public special ", shift, breakDown, (shift.end - breakDown))
+        if shift.start > breakDown:
+            counts['OB4'] = duration.seconds // 3600
+        else:
+            beforeBD = breakDown - shift.start
+            overBD = shift.end - breakDown
+            counts['OB4'] = beforeBD.seconds // 3600
+            counts['NWH'] = overBD.seconds // 3600
+            if verbose:
+                print(beforeBD.seconds // 3600, overBD.seconds//3600)
+        notAWEOrHoliday = False
+    for rd in red_days:  # OB3 - regular red days
         if _check_if_date_or_adjacent_WE(shift.date, rd):
             counts['OB3'] = duration.seconds // 3600
             notAWEOrHoliday = False
-    for rd in reduced_days:  # OB3 as of 14:00
+    for rd in reduced_days:  # OB3 as of 14:00, but not for exception days (that also happen to be reduced hours)
+        if rd in [d[0] for d in public_holidays_special_exception]:
+            continue
         if _check_if_date_or_adjacent_WE(shift.date, rd) and \
                 shift.slot.abbreviation == 'NWH':
             counts['NWH'] = 5
@@ -155,6 +178,8 @@ def get_code_counts(shift: Shift) -> dict:
         _check(shift, 'NWH', counts)
         _check(shift, 'OB1', counts)
         _check(shift, 'OB2', counts)  # TODO consider returning date -> codes dict in case shift spanning over two days
+    if verbose:
+        print(counts)
     return counts
 
 

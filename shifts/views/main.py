@@ -168,6 +168,7 @@ def user(request, u=None, rid=None):
     context['default_end'] = default_end
     context['hide_campaign_selection'] = True
     context['hide_extra_role_selection'] = True
+    context['show_companion'] = True
     context['the_url'] = reverse('ajax.get_user_events')
     if rid is not None:
         requested_revision = get_object_or_404(Revision, number=rid)

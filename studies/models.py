@@ -235,8 +235,8 @@ class StudyRequest(models.Model):
                 'collaborators': [f'{m}' for m in self.collaborators.all()],
                 'title': self.title,
                 'description': self.description,
-                'request_start': {'display': self.slot_start.strftime('%b. %d, %Y, %I:%M%p'), 'order': self.slot_end.second},
-                'request_end': {'display': self.slot_end.strftime('%b. %d, %Y, %I:%M%p'), 'order': self.slot_end.second},
+                'request_start': {'display': timezone.localtime(self.slot_start).strftime('%b. %d, %Y, %I:%M%p'), 'order': self.slot_end.timestamp()},
+                'request_end': {'display': timezone.localtime(self.slot_end).strftime('%b. %d, %Y, %I:%M%p'), 'order': self.slot_end.timestamp()},
                 'state': {'order': [tup for tup in self.BOOKING_STATE_CHOICES if tup[0] == self.state][0][1],
                           'display': ''},
                 'booking': 'pass'}

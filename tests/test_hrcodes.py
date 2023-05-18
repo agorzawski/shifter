@@ -5,6 +5,7 @@ import shifts.hrcodes as hrc
 
 HOURS_AM = {'OB1': 0, 'OB2': 1, 'OB3': 0, 'OB4': 0, 'NWH': 7}  #
 HOURS_PM = {'OB1': 4, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 4}  #
+HOURS_NWH_BH = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 4, 'NWH': 4}  #
 HOURS_NG = {'OB1': 2, 'OB2': 6, 'OB3': 0, 'OB4': 0, 'NWH': 0}  #
 HOURS_WE = {'OB1': 0, 'OB2': 0, 'OB3': 8, 'OB4': 0, 'NWH': 0}  # + normal holidays, like WE
 HOURS_BH = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 8, 'NWH': 0}  # special holidays
@@ -77,6 +78,21 @@ class HRCodes(TestCase):
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_BH)
 
+    def test_codes_Maundy_Thursday_2023_AM(self):
+        shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
+                          fancy_date=datetime.date(2023, 4, 6))
+        self.compare(hrc.get_code_counts(shift), HOURS_AM)
+
+    def test_codes_Maundy_Thursday_holiday_2022_PM(self):
+        shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
+                          fancy_date=datetime.date(2022, 4, 14))
+        self.compare(hrc.get_code_counts(shift), HOURS_NWH_BH)
+
+    def test_codes_Maundy_Thursday_holiday_2023_NG(self):
+        shift = get_shift(slot=Slot.objects.get(abbreviation='NG'),
+                          fancy_date=datetime.date(2023, 4, 6))
+        self.compare(hrc.get_code_counts(shift), HOURS_BH)
+
     def test_codes_red_day_2023(self):  # a shift on a red day -> OB3
         shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
                           fancy_date=datetime.date(2023, 5, 1))
@@ -93,25 +109,25 @@ class HRCodes(TestCase):
 
     def test_reduced_day_morning(self):  # a shift on a reduced day - no weird OB
         shift = get_shift(slot=Slot.objects.get(abbreviation='AM'),
-                          fancy_date=datetime.date(2023, 4, 6))
+                          fancy_date=datetime.date(2023, 1, 5))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_AM)
 
     def test_reduced_day_nwh(self):
         shift = get_shift(slot=Slot.objects.get(abbreviation='NWH'),
-                          fancy_date=datetime.date(2023, 4, 6))
+                          fancy_date=datetime.date(2023, 1, 5))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_REDUCED)
 
     def test_reduced_day_afternoon(self):  # a pm shift on a reduced day -> all OB3
         shift = get_shift(slot=Slot.objects.get(abbreviation='PM'),
-                          fancy_date=datetime.date(2023, 4, 6))
+                          fancy_date=datetime.date(2023, 1, 5))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_WE)
 
     def test_reduced_day_with_night_shift(self):  # a shift on a red day -> OB3
         shift = get_shift(slot=Slot.objects.get(abbreviation='NG'),
-                          fancy_date=datetime.date(2023, 4, 6))
+                          fancy_date=datetime.date(2023, 1, 5))
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_WE)
 

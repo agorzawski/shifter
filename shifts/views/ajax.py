@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.http import HttpRequest
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_safe
 from shifts.models import *
@@ -11,6 +11,7 @@ from assets.models import AssetBooking
 from shifts.hrcodes import red_days, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
+from shifter.settings import DEFAULT_SPECIAL_SHIFT_ROLES
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 import json
 from watson import search as watson
@@ -49,7 +50,8 @@ def _get_scheduled_shifts(request: HttpRequest):
 
 @require_safe
 def get_user_events(request: HttpRequest) -> HttpResponse:
-    calendar_events = [d.get_shift_as_json_event() for d in _get_scheduled_shifts(request)]
+    base_scheduled_shifts = _get_scheduled_shifts(request)
+    calendar_events = [d.get_shift_as_json_event() for d in base_scheduled_shifts]
     revisionNext = request.GET.get("revision_next", default='-1')
     revisionNext = int(revisionNext)
     if revisionNext != -1:
@@ -58,6 +60,16 @@ def get_user_events(request: HttpRequest) -> HttpResponse:
                                                        revision=revisionNext)
         for d in future_scheduled_shifts:
             calendar_events.append(d.get_planned_shift_as_json_event())
+    withCompanion = request.GET.get("companion", default=None)
+    withCompanion = True if withCompanion == "true" else False
+    if withCompanion:
+        future_companion_shifts = Shift.objects.filter(date__in=[s.date for s in base_scheduled_shifts]) \
+                                               .filter(revision__in=[s.revision for s in base_scheduled_shifts])\
+                                               .filter(~Q(member=_get_member(request)))
+        future_companion_exact_shifts = [d.start for d in base_scheduled_shifts]
+        for d in future_companion_shifts:
+            if d.start in future_companion_exact_shifts:
+                calendar_events.append(d.get_shift_as_json_event())
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 
@@ -83,12 +95,14 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
-    filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns}
-    if not all_roles:
-        filter_dic['role'] = None
-    filter_dic['member_id__in'] = users_requested
-    scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+    filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns,
+                  'member_id__in': users_requested}
 
+    scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+    if not all_roles:
+        scheduled_shifts = scheduled_shifts.filter(Q(role=None) |
+                                                   Q(role__in=[one for one in ShiftRole.objects.filter(
+                                                       abbreviation__in=DEFAULT_SPECIAL_SHIFT_ROLES)]))
     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
@@ -119,12 +133,14 @@ def get_events(request: HttpRequest) -> HttpResponse:
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
     filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns}
-    if not all_roles:
-        filter_dic['role'] = None
     if int(team_id) > 0:
         team = Team.objects.get(id=team_id)
         filter_dic['member__team'] = team
     scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+    if not all_roles:
+        scheduled_shifts = scheduled_shifts.filter(Q(role=None) |
+                                                   Q(role__in=[one for one in ShiftRole.objects.filter(
+                                                       abbreviation__in=DEFAULT_SPECIAL_SHIFT_ROLES)]))
 
     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
 

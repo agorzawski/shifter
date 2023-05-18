@@ -28,13 +28,16 @@ def find_weekly_rest_time_violation(scheduled_shifts, minimum_rest_time=36) -> l
     ss = list(scheduled_shifts)
     ss.sort(key=lambda s: s.start)
     for i, one in enumerate(ss[:-1]):
-        if ss[i+1].start - one.end < timedelta(hours=24):
+        nextShift = ss[i+1]
+        if nextShift.start - one.end < timedelta(hours=minimum_rest_time):
             streak.append(one)
         else:
             streak = []
         if len(streak) >= 6:
-            if ss[i+1].start - one.end < timedelta(hours=minimum_rest_time):
+            if nextShift.start - one.end < timedelta(hours=minimum_rest_time):
+                streak.append(ss[i+1])
                 toReturn.append(streak)
+                streak = []
             else:
                 streak = []
 

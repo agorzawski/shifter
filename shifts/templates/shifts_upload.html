@@ -4,20 +4,8 @@
 <div class="container mb-5 pb-5">
     <div class="row justify-content-center">
         <div class="col">
-            <h1>How to prepare an input</h1>
-            <p>Provide a file (in the CSV format) that has lines in the following structure:</p>
-            <hr>
-            <pre><code>
-                FirstName1,NWH,NWH,-,-,-,
-                FirstName2,NWH,-,NWH,NWH,-,
-                FirstName3,PM,-,-,NWH,PM,
-            </code></pre>
-            <hr>
-            <div class="alert alert-primary" role="alert">
-                <strong>Note: </strong>
-                Each shifter (name) can have a different number of columns defined <br>
-                This will assign to FirstName1 normal working hours (NWH, other available AM and PM) for the consecutive days.
-            </div>
+            <h5>How to prepare an input</h5>
+            <p>Provide a file (in the CSV format) following the instructions in gitlab.</p>
         </div>
     </div>
     <div class="row justify-content-center">
@@ -40,14 +28,19 @@
                 </div>
                 <div class="mb-3">
                     <label for="revision" class="form-label">Revision: </label>
-                    <select class="form-select" name='revision' id='revision' required>
-                        <option value="">Revision assignment</option>
+                    <select class="form-select" name='revision' id='revision' onchange="return newRevBlock(this.value)">
+                        <option value="-1"> --> create new <--- </option>
                         {% for rev in revisions %}
                             <option value="{{rev.number}}"
                                     {% if rev == latest_revision %}selected="selected"{%endif%}>
                                 {{rev}} (validity: {{rev.valid}}) </option>
                         {% endfor %}
                     </select>
+                </div>
+                <div class="mb-3" id="new-revision-block">
+                    <label for="new-revision-name">New revision name</label>
+                    <input class="form-control" name="new-revision-name" id="new-revision-name" aria-describedby="new-revision-name-help" placeholder="some default for revision">
+                    <small id="new-revision-name-help" class="form-text text-muted">Give some short distinct name, like 'New W20-28'.</small><br>
                 </div>
                 <div class="mb-3">
                     <label for="role" class="form-label">Role: </label>
@@ -63,4 +56,17 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{%  block js %}
+<script type="text/javascript">
+    function newRevBlock(rev){
+      if (rev>0){$("#new-revision-block").hide();}
+      else{$("#new-revision-block").show();}
+      return false;
+    }
+     $(document).ready(function() {
+        newRevBlock(99)
+    });
+</script>
 {% endblock %}

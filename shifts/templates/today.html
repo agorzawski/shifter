@@ -53,7 +53,7 @@
         <div class="accordion-item">
             <h2 class="accordion-header" id="study_header{{ a_studie.id }}">
                 <button class="accordion-button bg-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#study_collapse{{ a_studie.id }}" aria-expanded="true" aria-controls="study_collapse{{ a_studie.id }}">
-                    {%  if a_studie.priority %} <span class="badge text-bg-warning rounded-pill flex float-end">Priority</span>&nbsp;{% endif %}<strong>{{ a_studie.title }}</strong>&nbsp;- {{ a_studie.slot_start|date:'H:i'}} to {{ a_studie.slot_end|date:'H:i' }}
+                    <small>{{ a_studie.id }}.&nbsp;</small> {%  if a_studie.priority %} <span class="badge text-bg-warning rounded-pill flex float-end">Priority</span>&nbsp;{% endif %}<strong>{{ a_studie.title }}</strong>&nbsp;- {{ a_studie.slot_start|date:'H:i'}} to {{ a_studie.slot_end|date:'H:i' }}
                 </button>
             </h2>
             <div id="study_collapse{{ a_studie.id }}" class="accordion-collapse collapse" aria-labelledby="study_header{{ a_studie.id }}">

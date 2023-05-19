@@ -35,7 +35,7 @@
             {% endif %}
             <div class="row m-2 p-2">
                 <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="show_studies" checked>
+                    <input class="form-check-input" type="checkbox" id="show_studies" {% if hide_studies is not True %}checked{%endif%}>
                     <label class="form-check-label" for="all_roles">Show studies.</label>
                 </div>
             </div>

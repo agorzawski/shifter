@@ -203,6 +203,7 @@ def users(request):
         'scheduled_campaigns_list': scheduled_campaigns,
         'users': users_list,
         'users_requested': users_requested,
+        'hide_studies': True,
     }
     return render(request, 'users.html', prepare_default_context(request, context))
 

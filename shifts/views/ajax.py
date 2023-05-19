@@ -248,7 +248,9 @@ def get_shift_summary(m, validSlots, revision, start, end) -> tuple:
 def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
     start = datetime.datetime.fromisoformat(request.GET.get('start')).date()
     end = datetime.datetime.fromisoformat(request.GET.get('end')).date()
-    revision = Revision.objects.filter(valid=True).order_by("-number").first()
+    # TODO fix revision
+    revision = _get_revision(request)
+    # revision = Revision.objects.get(number=19)
     team = request.user.team
 
     teamMembers = Member.objects.filter(team=team, is_active=True)
@@ -325,6 +327,62 @@ def get_team_shift_inconsistencies(request: HttpRequest) -> HttpResponse:
             toReturnHTML += "<hr><h5 class=\"mb-3\">{}</h5>".format(member)
             toReturnHTML += foundInconsistencies
     return HttpResponse(toReturnHTML, content_type="application/text")
+
+
+@login_required
+def get_shift_stats(request: HttpRequest) -> HttpResponse:
+    start_date = request.GET.get('start', None)
+    end_date = request.GET.get('end', None)
+    statType = request.GET.get('statType', None)
+    teamId = request.GET.get('teamId', -1)
+    teamId = int(teamId)
+    # TODO fix revision
+    revision = _get_revision(request)
+    # revision = Revision.objects.get(number=19)
+    start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
+    end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
+    shifts4Stat = Shift.objects.filter(revision=revision)\
+                               .filter(member__team__id=teamId)\
+                               .filter(date__gte=start).filter(date__lte=end).order_by('date')
+    dataToReturn = []
+    if statType == 'workWith':
+        # FIXME there is no way to have distinct in sqllite hence the next few lines
+        differentMembers = []
+        differentShiftStarts = []
+        for s in shifts4Stat:
+            differentShiftStarts.append(s.start)
+            differentMembers.append(s.member)
+        differentMembers = list(set(differentMembers))
+        differentShiftStarts = list(set(differentShiftStarts))
+        differentShiftStarts.sort()
+        # prepare the counter
+        dataCount ={}
+        for dm in differentMembers:
+            dataCount[dm] = {}
+            for dmX in differentMembers:
+                if dmX == dm:
+                    continue
+                dataCount[dm][dmX] = 0
+        # count
+        for oneShiftStart in differentShiftStarts:
+            temp = []
+            # find same shifts (date + slot)
+            for oneShift in shifts4Stat:
+                if oneShift.start == oneShiftStart:
+                    temp.append(oneShift)
+            # count the encounters
+            for one in temp:
+                for second in temp:
+                    if one.member == second.member:
+                        continue
+                    dataCount[one.member][second.member] += 1
+        dataToReturn = []
+        for one in dataCount.keys():
+            for second in dataCount[one]:
+                if dataCount[one][second] != 0:
+                    dataToReturn.append([one.first_name, second.first_name, dataCount[one][second]])
+    header = f'Showing shift companions from {start.strftime("%A, %B %d, %Y ")} to {(end - datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
+    return HttpResponse(json.dumps({'data': dataToReturn, 'header':header}), content_type="application/json")
 
 
 def search(request: HttpRequest) -> HttpResponse:

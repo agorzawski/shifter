@@ -22,6 +22,9 @@
                     <button class="nav-link" id="time_report-tab" data-bs-toggle="tab" data-bs-target="#time_report-tab-pane" type="button" role="tab" aria-controls="time_report-tab-pane" aria-selected="false">Time Report</button>
                 </li>
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="shift-stat-tab" data-bs-toggle="tab" data-bs-target="#team-shift-stat-pane" type="button" role="tab" aria-controls="time_report-tab-pane" aria-selected="false">Team Statistics</button>
+                </li>
+                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="shift-inconsistencies-tab" data-bs-toggle="tab" data-bs-target="#team-shift-inconsistencies-tab-pane" type="button" role="tab" aria-controls="time_report-tab-pane" aria-selected="false">Shift Inconsistencies</button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -53,7 +56,7 @@
                                 </div>
                                 <form class="row g-3 m-3">
                                     <div class="form-group row">
-                                        <label for="inputPassword" class="col-sm-2 col-form-label">Date-range :</label>
+                                        <label for="date_range_picker" class="col-sm-2 col-form-label">Date-range :</label>
                                         <div class="col-sm-10">
                                             <input class="form-control"  type="text" id="date_range_picker" name="daterange" value="{{ default_start | date:"m/d/y" }} - {{ default_end | date:"m/d/y" }}" />
                                         </div>
@@ -87,6 +90,28 @@
                                             </tr>
                                         </tfoot>
                                     </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tab displaying the statistics -->
+                <div class="tab-pane fade" id="team-shift-stat-pane" role="tabpanel" aria-labelledby="shift-stat-tab" tabindex="1">
+                    <div class='container'>
+                        <div class="row justify-content-center m-4">
+                            <div class="col">
+                                <h2 class="mb-3">Team Statistics</h2>
+                                <form class="row g-3 m-3">
+                                    <div class="form-group row">
+                                        <label for="stat_date_range_picker" class="col-sm-2 col-form-label">Date-range :</label>
+                                        <div class="col-sm-10">
+                                            <input class="form-control"  type="text" id="stat_date_range_picker" name="daterange" value="{{ default_start | date:"m/d/y" }} - {{ default_end | date:"m/d/y" }}" />
+                                        </div>
+                                    </div>
+                                </form>
+                                <div class="container-fluid mb-5">
+                                    <div id="statWheel" data-content_url="{% url 'ajax.get_stats'%}"></div>          <!-- filled by AJAX -->
+                                    <div id="statBars"  data-content_url="{% url 'ajax.get_team_breakdown'%}"></div> <!-- filled by AJAX -->
                                 </div>
                             </div>
                         </div>
@@ -196,10 +221,17 @@
 <script type="text/javascript" src="{% static 'datatables.net-searchpanes/js/dataTables.searchPanes.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'datatables.net-searchpanes-bs5/js/searchPanes.bootstrap5.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/highcharts.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/sankey.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/dependency-wheel.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/exporting.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/export-data.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/accessibility.js '%}"></script>
 <script type="text/javascript" src="{% static 'moment/min/moment-with-locales.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'daterangepicker/daterangepicker.js' %}"></script>
 <script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/desiderata_space.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/team_stats.min.js' %}"></script>
 <script type="text/javascript">
     function fillInconsistenciesDiv(rev){
       $("#shift-inconsistencies").load("{%  url 'ajax.get_team_shift_inconsistencies' %}?revision="+rev+"&tid={{ team.id }}");

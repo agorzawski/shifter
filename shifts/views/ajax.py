@@ -265,7 +265,11 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
 
     header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end - datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
 
-    return HttpResponse(json.dumps({'data': teamMembersSummary, 'header': header}), content_type="application/json")
+    return HttpResponse(json.dumps({'data': teamMembersSummary,
+                                    'header': header,
+                                    'date-start': start.strftime(DATE_FORMAT_FULL),
+                                    'date-end': end.strftime(DATE_FORMAT_FULL),
+                                    'revision': revision.__str__()}), content_type="application/json")
 
 
 def _get_inconsistencies_per_member(member, revision):
@@ -339,8 +343,8 @@ def get_shift_stats(request: HttpRequest) -> HttpResponse:
     # TODO fix revision
     revision = _get_revision(request)
     # revision = Revision.objects.get(number=19)
-    start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
-    end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
+    start = datetime.datetime.fromisoformat(start_date).date()
+    end = datetime.datetime.fromisoformat(end_date).date()
     shifts4Stat = Shift.objects.filter(revision=revision)\
                                .filter(member__team__id=teamId)\
                                .filter(date__gte=start).filter(date__lte=end).order_by('date')
@@ -382,7 +386,11 @@ def get_shift_stats(request: HttpRequest) -> HttpResponse:
                 if dataCount[one][second] != 0:
                     dataToReturn.append([one.first_name, second.first_name, dataCount[one][second]])
     header = f'Showing shift companions from {start.strftime("%A, %B %d, %Y ")} to {(end - datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
-    return HttpResponse(json.dumps({'data': dataToReturn, 'header':header}), content_type="application/json")
+    return HttpResponse(json.dumps({'data': dataToReturn,
+                                    'header': header,
+                                    'date-start': start.strftime(DATE_FORMAT_FULL),
+                                    'date-end': end.strftime(DATE_FORMAT_FULL),
+                                    'revision': revision.__str__()}), content_type="application/json")
 
 
 def search(request: HttpRequest) -> HttpResponse:

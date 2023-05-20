@@ -248,9 +248,7 @@ def get_shift_summary(m, validSlots, revision, start, end) -> tuple:
 def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
     start = datetime.datetime.fromisoformat(request.GET.get('start')).date()
     end = datetime.datetime.fromisoformat(request.GET.get('end')).date()
-    # TODO fix revision
     revision = _get_revision(request)
-    # revision = Revision.objects.get(number=19)
     team = request.user.team
 
     teamMembers = Member.objects.filter(team=team, is_active=True)
@@ -340,9 +338,7 @@ def get_shift_stats(request: HttpRequest) -> HttpResponse:
     statType = request.GET.get('statType', None)
     teamId = request.GET.get('teamId', -1)
     teamId = int(teamId)
-    # TODO fix revision
     revision = _get_revision(request)
-    # revision = Revision.objects.get(number=19)
     start = datetime.datetime.fromisoformat(start_date).date()
     end = datetime.datetime.fromisoformat(end_date).date()
     shifts4Stat = Shift.objects.filter(revision=revision)\

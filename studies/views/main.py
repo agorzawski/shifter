@@ -15,7 +15,8 @@ class StudyView(View):
     def get(self, request):
         form = StudyRequestForm({'member': request.user}, user=request.user)
         closing_form = StudyRequestFormClosing()
-        return render(request, 'request.html', {'form': form, 'closing_form': closing_form})
+        context = {'form': form, 'closing_form': closing_form}
+        return render(request, 'request.html', context)
 
     def post(self, request):
         form = StudyRequestForm(request.POST, user=request.user)
@@ -32,6 +33,21 @@ class StudyView(View):
             message = "Study form is not valid, please correct."
             messages.success(request, message)
         return redirect('studies:study_request')
+
+
+class SingleStudyView(View):
+
+    def get(self, request, sid=None):
+        form = StudyRequestForm({'member': request.user}, user=request.user)
+        closing_form = StudyRequestFormClosing()
+        context = {'form': form, 'closing_form': closing_form}
+        if sid is not None:
+            try:
+                context['study'] = StudyRequest.objects.get(id=sid)
+            except StudyRequest.DoesNotExist:
+                messages.error(request, "No such study found with the given id={}".format(sid))
+                pass
+        return render(request, 'study.html', context)
 
 
 @require_http_methods(["POST"])

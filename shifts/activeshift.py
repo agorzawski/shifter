@@ -5,12 +5,13 @@ from django.db.models import Q
 
 import phonenumbers
 import datetime
-from shifter.settings import NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES, DEFAULT_SHIFT_SLOT, DEFAULT_SHIFTER_TO_JSON
+from shifter.settings import NUMBER_OF_HOURS_BEFORE_SHIFT_SLOT_CHANGES, DEFAULT_SHIFT_SLOT, DEFAULT_SHIFTER_TO_JSON, \
+    DEFAULT_SPECIAL_SHIFT_ROLES
 
 
 def prepare_ShiftID(today, now, activeSlot, error=False):
     if error or activeSlot is None:
-        return today.strftime(DATE_FORMAT_SLIM)+"Err"
+        return today.strftime(DATE_FORMAT_SLIM) + "Err"
     return today.strftime(DATE_FORMAT_SLIM) + activeSlot.id_code
 
 
@@ -53,12 +54,12 @@ def prepare_active_crew(dayToGo=None,
         print("\n =======\n Searching for ", nowFull)
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
     scheduled_shifts = Shift.objects.filter(revision=revision) \
-                                    .filter(Q(date=today) & Q(slot__op=True))
+        .filter(Q(date=today) & Q(slot__op=True))
 
     if Slot.objects.all().order_by("hour_start").first().hour_start > now:
         todayX = today + datetime.timedelta(days=-1)
         scheduled_shifts = Shift.objects.filter(revision=revision) \
-                            .filter(Q(date=todayX) & Q(slot__op=True))
+            .filter(Q(date=todayX) & Q(slot__op=True))
 
     # first find on EXACT time for OP slots
     slotsOPWithinScheduled = filter_active_slots(now, scheduled_shifts)
@@ -87,9 +88,9 @@ def prepare_active_crew(dayToGo=None,
         lastShiftTeam = [s for s in Shift.objects.filter(shiftID=lastCompletedShiftBeforeTodayNow.shiftID)]
         return {'today': today,
                 'now': now,
-                'shiftID': lastCompletedShiftBeforeTodayNow.shiftID.label\
-                if lastCompletedShiftBeforeTodayNow is not None\
-                else prepare_ShiftID(today, now, None, error=True),
+                'shiftID': lastCompletedShiftBeforeTodayNow.shiftID.label \
+                    if lastCompletedShiftBeforeTodayNow is not None \
+                    else prepare_ShiftID(today, now, None, error=True),
                 'activeSlots': [lastShiftTeam[0].slot if len(lastShiftTeam) else None],
                 'activeSlot': None,
                 'currentTeam': lastShiftTeam
@@ -177,6 +178,20 @@ def update_details_from_LDAP(shifterDuty, ldap, useLDAP=True):
         shifterDuty.member.save()
 
 
+def _get_mapped_role(oneRole, shiftRole):
+    for role in DEFAULT_SHIFTER_TO_JSON:
+        if role in shiftRole:  # special roles should encapsulate the mapped role abbreviation
+            return role
+    else:
+        return oneRole
+
+
+def _append_details_for(dataToReturn, oneRole, shifter):
+    dataToReturn[oneRole] = shifter.member.name
+    dataToReturn[oneRole + "Phone"] = shifter.member.mobile if shifter.member.mobile is not None else ''
+    dataToReturn[oneRole + "Email"] = shifter.member.email if shifter.member.email is not None else ''
+
+
 def prepare_for_JSON(activeShift, studies=None):
     dataToReturn = {'_datetime': activeShift['today'].strftime(DATE_FORMAT),
                     '_slot': 'outside active slots' if activeShift['activeSlot'] is None else activeShift[
@@ -189,11 +204,17 @@ def prepare_for_JSON(activeShift, studies=None):
                     }
     for oneRole in DEFAULT_SHIFTER_TO_JSON:
         dataToReturn[oneRole] = "N/A"
-    for oneRole in DEFAULT_SHIFTER_TO_JSON:
+    for oneRole in DEFAULT_SHIFTER_TO_JSON:  # main roles and their alter ego
         for shifter in activeShift['currentTeam']:
-            if oneRole in shifter.member.role.abbreviation and shifter.role is None:  # no extra role in the same shift
-                dataToReturn[oneRole] = shifter.member.name
-                dataToReturn[oneRole + "Phone"] = shifter.member.mobile if shifter.member.mobile is not None else ''
-                dataToReturn[oneRole + "Email"] = shifter.member.email if shifter.member.email is not None else ''
+            if oneRole in shifter.member.role.abbreviation:
+                if shifter.role is None:  # no extra role in the same shift
+                    _append_details_for(dataToReturn, oneRole, shifter)
+                elif shifter.role is not None:  # extra assignment
+                    if shifter.role.abbreviation in DEFAULT_SPECIAL_SHIFT_ROLES:
+                        _append_details_for(dataToReturn, _get_mapped_role(oneRole, shifter.role.abbreviation), shifter)
+    for oneRole in DEFAULT_SPECIAL_SHIFT_ROLES:  # acting roles
+        for shifter in activeShift['currentTeam']:
+            if shifter.role is not None and shifter.role.abbreviation in oneRole:
+                _append_details_for(dataToReturn, _get_mapped_role(oneRole, shifter.role.abbreviation), shifter)
 
     return dataToReturn

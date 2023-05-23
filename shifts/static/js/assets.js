@@ -9,6 +9,8 @@ $(document).ready(function() {
     $('#table_id').DataTable({
         "ajax": $('#table_id').data('content_url'),
         dom: 'Plfrtip',
+        order: [[3, 'desc']],
+        pageLength: 25,
         searchPanes: {
             initCollapsed: true
         },

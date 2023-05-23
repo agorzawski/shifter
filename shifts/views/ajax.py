@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.http import HttpRequest
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_safe
 from shifts.models import *
@@ -11,6 +11,8 @@ from assets.models import AssetBooking
 from shifts.hrcodes import red_days, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
+from shifter.settings import DEFAULT_SPECIAL_SHIFT_ROLES
+from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
 import json
 from watson import search as watson
 from guardian.shortcuts import get_objects_for_user
@@ -26,6 +28,15 @@ def _get_member(request: HttpRequest):
     return member
 
 
+def _get_revision(request: HttpRequest):
+    revision = int(request.GET.get('revision', -1))
+    if revision == -1:
+        revision = Revision.objects.filter(valid=True).order_by("-number").first()
+    else:
+        revision = Revision.objects.get(number=revision)
+    return revision
+
+
 def _get_scheduled_shifts(request: HttpRequest):
     start_date = request.GET.get('start', None)
     end_date = request.GET.get('end', None)
@@ -33,13 +44,14 @@ def _get_scheduled_shifts(request: HttpRequest):
         return HttpResponse({}, content_type="application/json", status=500)
     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
-    return Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first())\
+    return Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()) \
         .filter(member=_get_member(request)).filter(date__gte=start).filter(date__lte=end)
 
 
 @require_safe
 def get_user_events(request: HttpRequest) -> HttpResponse:
-    calendar_events = [d.get_shift_as_json_event() for d in _get_scheduled_shifts(request)]
+    base_scheduled_shifts = _get_scheduled_shifts(request)
+    calendar_events = [d.get_shift_as_json_event() for d in base_scheduled_shifts]
     revisionNext = request.GET.get("revision_next", default='-1')
     revisionNext = int(revisionNext)
     if revisionNext != -1:
@@ -48,6 +60,16 @@ def get_user_events(request: HttpRequest) -> HttpResponse:
                                                        revision=revisionNext)
         for d in future_scheduled_shifts:
             calendar_events.append(d.get_planned_shift_as_json_event())
+    withCompanion = request.GET.get("companion", default=None)
+    withCompanion = True if withCompanion == "true" else False
+    if withCompanion:
+        future_companion_shifts = Shift.objects.filter(date__in=[s.date for s in base_scheduled_shifts]) \
+                                               .filter(revision__in=[s.revision for s in base_scheduled_shifts])\
+                                               .filter(~Q(member=_get_member(request)))
+        future_companion_exact_shifts = [d.start for d in base_scheduled_shifts]
+        for d in future_companion_shifts:
+            if d.start in future_companion_exact_shifts:
+                calendar_events.append(d.get_shift_as_json_event())
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 
@@ -61,7 +83,7 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     end_date = request.GET.get('end', None)
     all_roles = request.GET.get('all_roles', None)
     campaigns = request.GET.get('campaigns', None)
-    revision = request.GET.get('revision', None)
+    revision = _get_revision(request)
 
     if start_date is None or end_date is None or all_roles is None or campaigns is None or revision is None:
         return HttpResponse({}, content_type="application/json", status=500)
@@ -71,20 +93,16 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     all_roles = True if all_roles == "true" else False
     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
-    revision = int(revision)
-
-    if revision == -1:
-        revision = Revision.objects.filter(valid=True).order_by("-number").first()
-    else:
-        revision = Revision.objects.get(valid=True, number=revision)
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
-    filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns}
-    if not all_roles:
-        filter_dic['role'] = None
-    filter_dic['member_id__in'] = users_requested
-    scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+    filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns,
+                  'member_id__in': users_requested}
 
+    scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+    if not all_roles:
+        scheduled_shifts = scheduled_shifts.filter(Q(role=None) |
+                                                   Q(role__in=[one for one in ShiftRole.objects.filter(
+                                                       abbreviation__in=DEFAULT_SPECIAL_SHIFT_ROLES)]))
     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
@@ -115,12 +133,14 @@ def get_events(request: HttpRequest) -> HttpResponse:
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
     filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns}
-    if not all_roles:
-        filter_dic['role'] = None
     if int(team_id) > 0:
         team = Team.objects.get(id=team_id)
         filter_dic['member__team'] = team
     scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
+    if not all_roles:
+        scheduled_shifts = scheduled_shifts.filter(Q(role=None) |
+                                                   Q(role__in=[one for one in ShiftRole.objects.filter(
+                                                       abbreviation__in=DEFAULT_SPECIAL_SHIFT_ROLES)]))
 
     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
 
@@ -241,13 +261,74 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
             memberSummary.append(result.get(oneSlot.abbreviation, '--'))
         teamMembersSummary.append(memberSummary)
 
-    header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end -  datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
+    header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end - datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
 
     return HttpResponse(json.dumps({'data': teamMembersSummary, 'header': header}), content_type="application/json")
 
 
+def _get_inconsistencies_per_member(member, revision):
+    # TODO fix it with proper js file to build it out of JSON
+    # TODO once with json, return count of inconsistencies to enable badge
+    ss = Shift.objects.filter(revision=revision).filter(member=member)
+    dailyViolations = find_daily_rest_time_violation(scheduled_shifts=ss)
+    weeklyViolations = find_weekly_rest_time_violation(scheduled_shifts=ss)
+    toReturnHTML = ""
+    if len(dailyViolations):
+        toReturnHTML += "<dl class=\"row\">" \
+                                "<dt class=\"col-sm-3\">Daily shift issues:</dt>" \
+                                "<dd class=\"col-sm-9\">"
+        for oneD in dailyViolations:
+            label = 'light'
+            if oneD[0].start > datetime.datetime.now():
+                label = 'danger'
+            toReturnHTML += f"<p><span class=\"badge text-bg-{label}\">{oneD[0].get_shift_as_date_slot()}</span> - " \
+                            f"<span class=\"badge text-bg-{label}\">{oneD[1].get_shift_as_date_slot()} </span></p>"
+        toReturnHTML += "</dd></dl>"
+    if len(weeklyViolations):
+        toReturnHTML += "<dl class=\"row\">" \
+                        "<dt class=\"col-sm-3\">Weekly shift issues:</dt>" \
+                        "<dd class=\"col-sm-9\">"
+        for oneW in weeklyViolations:
+            for oneInW in oneW:
+                label = 'light'
+                if oneInW.start > datetime.datetime.now():
+                    label = 'danger'
+                toReturnHTML += f"<p><span class=\"badge text-bg-{label}\">{oneInW.get_shift_as_date_slot()}</span></p>"
+            toReturnHTML += "<hr>"
+        toReturnHTML += "</dd></dl>"
+    if len(dailyViolations) or len(weeklyViolations):
+        return toReturnHTML
+    else:
+        return None
+
+
+@login_required
+def get_shift_inconsistencies(request: HttpRequest) -> HttpResponse:
+    revision = _get_revision(request)
+    toReturnHTML = _get_inconsistencies_per_member(request.user, revision)
+    return HttpResponse(toReturnHTML, content_type="application/text")
+
+
+@login_required
+def get_team_shift_inconsistencies(request: HttpRequest) -> HttpResponse:
+    revision = _get_revision(request)
+    team = request.user.team
+    teamId = int(request.GET.get('tid', -1))
+    if teamId > 0:
+        team = Team.objects.get(id=teamId)
+    members = Member.objects.filter(team=team, is_active=True)
+    # TODO improve when _get_per_member's TODOs solved
+    toReturnHTML = ""
+    for member in members:
+        foundInconsistencies = _get_inconsistencies_per_member(member, revision)
+        if foundInconsistencies is not None:
+            toReturnHTML += "<hr><h5 class=\"mb-3\">{}</h5>".format(member)
+            toReturnHTML += foundInconsistencies
+    return HttpResponse(toReturnHTML, content_type="application/text")
+
+
 def search(request: HttpRequest) -> HttpResponse:
-    answer=[]
+    answer = []
     search = request.GET.get('search')
     search_results = watson.search(search, ranking=False)
     for result in search_results:

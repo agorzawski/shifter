@@ -197,6 +197,9 @@ class Shift(models.Model):
     def __str__(self):
         return '{} {} {}'.format(self.member, self.date, self.slot)
 
+    def get_shift_as_date_slot(self) -> str:
+        return '{} {}'.format( self.date, self.slot)
+
     def get_shift_title(self) -> str:
         title = f"{self.member.first_name} as "
         if self.role:

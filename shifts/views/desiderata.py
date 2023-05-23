@@ -5,9 +5,9 @@ from django.shortcuts import render
 
 from django.views.decorators.http import require_safe
 
-from members.models import Team
 import datetime
-from shifts.models import Desiderata
+from shifts.models import Desiderata, Revision
+from members.models import Team
 from django.utils.timezone import make_aware
 from django.utils import timezone
 import json
@@ -34,7 +34,10 @@ def team_view(request: HttpRequest, team_id: int) -> HttpResponse:
     # Here we are sure the team exists, and the user has the right to see the full desiderata
     return render(request, 'team_desiderata.html', {'team': the_team,
                                                     'default_start': default_start,
-                                                    'default_end': default_end})
+                                                    'default_end': default_end,
+                                                    'latest_revision': Revision.objects.filter(valid=True).order_by('-number').first(),
+                                                    'revisions': Revision.objects.order_by('-number')}
+                                                    )
 
 
 @require_safe

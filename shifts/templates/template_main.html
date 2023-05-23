@@ -7,6 +7,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
         <title>Shifter - shifts planner and viewer</title>
+        <link rel="icon" type="image/x-icon" href="{% static 'img/shifter-icon.png' %}">
         <link rel="stylesheet" href="{% static '@fortawesome/fontawesome-free/css/all.min.css'%}">
         <link rel="stylesheet" href="{% static 'bootstrap/dist/css/bootstrap.min.css'%}">
         <link rel="stylesheet" href="{% static 'bootstrap-icons/font/bootstrap-icons.css'%}">
@@ -40,7 +41,7 @@
 
         <!-- Django messages -->
         {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{%if message.tags == 'error'%}danger{%else%}{{ message.tags }}{%endif%} alert-dismissible fade show" role="alert">
             {{message|safe}}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>

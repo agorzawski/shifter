@@ -93,6 +93,7 @@ $(document).ready(function () {
       extraParams: function() {
           return {
             all_roles: $('#all_roles').is(':checked'),
+            companion: $('#show_companion').is(':checked'),
             revision: get_revision(),
             revision_next: get_revision_next(),
             campaigns: get_selected_campaigns(),
@@ -134,6 +135,10 @@ $(document).ready(function () {
     calendar.render();
 
     $('#all_roles').change(function() {
+        calendar.getEventSourceById('shifts').refetch()
+    });
+
+    $('#show_companion').change(function() {
         calendar.getEventSourceById('shifts').refetch()
     });
 

@@ -32,7 +32,7 @@
           {%if study.state == 'C' or study.state == 'D' %}
           <h5>Closing comments</h5>
           <p>{{study.after_comment}}</p>
-          <p><a href={{self.logbook_link}}>Logbook Link</a></p>
+          <p><a href="{{study.logbook_link}}">Logbook Link</a></p>
           {%endif%}
       </div>
         <hr>

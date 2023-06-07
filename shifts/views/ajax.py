@@ -48,6 +48,18 @@ def _get_scheduled_shifts(request: HttpRequest):
         .filter(member=_get_member(request)).filter(date__gte=start).filter(date__lte=end)
 
 
+def _get_companions_shift(member: Member, base_scheduled_shifts):
+    filteredCompanions = []
+    future_companion_shifts = Shift.objects.filter(date__in=[s.date for s in base_scheduled_shifts]) \
+        .filter(revision__in=[s.revision for s in base_scheduled_shifts]) \
+        .filter(~Q(member=member))
+    future_companion_exact_shifts = [d.start for d in base_scheduled_shifts]
+    for d in future_companion_shifts:
+        if d.start in future_companion_exact_shifts:
+            filteredCompanions.append(d)
+    return filteredCompanions
+
+
 @require_safe
 def get_user_events(request: HttpRequest) -> HttpResponse:
     base_scheduled_shifts = _get_scheduled_shifts(request)
@@ -63,13 +75,8 @@ def get_user_events(request: HttpRequest) -> HttpResponse:
     withCompanion = request.GET.get("companion", default=None)
     withCompanion = True if withCompanion == "true" else False
     if withCompanion:
-        future_companion_shifts = Shift.objects.filter(date__in=[s.date for s in base_scheduled_shifts]) \
-                                               .filter(revision__in=[s.revision for s in base_scheduled_shifts])\
-                                               .filter(~Q(member=_get_member(request)))
-        future_companion_exact_shifts = [d.start for d in base_scheduled_shifts]
-        for d in future_companion_shifts:
-            if d.start in future_companion_exact_shifts:
-                calendar_events.append(d.get_shift_as_json_event())
+        for d in _get_companions_shift(_get_member(request), base_scheduled_shifts):
+            calendar_events.append(d.get_shift_as_json_event())
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 

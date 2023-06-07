@@ -2,32 +2,35 @@
 VERSION:2.0
 PRODID:-//ESS Shift planning tool//NONSGML v1.0//EN
 X-WR-CALNAME;VALUE=TEXT:ESS Shift {% if campaign %} {{ campaign }}{% endif %}
-{% for s in shifts %}BEGIN:VEVENT
-UID:{{ s.id }}
+{% for s in companionShifts %}
+BEGIN:VEVENT
+UID:{{ s.0.id }}
 STATUS:CONFIRMED
-DTSTAMP:{{ s.created|utc|date:"Ymd\THis\Z" }}
-DTSTART:{{ s.start|utc|date:"Ymd\THis\Z" }}
-DTEND:{{ s.end|utc|date:"Ymd\THis\Z" }}
-SUMMARY:{{s.member}} {% if s.role != null %}{%else%}as {{s.member.role}}{%endif%}
-LOCATION: {% if s.role != null %} {{s.role}} {%else%} ESS/ Main Control Room {%endif%}
-END:VEVENT
-{% endfor %}{% localtime on %}{% for s in studies %}BEGIN:VEVENT
+DTSTAMP:{{ now|utc|date:"Ymd\THis\Z" }}
+DTSTART:{{ s.0.start|utc|date:"Ymd\THis\Z" }}
+DTEND:{{ s.0.end|utc|date:"Ymd\THis\Z" }}
+SUMMARY:{{s.0.member}} {% if s.0.role != null %}{%else%}as {{s.0.member.role}}{%endif%}
+DESCRIPTION:On shift together with:\n{%for oneCompanion in s.1 %}- {{oneCompanion.member}}, phone: {{oneCompanion.member.mobile}}\n{% endfor %}
+LOCATION: {% if s.0.role != null %} {{s.0.role}} {%else%} ESS/ Main Control Room {%endif%}
+END:VEVENT{% endfor %}{% localtime on %}
+{% for s in studies %}BEGIN:VEVENT
 UID:666{{ forloop.counter }}
 STATUS:CONFIRMED
 DTSTAMP:{{ s.booked_slot|utc|date:"Ymd\THis\Z" }}
 DTSTART:{{ s.slot_start|utc|date:"Ymd\THis\Z" }}
 DTEND:{{ s.slot_end|utc|date:"Ymd\THis\Z" }}
 SUMMARY:{{s.title}} requested by {{s.member}}
+DESCRIPTION: {{s.description}}
 LOCATION: ESS/ Main Control Room
-END:VEVENT
-{% endfor %}{% for s in studies_as_collaborator %}BEGIN:VEVENT
+END:VEVENT{% endfor %}
+{% for s in studies_as_collaborator %}BEGIN:VEVENT
 UID:555{{ forloop.counter }}
 STATUS:CONFIRMED
 DTSTAMP:{{ s.booked_slot|utc|date:"Ymd\THis\Z" }}
 DTSTART:{{ s.slot_start|utc|date:"Ymd\THis\Z" }}
 DTEND:{{ s.slot_end|utc|date:"Ymd\THis\Z" }}
 SUMMARY:{{s.title}} (as Collaborator)
+DESCRIPTION: {{s.description}}
 LOCATION: ESS/ Main Control Room
-END:VEVENT
-{% endfor %}{% endlocaltime %}
+END:VEVENT{% endfor %}{% endlocaltime %}
 END:VCALENDAR

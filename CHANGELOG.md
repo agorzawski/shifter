@@ -1,9 +1,14 @@
 # ESS OP Shifter Changelog
 
-### v.1.0.x
-- Bugfixes found with 1.0 
-- Refreshed Today page with upcoming shift
-- Study overviews, tables & views
+### v.1.0.7 (including .1-.6)
+- User/Team inconsistencies improved,
+- Show shift companion, 
+- Study details exposed with direct link, id and indiv pages,
+- Fixes for sorting tables, 
+- Admin actions for batch shifts/studies actions,
+- Refreshed Today page with upcoming shift,
+- Study overviews, tables & views,
+- User-friendly tables (default rows increased)
 
 ### v.1.0.0
 - Beam studies planner (ACCOP-337) first version,

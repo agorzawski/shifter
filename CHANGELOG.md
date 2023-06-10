@@ -1,5 +1,11 @@
 # ESS OP Shifter Changelog
 
+### v.1.0.8
+- Statistics per MyTeam and detailed panel for Rota Maker,
+- Few cosmetics between calendars default views: hiding/showing relevant events depending on the page,
+- shift inconsistencies - shift-to-shift hours break,
+- individual ical links enhanced with shift companion contact details,
+
 ### v.1.0.7 (including .1-.6)
 - User/Team inconsistencies improved,
 - Show shift companion, 

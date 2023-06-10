@@ -12,7 +12,7 @@ from shifts.hrcodes import red_days, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
 from shifter.settings import DEFAULT_SPECIAL_SHIFT_ROLES
-from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation
+from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, get_hours_break
 import json
 from watson import search as watson
 from guardian.shortcuts import get_objects_for_user
@@ -48,6 +48,18 @@ def _get_scheduled_shifts(request: HttpRequest):
         .filter(member=_get_member(request)).filter(date__gte=start).filter(date__lte=end)
 
 
+def _get_companions_shift(member: Member, base_scheduled_shifts):
+    filteredCompanions = []
+    future_companion_shifts = Shift.objects.filter(date__in=[s.date for s in base_scheduled_shifts]) \
+        .filter(revision__in=[s.revision for s in base_scheduled_shifts]) \
+        .filter(~Q(member=member))
+    future_companion_exact_shifts = [d.start for d in base_scheduled_shifts]
+    for d in future_companion_shifts:
+        if d.start in future_companion_exact_shifts:
+            filteredCompanions.append(d)
+    return filteredCompanions
+
+
 @require_safe
 def get_user_events(request: HttpRequest) -> HttpResponse:
     base_scheduled_shifts = _get_scheduled_shifts(request)
@@ -63,13 +75,8 @@ def get_user_events(request: HttpRequest) -> HttpResponse:
     withCompanion = request.GET.get("companion", default=None)
     withCompanion = True if withCompanion == "true" else False
     if withCompanion:
-        future_companion_shifts = Shift.objects.filter(date__in=[s.date for s in base_scheduled_shifts]) \
-                                               .filter(revision__in=[s.revision for s in base_scheduled_shifts])\
-                                               .filter(~Q(member=_get_member(request)))
-        future_companion_exact_shifts = [d.start for d in base_scheduled_shifts]
-        for d in future_companion_shifts:
-            if d.start in future_companion_exact_shifts:
-                calendar_events.append(d.get_shift_as_json_event())
+        for d in _get_companions_shift(_get_member(request), base_scheduled_shifts):
+            calendar_events.append(d.get_shift_as_json_event())
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 
@@ -286,18 +293,22 @@ def _get_inconsistencies_per_member(member, revision):
             if oneD[0].start > datetime.datetime.now():
                 label = 'danger'
             toReturnHTML += f"<p><span class=\"badge text-bg-{label}\">{oneD[0].get_shift_as_date_slot()}</span> - " \
-                            f"<span class=\"badge text-bg-{label}\">{oneD[1].get_shift_as_date_slot()} </span></p>"
+                            f"<span class=\"badge text-bg-{label}\">{oneD[1].get_shift_as_date_slot()} </span> " \
+                            f"<span class=\"badge text-bg-dark\">{get_hours_break(oneD[1], oneD[0])}h</span></p>"
         toReturnHTML += "</dd></dl>"
     if len(weeklyViolations):
         toReturnHTML += "<dl class=\"row\">" \
                         "<dt class=\"col-sm-3\">Weekly shift issues:</dt>" \
                         "<dd class=\"col-sm-9\">"
         for oneW in weeklyViolations:
-            for oneInW in oneW:
+            for i, oneInW in enumerate(oneW):
                 label = 'light'
                 if oneInW.start > datetime.datetime.now():
                     label = 'danger'
-                toReturnHTML += f"<p><span class=\"badge text-bg-{label}\">{oneInW.get_shift_as_date_slot()}</span></p>"
+                breakLength = ""
+                if i < len(oneW)-1:
+                    breakLength = f"<span class=\"badge text-bg-dark\">{get_hours_break(oneW[i + 1], oneInW)}h</span>"
+                toReturnHTML += f"<p><span class=\"badge text-bg-{label}\">{oneInW.get_shift_as_date_slot()}</span>{breakLength}</p>"
             toReturnHTML += "<hr>"
         toReturnHTML += "</dd></dl>"
     if len(dailyViolations) or len(weeklyViolations):

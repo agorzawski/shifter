@@ -276,6 +276,7 @@ def users(request):
         'scheduled_campaigns_list': scheduled_campaigns,
         'users': users_list,
         'users_requested': users_requested,
+        'hide_studies': True,
     }
     return render(request, 'users.html', prepare_default_context(request, context))
 
@@ -292,6 +293,13 @@ def icalendar(request):
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
 
     shifts = Shift.objects.filter(member=member, revision=revision)
+    from .ajax import _get_companions_shift
+    #  FIXME may need some optimisation in the future, it may take some time to combine all past shifts with details...
+    companionShifts = _get_companions_shift(member, shifts)
+    companionShiftsDates = {one.start: [one, []] for one in shifts}
+    for one in companionShifts:
+        companionShiftsDates[one.start][1].append(one)
+
     studies = StudyRequest.objects.filter(member=member, state__in=["B", "D"])
     studies_as_collaborator = StudyRequest.objects.filter(collaborators=member, state__in=["B", "D"])
     if team is not None:
@@ -306,10 +314,12 @@ def icalendar(request):
     context = {
         'campaign': 'Exported Shifts',
         'shifts': shifts,
+        'companionShifts': list(companionShiftsDates.values()),
         'studies': studies,
         'studies_as_collaborator': studies_as_collaborator,
         'member': member,
         'team': team if not None else member.team,
+        'now': timezone.now()
     }
 
     body = render_to_string('icalendar.ics', context)

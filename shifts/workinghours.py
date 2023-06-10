@@ -1,7 +1,12 @@
 from shifter.settings import DEFAULT_SHIFT_SLOT
-from shifts.models import DATE_FORMAT_FULL
+from shifts.models import DATE_FORMAT_FULL, Shift
 from datetime import timedelta
 import datetime
+
+
+def get_hours_break(laterShift: Shift, earlierShift: Shift):
+    breakTotal = laterShift.start - earlierShift.end
+    return breakTotal.seconds // 3600 + breakTotal.days * 24
 
 
 def find_daily_rest_time_violation(scheduled_shifts, minimum_rest_time_in_hours=11) -> list:

@@ -15,7 +15,11 @@ class StudyView(View):
     def get(self, request):
         form = StudyRequestForm({'member': request.user}, user=request.user)
         closing_form = StudyRequestFormClosing()
-        context = {'form': form, 'closing_form': closing_form}
+        context = {'form': form,
+                   'closing_form': closing_form,
+                   'defaultDate': timezone.now().date().strftime(DATE_FORMAT),
+                   'hide_extra_role_selection': True,
+                   }
         return render(request, 'request.html', context)
 
     def post(self, request):

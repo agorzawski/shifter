@@ -17,19 +17,22 @@
   "author": "C. Lombard",
   "license": "ISC",
   "devDependencies": {
-    "bootstrap": "^5.2.3",
-    "jquery": "^3.6.1",
-    "fullcalendar": "^5.11.3",
     "@fortawesome/fontawesome-free": "^6.2.1",
+    "bootstrap": "^5.2.3",
     "bootstrap-icons": "^1.8.1",
-    "select2": "~4.0",
     "datatables.net-bs5": "^1.13.1",
     "datatables.net-dt": "~1.13.1",
     "datatables.net-searchpanes": "^2.1.0",
     "datatables.net-searchpanes-bs5": "^2.1.0",
     "datatables.net-select": "^1.5.0",
-    "moment": "^2.29.4",
     "daterangepicker": "^3.1.0",
+    "fullcalendar": "^5.11.3",
+    "jquery": "^3.6.1",
+    "moment": "^2.29.4",
+    "select2": "~4.0",
     "typeahead.js": "^0.11.1"
+  },
+  "dependencies": {
+    "highcharts": "^11.0.1"
   }
 }

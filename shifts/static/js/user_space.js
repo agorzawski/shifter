@@ -35,6 +35,7 @@ $(document).ready(function() {
             },
         },
         "autoWidth": false,
+        pageLength: 25,
         footerCallback: function(row, data, start, end, display) {
             var api = this.api();
 

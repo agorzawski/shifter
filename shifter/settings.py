@@ -188,6 +188,8 @@ NPM_FILE_PATTERNS = {
     'bootstrap': ['dist/css/bootstrap.min.css.map', 'dist/css/bootstrap.min.css',
                   'dist/js/bootstrap.bundle.min.js', 'dist/js/bootstrap.bundle.min.js.map'],
     'fullcalendar': ['main.min.css', 'main.min.css.map', 'main.min.js', 'main.min.js.map'],
+    'highcharts': ['highcharts.js', 'modules/sankey.js', 'modules/dependency-wheel.js',
+                   'modules/exporting.js', 'modules/export-data.js', 'modules/accessibility.js'],
     'jquery': ['dist/jquery.min.js', 'dist/jquery.min.js.map'],
     '@fortawesome': ['fontawesome-free/*'],
     'bootstrap-icons': ['*'],

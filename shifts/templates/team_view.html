@@ -52,6 +52,10 @@
             </div>
         </div>
     </div>
+    <div class="container-fluid mb-5">
+        <div id="statWheel" data-content_url="{% url 'ajax.get_stats'%}"></div>          <!-- filled by AJAX -->
+        <div id="statBars"  data-content_url="{% url 'ajax.get_team_breakdown'%}"></div> <!-- filled by AJAX -->
+    </div>
     {% endif %}
     <div class="container-fluid mb-5">
         <div class="row justify-content-md-center">
@@ -84,6 +88,12 @@ $(document).ready(function() {
 <script type="text/javascript" src="{% static 'datatables.net-searchpanes/js/dataTables.searchPanes.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'datatables.net-searchpanes-bs5/js/searchPanes.bootstrap5.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/highcharts.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/sankey.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/dependency-wheel.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/exporting.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/export-data.js' %}"></script>
+<script type="text/javascript" src="{% static 'highcharts/modules/accessibility.js '%}"></script>
 <script type="text/javascript" src="{% static 'js/my_team.min.js' %}"></script>
 {% else %}
 <script type="text/javascript" src="{% static 'js/calendar_script.min.js' %}"></script>

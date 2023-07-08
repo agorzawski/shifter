@@ -37,7 +37,7 @@
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="booking_header">
                         <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#accordion_booking" aria-expanded="true" aria-controls="accordion_booking">
-                            Last Requests
+                            Study Requests List
                         </button>
                     </h2>
                     <div id="accordion_booking" class="accordion-collapse collapse show" aria-labelledby="booking_header" data-bs-parent="#assets_accordion">
@@ -124,6 +124,14 @@
   </div>
 </div>
 
+<div class="container-fluid mb-5 pb-5">
+    <h2 class="text-center mb-3">Study calendar</h2>
+    <div class="col">
+        {% url 'ajax.get_users_events' as the_url %}
+        {% include 'calendar.html' with event_source=the_url %}
+    </div>
+</div>
+{%  include 'layout/calendar_tools_off_canvas.html' %}
 {% endblock %}
 
 {%  block js %}
@@ -133,6 +141,7 @@
     <script type="text/javascript" src="{% static 'datatables.net-bs5/js/dataTables.bootstrap5.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'datatables.net-searchpanes-bs5/js/searchPanes.bootstrap5.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/studies_booking.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/calendar_script.js' %}"></script>
     <script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
     <script>
     $(document).ready(function() {
@@ -144,4 +153,10 @@
             $('#study_modal').modal('show');
         });
     </script>{%endif%}
+    <script>
+    $(document).ready(function() {
+    $('#displayed_campaigns').select2();
+    $('#displayed_revision').select2();
+    $('#users_selection').select2();
+});</script>
 {% endblock %}

@@ -140,6 +140,24 @@ class ShiftAdmin(admin.ModelAdmin):
         ) % updated, messages.SUCCESS)
         self.description = 'Move selected shifts to default slot (NWH)'
 
+    def set_not_ACTIVE(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        self.message_user(request, ngettext(
+            '%d moved to not active state.',
+            '%d moved to not active state',
+            updated,
+        ) % updated, messages.SUCCESS)
+        self.description = 'Move selected shifts to the moved to not active state'
+
+    def set_last_minute_cancellation(self, request, queryset):
+        updated = queryset.update(is_cancelled=True)
+        self.message_user(request, ngettext(
+            '%d moved to last minute cancellation.',
+            '%d moved to last minute cancellation',
+            updated,
+        ) % updated, messages.SUCCESS)
+        self.description = 'Move selected shifts to to last minute cancellation'
+
     model = Shift
     list_display = [
         'date',
@@ -159,7 +177,9 @@ class ShiftAdmin(admin.ModelAdmin):
                MOVE_to_newest_VALID_revision,
                MERGE_to_newest_VALID_revision,
                MOVE_to_newest_TEMP_revision,
-               COPY_to_newest_TEMP_revision)
+               COPY_to_newest_TEMP_revision,
+               set_last_minute_cancellation,
+               set_not_ACTIVE)
 
     def _member(self, object):
         return '{} ({})'.format(object.member.username, object.member.team)

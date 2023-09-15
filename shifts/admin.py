@@ -144,13 +144,16 @@ class ShiftAdmin(admin.ModelAdmin):
     list_display = [
         'date',
         'slot',
+        'is_cancelled',
+        'is_active',
         '_member',
         'role',
         'revision',
         'shiftID',
     ]
 
-    list_filter = ('campaign', 'revision', 'csv_upload_tag', 'slot', 'member__team', 'member__role', 'role', 'member')
+    list_filter = ('campaign', 'is_cancelled', 'is_active', 'revision', 'csv_upload_tag', 'slot', 'member__team',
+                   'member__role', 'role', 'member')
     ordering = ('-date',)
     actions = (UPDATE_to_default_slot_NWH,
                MOVE_to_newest_VALID_revision,

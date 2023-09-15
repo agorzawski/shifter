@@ -10,7 +10,7 @@ DTSTAMP:{{ now|utc|date:"Ymd\THis\Z" }}
 DTSTART:{{ s.0.start|utc|date:"Ymd\THis\Z" }}
 DTEND:{{ s.0.end|utc|date:"Ymd\THis\Z" }}
 SUMMARY:{{s.0.member}} {% if s.0.role != null %}{%else%}as {{s.0.member.role}}{%endif%}
-DESCRIPTION:On shift together with:\n{%for oneCompanion in s.1 %}- {{oneCompanion.member}}, phone: {{oneCompanion.member.mobile}}\n{% endfor %}
+DESCRIPTION:On shift together with:\n{%for oneCompanion in s.1 %}\n - {{oneCompanion.member}}, phone: {{oneCompanion.member.mobile}}{% endfor %}\n Shift additional info:\n{{s.0.pre_comment}}\n Post shift comment:\n{{s.0.post_comment}}\n
 LOCATION: {% if s.0.role != null %} {{s.0.role}} {%else%} ESS/ Main Control Room {%endif%}
 END:VEVENT{% endfor %}{% localtime on %}
 {% for s in studies %}BEGIN:VEVENT

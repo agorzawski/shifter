@@ -118,6 +118,7 @@ class ShiftRole(models.Model):
     name = models.CharField(max_length=200)
     abbreviation = models.CharField(max_length=10, default=None)
     priority = models.IntegerField(blank=True, default=99)
+    color_in_calendar = models.CharField(max_length=7, blank=True)
 
     def __str__(self):
         return '{}'.format(self.name)
@@ -220,6 +221,11 @@ class Shift(models.Model):
 
         return title
 
+    def get_color_for_calendar(self):
+        if self.role is not None and self.role.color_in_calendar is not None:
+            return self.role.color_in_calendar
+        return self.slot.color_in_calendar
+
     def get_shift_as_json_event(self) -> dict:
         event = {'id': self.id,
                  'title': self.get_shift_title(),
@@ -229,7 +235,7 @@ class Shift(models.Model):
                  'slot': self.slot.name,
                  'pre_comment': self.pre_comment,
                  'post_comment': self.post_comment,
-                 'color': self.slot.color_in_calendar,
+                 'color': self.get_color_for_calendar(),
                  }
         if 'ShiftLeader' in self.member.role.name:
             event['textColor'] = '#E9E72D'
@@ -244,7 +250,7 @@ class Shift(models.Model):
                  'slot': self.slot.name,
                  'pre_comment': self.pre_comment,
                  'post_comment': self.post_comment,
-                 'color': self.slot.color_in_calendar,
+                 'color': self.get_color_for_calendar(),
                  'borderColor': 'black',
                  'textColor':'black',
                  }

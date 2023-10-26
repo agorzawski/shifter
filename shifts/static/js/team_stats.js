@@ -40,7 +40,7 @@ function fill_plots(){
                     text: dataJSON.header
                 },
               xAxis: {
-                categories: ['OP Morning', 'Normal Working Hours', 'Afternoon', 'OP Nights'],
+                categories: dataJSON.slots,
                 labels: {
                   x: -10
                 }
@@ -51,7 +51,7 @@ function fill_plots(){
                   text: 'Amount'
                 }
               },
-              series: [{},{},{},{},{},{},{},{},{},{},{},{},{},],
+              series: dataJSON.userdata,
             };
             var arrayLength = dataJSON.data.length;
             for (var i = 0; i < arrayLength; i++) {

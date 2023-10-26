@@ -35,6 +35,12 @@ $(document).ready(function() {
             },
         },
         "autoWidth": false,
+        buttons: [{
+            extend: 'collection',
+            text: 'Export',
+            buttons: ['copy', 'csv',]
+        }],
+        dom: 'Bfrtip',
         pageLength: 25,
         footerCallback: function(row, data, start, end, display) {
             var api = this.api();

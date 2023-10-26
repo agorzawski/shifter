@@ -30,6 +30,12 @@ red_days = [
     date(2023, 5, 19),
     date(2023, 6, 5),
     date(2023, 6, 6),
+
+    # https://confluence.esss.lu.se/display/HR/Public+holidays+and+additional+days+off+%282024%29+Sweden
+    date(2024, 5, 1),
+    date(2024, 5, 9),
+    date(2024, 5, 10),
+    date(2024, 12, 31),
 ]
 
 reduced_days = [
@@ -47,6 +53,12 @@ reduced_days = [
     date(2023, 1, 5),
     date(2023, 4, 6),
     date(2023, 11, 3),
+
+    # https://confluence.esss.lu.se/display/HR/Public+holidays+and+additional+days+off+%282024%29+Sweden
+    date(2024, 1, 5),
+    date(2024, 3, 28),
+    date(2024, 4, 30),
+    date(2024, 11, 1),
 ]
 
 # The ones that are counted as OB4
@@ -87,6 +99,17 @@ public_holidays_special = [
     date(2023, 6, 23),
     date(2023, 12, 25),
     date(2023, 12, 26),
+
+    # https://confluence.esss.lu.se/display/HR/Public+holidays+and+additional+days+off+%282024%29+Sweden
+    date(2024, 1, 1),
+    date(2024, 3, 29),
+    date(2024, 4, 1),
+    date(2024, 6, 6),
+    date(2024, 6, 7),
+    date(2024, 6, 21),
+    date(2024, 12, 24),
+    date(2024, 12, 25),
+    date(2024, 12, 26),
 ]
 
 

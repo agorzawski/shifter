@@ -21,10 +21,16 @@ urlpatterns = [
     path('ioc-update', views.ioc_update, name='ioc-update'),
     path('scheduled-work-time', views.scheduled_work_time, name='scheduled_work_time'),
     path('shifts', views.shifts, name='shifts'),
+
     path('shift-exchange', views.shiftExchangeRequest, name='shift-exchange-request'),
-    path('shift-exchange/<int:ex_id>', views.shiftExchange, name='shift-exchange'),
+    path('shift/<int:sid>', views.shift_edit, name='shift-edit'),
+    path('shift/<int:sid>/edit', views.shift_edit_post, name='shift-edit-post'),
+    path('shift-exchange/<int:ex_id>', views.shiftExchangeRequest, name='shift-exchange-request'),
+    path('shift-exchange/<int:ex_id>/close', views.shiftExchangeRequestClose, name='shift-exchange-close'),
+    path('shift-exchange/<int:ex_id>/finalize', views.shiftExchange, name='shift-exchange'),
     path('shift-upload-csv', views.shifts_upload, name="shift-upload"),
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),
+    # FIXME the following two shift-update might need to be updated/removed in v.1.1.x
     path('shift-update', views.shifts_update, name="shift-update"),
     path('shift-update-post', views.shifts_update_post, name="shift-update-post"),
     path('assets', login_required(views.AssetsView.as_view()), name='assets'),

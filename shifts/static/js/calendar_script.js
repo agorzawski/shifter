@@ -81,6 +81,16 @@ $(document).ready(function () {
            startTime: '08:00', // 8am
            endTime: '18:00' // 6pm
          },],
+      eventClick:  function(info) {
+        info.jsEvent.preventDefault();
+        var eventObj = info.event;
+        $('#modalTitle').html(eventObj.title + " for " + eventObj.extendedProps.slot + " on " + eventObj.start);
+        $('#modalPre').html( "Pre shift comments  : " + eventObj.extendedProps.pre_comment);
+        $('#modalPost').html("Post shift comments : " + eventObj.extendedProps.post_comment);
+        $('#eventUrl').attr('href',eventObj.url);
+        $('#eventEdit').attr('href',"/shift/"+eventObj.id);
+        $('#calendarModal').modal("show");
+      },
       eventLimit: true, // allow 'more' link when too many events
       eventDisplay: 'block',
       eventOrder: "start,id,name,title",

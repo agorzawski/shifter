@@ -185,6 +185,8 @@ def user(request, u=None, rid=None):
     shiftExchanges = ShiftExchange.objects.filter(Q(requestor=member) |
                                                   Q(shifts__shift_for_exchange__member__exact=member)) \
         .order_by('-requested')
+    shiftExchangesLast = ShiftExchange.objects.filter(requestor=member, approver=None).order_by("-requested").first()
+
     # FIXME this one is to clear the 'over select' from the query above that
     shiftExchangesUnique = []
     for se in shiftExchanges:
@@ -199,16 +201,14 @@ def user(request, u=None, rid=None):
         se.save()
         if se.applicable and not se.implemented: pendingRequests += 1
     context['shift_exchanges_requested'] = shiftExchangesUnique
+    context['shiftExchangesLast'] = shiftExchangesLast
+    print(shiftExchangesLast)
     context['exchanges_total'] = pendingRequests
     return render(request, 'user.html', prepare_default_context(request, context))
 
 
 @login_required
 def shiftExchange(request, ex_id=None):
-    # print("-----------------")
-    # print(request.user)
-    # print('proceeding with {}'.format(ex_id))
-    # print("-----------------")
     shiftExchanges = ShiftExchange.objects.filter(id=ex_id, implemented=False)
     if shiftExchanges.count() == 0:
         messages.error(request,
@@ -216,10 +216,9 @@ def shiftExchange(request, ex_id=None):
                        )
         return user(request)
     shift_exchange = shiftExchanges.first()
-    # print(shift_exchange)
     if shift_exchange.approver == request.user:
         perform_exchange_and_save_backup(shift_exchange,
-                                         approver=request.user,
+                                          approver=request.user,
                                          revisionBackup=shift_exchange.backupRevision)
         messages.success(request,
                          "Requested shift exchange is now successfully implemented. If you need to revert it please "
@@ -244,14 +243,46 @@ def shiftExchangeRequest(request, ex_id=None):
     sPair = ShiftExchangePair.objects.create(shift=Shift.objects.get(id=s1ID),
                                              shift_for_exchange=Shift.objects.get(id=s2ID))
     sPair.save()
-    sEx = ShiftExchange()
-    sEx.requestor = request.user
-    sEx.backupRevision = Revision.objects.filter(number=1).first()
-    sEx.requested = timezone.now()
-    sEx.save()
-    sEx.shifts.add(sPair)
-    sEx.save()
-    messages.success(request, "Created the Exchange request {}".format(sEx))
+
+    if ex_id is None:
+        sEx = ShiftExchange()
+        sEx.requestor = request.user
+        sEx.backupRevision = Revision.objects.filter(number=1).first()
+        sEx.requested = timezone.now()
+        sEx.save()
+        sEx.shifts.add(sPair)
+        sEx.save()
+    else:
+        sEx = ShiftExchange.objects.get(id=ex_id)
+        sEx.shifts.add(sPair)
+        sEx.save()
+
+    messages.success(request, "Created/Updated the Exchange request {} with {}".format(sEx, sPair))
+    return HttpResponseRedirect(reverse("shifter:user"))
+
+
+@require_http_methods(["GET"])
+@csrf_protect
+@login_required
+def shiftExchangeRequestClose(request, ex_id=None):
+    sEx = ShiftExchange.objects.get(id=ex_id)
+    if sEx.approver == request.user and not sEx.implemented:
+        # TODO find smarter way of assigning the approver,
+        #  for now just the first from the exchange list
+        approver = sEx.shifts.all()[0].shift_for_exchange.member
+        print(approver)
+        print("======")
+        print(sEx)
+        print("======")
+        sEx.approver = approver
+        sEx.save()
+        messages.success(request, "Closed the Exchange request {}, awaitng for {}".format(sEx, approver))
+    elif sEx.implemented:
+        messages.error(request, "This Exchange is already handled")
+    else:
+        messages.error(request,
+                       "This Exchange can only be handled by {}".format(sEx.approver)
+                       )
     return HttpResponseRedirect(reverse("shifter:user"))
 
 
@@ -488,6 +519,46 @@ def shifts_update_post(request):
                          format(s.count(), d, revToTrim))
     return HttpResponseRedirect(reverse("desiderata.team_view",
                                         kwargs={'team_id': request.user.team.id}))
+
+
+@require_safe
+@login_required
+def shift_edit(request, sid=None):
+    data = {'shift': Shift.objects.get(id=sid),
+            'shiftRoles': ShiftRole.objects.all()}
+    return render(request, "shift_edit.html", prepare_default_context(request, data))
+
+
+@require_http_methods(["POST"])
+@csrf_protect
+@login_required
+def shift_edit_post(request, sid=None):
+    s = Shift.objects.get(id=sid)
+    s.pre_comment = request.POST['preShiftComment']
+    s.post_comment = request.POST['postShiftComment']
+    try:
+        a = request.POST['cancelledLastMinute']
+        s.is_cancelled = True
+    except:
+        s.is_cancelled = False
+    try:
+        a = request.POST['activeShift']
+        s.is_active = True
+    except:
+        s.is_active = False
+    try:
+        s_role_id = int(request.POST['shiftRole'])
+        print(s_role_id)
+        if s_role_id > 0:
+            s.role = ShiftRole.objects.get(id=s_role_id)
+        else:
+            s.role = None
+    except:
+        pass
+    s.save()
+    url = reverse("shifter:shift-edit", kwargs={'sid': sid})
+    messages.success(request, "<a class='href' href='{}'> Shift {} updated successfully! Edit again?</a>".format(url, s))
+    return HttpResponseRedirect(reverse("shifter:index"))
 
 
 @require_safe

@@ -80,6 +80,8 @@ def _create_shift(shift, member, revision=None, permanent=False):
     s.campaign = shift.campaign
     s.date = shift.date
     s.shiftID = shift.shiftID
+    s.is_active = True
+    s.is_cancelled = False
     s.revision = shift.revision if revision is None else revision
     s.csv_upload_tag = shift.csv_upload_tag
     if permanent:

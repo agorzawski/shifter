@@ -1,0 +1,63 @@
+{% extends 'template_main.html'%}
+{% block body %}
+
+{%if request.user.is_staff %}
+<div class="container mb-5 pb-5">
+    <div class="col">
+        <h2>{{shift}}</h2>
+        <form action="{% url 'shifter:shift-edit-post' shift.id %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+            {% csrf_token %}
+
+            <div class="form-select">
+                <label for="shiftRole" class="form-label">Assigned shift role:</label>
+                <select class="form-select" name='shiftRole' id='shiftRole'>
+                    <option value="-1">Default: Member Role - {{shift.member.role}}</option>
+                    {% for sr in shiftRoles %}
+                        <option value="{{sr.id}}" {%if shift.role == sr%} selected {%endif%}>Shift Role - {{sr.name}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <hr class="hr" />
+            <div class="form-floating">
+              <textarea class="form-control" placeholder="Anything to add?" name="preShiftComment" id="preShiftComment"
+                        style="height: 100px">{{shift.pre_comment}}</textarea>
+              <label for="preShiftComment">Pre-shift memo</label>
+            </div>
+
+            <hr class="hr" />
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="activeShift"
+                     id="activeShift" {%if shift.is_active%}checked{%endif%} >
+              <label class="form-check-label" for="activeShift">
+                Is this shift valid and still in schedule? Note: removing will require admin access to undo!
+              </label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="cancelledLastMinute"
+                     id="cancelledLastMinute" {%if shift.is_cancelled%}checked{%endif%}>
+              <label class="form-check-label" for="cancelledLastMinute">
+                Canceled last minute?
+              </label>
+            </div>
+
+            <div class="form-floating">
+              <textarea class="form-control" placeholder="Anything to add?" name="postShiftComment" id="postShiftComment"
+                        style="height: 100px">{{shift.post_comment}}</textarea>
+              <label for="postShiftComment">Post shift/cancellation comment</label>
+            </div>
+
+            <div class="form-floating">
+                <button class="btn btn-primary">Save changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{%else%}
+<div class="container mb-5 pb-5"> <h3>You do not have permission to navigate here! Contact OP group for further assistance.</h3></div>
+{%endif%}
+{% endblock %}
+
+{%  block js %}
+{% endblock %}

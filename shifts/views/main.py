@@ -427,6 +427,46 @@ def shifts_update_post(request):
 
 @require_safe
 @login_required
+def shift_edit(request, sid=None):
+    data = {'shift': Shift.objects.get(id=sid),
+            'shiftRoles': ShiftRole.objects.all()}
+    return render(request, "shift_edit.html", prepare_default_context(request, data))
+
+
+@require_http_methods(["POST"])
+@csrf_protect
+@login_required
+def shift_edit_post(request, sid=None):
+    s = Shift.objects.get(id=sid)
+    s.pre_comment = request.POST['preShiftComment']
+    s.post_comment = request.POST['postShiftComment']
+    try:
+        a = request.POST['cancelledLastMinute']
+        s.is_cancelled = True
+    except:
+        s.is_cancelled = False
+    try:
+        a = request.POST['activeShift']
+        s.is_active = True
+    except:
+        s.is_active = False
+    try:
+        s_role_id = int(request.POST['shiftRole'])
+        print(s_role_id)
+        if s_role_id > 0:
+            s.role = ShiftRole.objects.get(id=s_role_id)
+        else:
+            s.role = None
+    except:
+        pass
+    s.save()
+    url = reverse("shifter:shift-edit", kwargs={'sid': sid})
+    messages.success(request, "<a class='href' href='{}'> Shift {} updated successfully! Edit again?</a>".format(url, s))
+    return HttpResponseRedirect(reverse("shifter:index"))
+
+
+@require_safe
+@login_required
 def shifts_upload(request):
     data = {'campaigns': Campaign.objects.all(),
             'revisions': Revision.objects.filter(merged=False),

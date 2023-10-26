@@ -1,3 +1,24 @@
 <div class='container'>
       <div id='calendar' style="padding-top: 10px;" data-source-shifts="{{event_source}}"  data-source-studies="{%  url 'studies:ajax.get_studies' %}" data-source-holidays="{%  url 'ajax.get_holidays' %}" data-default-date="{{defaultDate}}"></div>
 </div>
+
+<div id="calendarModal" class="modal fade">
+<div class="modal-dialog">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h5 id="modalTitle" class="modal-title"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        {%if request.user.is_staff %}
+        <div  class="modal-body">
+            <p id="modalPre"></p>
+            <p id="modalPost"></p>
+        </div>
+        {%endif%}
+        <div class="modal-footer">
+            {%if request.user.is_staff %} <a id="eventEdit" type="button" class="btn btn-danger" data-dismiss="modal">Edit pre/post messages</a> {%endif%}
+            <a id="eventUrl" type="button" class="btn btn-success" data-dismiss="modal">Continue to shifter's schedule</a>
+        </div>
+    </div>
+</div>
+</div>

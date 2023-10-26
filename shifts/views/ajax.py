@@ -44,14 +44,20 @@ def _get_scheduled_shifts(request: HttpRequest):
         return HttpResponse({}, content_type="application/json", status=500)
     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
-    return Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()) \
-        .filter(member=_get_member(request)).filter(date__gte=start).filter(date__lte=end)
+    filter_dic = {'revision': Revision.objects.filter(valid=True).order_by('-number').first(),
+                  'date__lte': end, 'date__gte':start, 'member': _get_member(request),
+                  'is_cancelled': False, 'is_active': True}
+    return Shift.objects.filter(**filter_dic)
 
 
 def _get_companions_shift(member: Member, base_scheduled_shifts):
     filteredCompanions = []
-    future_companion_shifts = Shift.objects.filter(date__in=[s.date for s in base_scheduled_shifts]) \
-        .filter(revision__in=[s.revision for s in base_scheduled_shifts]) \
+    filter_dic = {'date__in': [s.date for s in base_scheduled_shifts],
+                  'revision__in': [s.revision for s in base_scheduled_shifts],
+                  'role': None,
+                  'is_cancelled': False,
+                  'is_active': True}
+    future_companion_shifts = Shift.objects.filter(**filter_dic) \
         .filter(~Q(member=member))
     future_companion_exact_shifts = [d.start for d in base_scheduled_shifts]
     for d in future_companion_shifts:
@@ -103,7 +109,8 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
     filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns,
-                  'member_id__in': users_requested}
+                  'member_id__in': users_requested,
+                  'is_cancelled': False, 'is_active': True}
 
     scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
     if not all_roles:
@@ -139,7 +146,8 @@ def get_events(request: HttpRequest) -> HttpResponse:
         revision = Revision.objects.get(valid=True, number=revision)
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
 
-    filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns}
+    filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns,
+                  'is_cancelled': False, 'is_active': True}
     if int(team_id) > 0:
         team = Team.objects.get(id=team_id)
         filter_dic['member__team'] = team
@@ -187,7 +195,8 @@ def get_hr_codes(request: HttpRequest) -> HttpResponse:
 
     revision = Revision.objects.filter(valid=True).order_by("-number").first()
 
-    filter_dic = {'date__gte': default_start, 'date__lte': default_end, 'revision': revision, 'member': member}
+    filter_dic = {'date__gte': default_start, 'date__lte': default_end, 'revision': revision, 'member': member,
+                  'is_active': True}
 
     scheduled_shifts = Shift.objects.filter(**filter_dic).order_by("-date")
 
@@ -219,7 +228,8 @@ def get_team_hr_codes(request: HttpRequest) -> HttpResponse:
     data = []
 
     for m in team_members:
-        filter_dic = {'date__gte': default_start, 'date__lte': default_end, 'revision': revision, 'member': m}
+        filter_dic = {'date__gte': default_start, 'date__lte': default_end, 'revision': revision, 'member': m,
+                      'is_active': True}
 
         scheduled_shifts = Shift.objects.filter(**filter_dic).order_by("-date")
 

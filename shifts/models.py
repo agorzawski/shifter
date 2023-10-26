@@ -118,6 +118,7 @@ class ShiftRole(models.Model):
     name = models.CharField(max_length=200)
     abbreviation = models.CharField(max_length=10, default=None)
     priority = models.IntegerField(blank=True, default=99)
+    color_in_calendar = models.CharField(max_length=7, blank=True)
 
     def __str__(self):
         return '{}'.format(self.name)
@@ -191,6 +192,17 @@ class Shift(models.Model):
     role = models.ForeignKey(ShiftRole, blank=True, null=True, on_delete=DO_NOTHING)
     csv_upload_tag = models.CharField(max_length=200, blank=True, null=True,)
 
+    is_cancelled = models.BooleanField(default=False, help_text='Last minute cancellation? IT IS counted for the HR '
+                                                                'code.')
+    is_active = models.BooleanField(default=True, help_text='Leave or early cancellation, IT IS NOT counted for the '
+                                                            'HR code.')
+
+    pre_comment = models.TextField(blank=True, null=True,
+                                   help_text='Text to be displayed in shifters as shift constraint. [Shifters view '
+                                             'ONLY]')
+    post_comment = models.TextField(blank=True, null=True,
+                                    help_text='Summary/comment for the end/post shift time. [Shifters view ONLY]')
+
     class Meta:
         unique_together = (("date", "slot", "member", "role", "campaign", "revision"),)
 
@@ -209,13 +221,21 @@ class Shift(models.Model):
 
         return title
 
+    def get_color_for_calendar(self):
+        if self.role is not None and self.role.color_in_calendar is not None:
+            return self.role.color_in_calendar
+        return self.slot.color_in_calendar
+
     def get_shift_as_json_event(self) -> dict:
         event = {'id': self.id,
                  'title': self.get_shift_title(),
                  'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
                  'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
                  'url': reverse('shifter:users') + f'?u={self.member.id}',
-                 'color': self.slot.color_in_calendar,
+                 'slot': self.slot.name,
+                 'pre_comment': self.pre_comment,
+                 'post_comment': self.post_comment,
+                 'color': self.get_color_for_calendar(),
                  }
         if 'ShiftLeader' in self.member.role.name:
             event['textColor'] = '#E9E72D'
@@ -227,7 +247,10 @@ class Shift(models.Model):
                  'start': self.get_proper_times(self.Moment.START).strftime(format=DATE_FORMAT_FULL),
                  'end': self.get_proper_times(self.Moment.END).strftime(format=DATE_FORMAT_FULL),
                  'url': reverse('shifter:users') + f'?u={self.member.id}',
-                 'color': self.slot.color_in_calendar,
+                 'slot': self.slot.name,
+                 'pre_comment': self.pre_comment,
+                 'post_comment': self.post_comment,
+                 'color': self.get_color_for_calendar(),
                  'borderColor': 'black',
                  'textColor':'black',
                  }

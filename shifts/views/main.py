@@ -135,14 +135,22 @@ def todays(request):
     for one in activeShift['currentTeam']:
         nowShift = one
     if nowShift is not None:
+        # back to back shifts
         nextTeam = Shift.objects.filter(revision=nowShift.revision,
                                         date=nowShift.end,
                                         slot__hour_start=nowShift.slot.hour_end)
-        nextSlot = None
-        for one in nextTeam:
-            nextSlot = one.slot
-        if nextSlot is not None:
-            context['nextSlot'] = nextSlot
+        if not len(nextTeam):
+            # same day, but different time (returns more than only one slot...)
+            nextTeam = Shift.objects.filter(revision=nowShift.revision,
+                                            date=nowShift.end,
+                                            slot__hour_start__gt=nowShift.slot.hour_start,
+                                            role=None).order_by('slot__hour_start')
+            if not len(nextTeam):
+                # next day with the overnight gap (returns more than one slot...)
+                nextTeam = Shift.objects.filter(revision=nowShift.revision,
+                                                date=nowShift.end+datetime.timedelta(days=1),
+                                                role=None).order_by('slot__hour_start')
+        if len(nextTeam):
             context['nextTeam'] = nextTeam
     return render(request, 'today.html', prepare_default_context(request, context))
 

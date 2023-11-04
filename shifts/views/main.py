@@ -254,7 +254,6 @@ def shiftExchangeRequestCancel(request, ex_id=None):
     return HttpResponseRedirect(reverse("shifter:user"))
 
 
-
 @require_http_methods(["POST"])
 @csrf_protect
 @login_required

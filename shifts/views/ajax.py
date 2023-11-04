@@ -276,7 +276,8 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
         memberSummary = [m.name, l]
         for oneSlot in validSlots:
             memberSummary.append(result.get(oneSlot.abbreviation, '--'))
-        teamMembersSummary.append(memberSummary)
+        if memberSummary[1] > 0:
+            teamMembersSummary.append(memberSummary)
 
     header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end - datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
 
@@ -284,6 +285,8 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
                                     'header': header,
                                     'date-start': start.strftime(DATE_FORMAT_FULL),
                                     'date-end': end.strftime(DATE_FORMAT_FULL),
+                                    'slots': [one.__str__() for one in validSlots],
+                                    'userdata': [{} for one in teamMembersSummary],
                                     'revision': revision.__str__()}), content_type="application/json")
 
 

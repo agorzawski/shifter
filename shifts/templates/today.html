@@ -11,7 +11,7 @@
     <div class="row justify-content-center">
         <h1 class="text-center mb-3"> {{currentTeam.0.campaign}}</h1>
         <hr>
-        <h3 class="text-center mb-3">{{today.date}} {{today.time}}  <span class="badge bg-info text-dark">SID: <strong>{{shiftID}}</strong> </span> </h3>
+        <h4 class="text-center mb-3">{{today.date}} {{today.time}}  <span class="badge bg-dark">SID: <strong>{{shiftID}}</strong> </span> </h4>
     </div>
 
     {% if not activeSlot %}
@@ -22,7 +22,6 @@
         </div>
     {% endif %}
 
-    <hr>
 
     <div class="row justify-content-center">
         {%  for slot in activeSlots %}
@@ -36,7 +35,7 @@
     <h5 class="text-center mb-3">
        Next:  <span class="fa-stack fa-x"><i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
             <i class="fa-solid fa-hourglass-1 fa-stack-1x fa-inverse"></i></span>
-        {{nextSlot}} {%for one in nextTeam%}{{one.member}}, {%endfor%}</h5>
+        {%for one in nextTeam%}<span class="badge" style="background-color:{{one.slot.color_in_calendar}};color:#FFFFFF;">{{one.member}}</span> {%endfor%}</h5>
 
     <hr>
 

@@ -228,5 +228,6 @@ class ShiftExchangeAdmin(admin.ModelAdmin):
         'requested',
         'approver',
         'approved',
+        'tentative',
         'implemented',
     ]

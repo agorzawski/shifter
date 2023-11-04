@@ -298,7 +298,7 @@ class ShiftExchangePair(models.Model):
 class ShiftExchange(models.Model):
     requestor = models.ForeignKey(Member, on_delete=DO_NOTHING)
     requested = models.DateTimeField()
-
+    tentative = models.BooleanField(default=True)
     approver = models.ForeignKey(Member, blank=True, null=True, on_delete=DO_NOTHING, related_name='approver')
     approved = models.DateTimeField(blank=True, null=True, )
 

@@ -218,7 +218,9 @@
                         <div class="row justify-content-center m-4">
                             <div class="col">
                             <h2 class="mb-3">New Request:</h2>
-                                <form action="{% url 'shifter:shift-exchange-request' %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+                                {%if shiftExchangesLast != None%}
+                                <form action="{% url 'shifter:shift-exchange-request' shiftExchangesLast.id %}" method="POST" enctype="multipart/form-data" class="form-horizontal">{%else%}
+                                <form action="{% url 'shifter:shift-exchange-request'%}" method="POST" enctype="multipart/form-data" class="form-horizontal">{%endif%}
                                     {% csrf_token %}
                                     <div class="col">
                                         <div class="mb-3">
@@ -267,21 +269,29 @@
                                                     <p><span class="badge text-bg-light">{{onePair}}</span></p>
                                                     {%endfor%}
                                             </dd>
-                                                {%if oneSE.approver == None%}
-                                                <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange-close' shiftExchangesLast.id %}>Close request
+                                            {%if oneSE.tentative%}
+                                                <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange-close' oneSE.id %}>Close request and await for approval
                                                 <span class="fa-stack">
                                                 <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
-                                                    <i class="fa-solid fa-hourglass-1 fa-stack-1x fa-inverse"></i>
-                                                </span> </a> {%endif%}
+                                                    <i class="fa-solid fa-bolt fa-stack-1x fa-inverse"></i>
+                                                </span> </a>
+                                            {%endif%}
+                                            {%if not oneSE.implemented%}
+                                               <a class="btn btn-outline-danger btn-light" href={% url 'shifter:shift-exchange-cancel' oneSE.id %}>Cancel this request (cannot be undone!)
+                                                <span class="fa-stack">
+                                                <i class="fa-solid fa-circle fa-stack-2x" ></i>
+                                                    <i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i>
+                                                </span> </a>
+                                            {%endif%}
 
                                         </dl>
                                         <dl class="row">
                                             <dd class="col-sm-1">
                                                 {%if oneSE.implemented%}<span class="fa-stack">
-                                                <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
-                                                <i class="fa-solid fa-database fa-stack-1x fa-inverse"></i>
+                                                <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754">{{oneSE.approver.first_name}}</i>
+                                                <i class="fa-solid fa-thumbs-up fa-stack-1x fa-inverse"></i>
                                                 </span>{%endif%}
-                                                {%if not oneSE.implemented and oneSE.applicable %}
+                                                {%if not oneSE.implemented and oneSE.applicable and not oneSE.tentative%}
                                                 {%if oneSE.approver == member%}
                                                 <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange' oneSE.id %}>Approve
                                                 <span class="fa-stack">

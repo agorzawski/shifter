@@ -8,3 +8,4 @@ class StudiesConfig(AppConfig):
     def ready(self):
         study = self.get_model("StudyRequest")
         watson.register(study)
+        import studies.signals

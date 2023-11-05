@@ -11,6 +11,7 @@
 
 
 {% block body %}
+{% load notifications_tags %}
 <div class="container-fluid mb-5 pb-5">
     <div class="row justify-content-center">
         <h2 class="text-center mb-3"><member_id data-id="{{ member.id }}">{{member}}'s personal space</member_id></h2>
@@ -35,6 +36,14 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link position-relative" id="inconsistencies-tab" data-bs-toggle="tab" data-bs-target="#inconsistencies-tab-pane" type="button" role="tab" aria-controls="inconsistencies-tab-pane" aria-selected="false">Inconsistencies</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link position-relative" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-tab-pane" type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false">
+                           <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {% notifications_unread %}
+                            <span class="visually-hidden">some invisible block</span>
+                        </span>
+                        Notifications</button>
                 </li>
             </ul>
             <div class="tab-content" id="user_tabs_content">
@@ -203,6 +212,29 @@
                         </div>
                     </div>
                 </div>
+                <!-- Tab displaying the system notifications -->
+                <div class="tab-pane fade" id="notify-tab-pane" role="tabpanel" aria-labelledby="links-tab" tabindex="5">
+                    <div class='container'>
+                        <li class="row justify-content-center m-4">
+                            <a id="clearNotify" class="btn btn-primary" href="/inbox/notifications/api/unread_list/?mark_as_read=true" target="_blank">Clear notifications</a>
+                        </li>
+                            <div class="list-group">
+                              {% for notification in  member.notifications.unread %}
+                                <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                  <h5 class="mb-1">
+                                      {% if notification.emailed %} <i class="fa-solid fa-envelope-circle-check"></i>{%else%}
+                                        <i class="fa-solid fa-envelope-open-text"></i>{%endif%}
+                                      Notification from <strong>{{ notification.actor }}</strong> on <strong>{{ notification.verb }}</strong></h5>
+                                  <small>time.since.notification</small>
+                                </div>
+                                    <p class="mb-1"> <pre><code>{{ notification.description }}</code></pre></p>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -245,5 +277,14 @@
     $('#displayed_revision').select2();
     fillInconsistenciesDiv(-1);
 });</script>
+<script>
+    $('a#clearNotify').on('click', function(e) {
+    e.preventDefault();
+    var url = $(this).attr('href');
+    $.get(url, function() {
+        location.reload();
+    });
+});
+</script>
 
 {% endblock %}

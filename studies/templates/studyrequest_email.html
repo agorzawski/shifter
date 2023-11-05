@@ -1,0 +1,23 @@
+Dear {{ study.member }}, {% for one in col %}{{one}}, {%endfor%}
+
+This is an automatic message regarding the creation or an update of your study
+{{ domain }}{%url 'studies:single_study_view' sid=study.id %}
+
+--
+{{ study.title }} initially requested by {{study.member}}
+
+{{study.description}}
+
+The current state is *{{studyState}}*
+The current slot assigned is {{study.slot_start}}
+--
+
+Reminder of the *Study Request states*:
+- Planned: as planned in the future, no specific date or slot,
+- Requested: requested to be placed in some time slot soon,
+- Booked: booked and confirmed with the actual slot,
+- Done/Cancelled: possible outcome.
+
+Thanks!
+--
+beam.commissioning@ess.eu

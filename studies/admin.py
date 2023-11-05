@@ -46,7 +46,7 @@ class StudyRequestAdmin(admin.ModelAdmin):
     list_display = ('title', 'member', 'booking_created', 'slot_start', 'priority', 'state',)
     list_filter = ['booking_created', 'state', 'priority', 'member__team']
 
-    ordering = ['booking_created']
+    ordering = ['-booking_created']
     actions = [make_priority,
                push_24h_forward,
                close_studies_DONE,

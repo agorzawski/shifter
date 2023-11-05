@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'guardian',
     'watson',
+    'notifications',
+    'django_cron',
 ]
 
 MIDDLEWARE = [
@@ -56,6 +58,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'watson.middleware.SearchContextMiddleware',
+]
+
+
+CRON_CLASSES = [
+    'shifter.cron.MyCronJob',
+    # ...
 ]
 
 AUTHENTICATION_BACKENDS = (

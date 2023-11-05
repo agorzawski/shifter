@@ -1,5 +1,5 @@
 {%  load static %}
-
+{% load notifications_tags %}
 <nav class="navbar navbar-expand-lg navbar-light {%  if SHIFTER_TEST_INSTANCE %}bg-danger{% else %}bg-light{% endif %}">
     <div class="container-fluid">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#shifterNavBar" aria-controls="shifterNavBar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,6 +65,7 @@
                 <li class="nav-item dropdown dropstart">
                     <a class="nav-link dropdown-toggle d-flex align-items-center m-0 p-0 ps-3" href="#" id="navbarDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false" >
                         <img class="rounded-circle" loading="lazy" height="35" src={% if shift.member.photo|length > 0 %} "data:image/gif;base64,{{shift.member.photo}}" {%  else %} {% static 'img/anonymous.png'%} {% endif %}/>
+                        {% live_notify_badge badge_class="badge" %}
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                         <li><a class="dropdown-item" href="{% url 'user' %}">My Shifts</a></li>

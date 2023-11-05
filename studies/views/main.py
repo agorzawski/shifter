@@ -6,6 +6,8 @@ import django.contrib.messages as messages
 from django.views import View
 from django.utils import timezone
 
+from shifter.notifications import notificationService
+
 
 def page_not_found(request, exception):
     return render(request, "404.html", {})
@@ -33,6 +35,7 @@ class StudyView(View):
             post.collaborators.set(col)
             message = "Study Booking {} for {} on {}, is added!".format(post.title, post.member.first_name, post.booking_created)
             messages.success(request, message)
+            notificationService.notify(post)
         else:
             message = "Study form is not valid, please correct."
             messages.success(request, message)

@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+import notifications.urls
 
 urlpatterns = [
     path('planning/', include('shifts.urls.main')),
@@ -23,5 +24,6 @@ urlpatterns = [
     path('ajax/', include('shifts.urls.ajax')),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),  # new
-    path('desiderata/', include('shifts.urls.desiderata'))
+    path('desiderata/', include('shifts.urls.desiderata')),
+    path('inbox/notifications/', include(notifications.urls, namespace='notifications')),
 ]

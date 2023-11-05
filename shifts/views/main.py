@@ -5,7 +5,6 @@ from django.shortcuts import render, get_object_or_404, Http404, redirect
 from django.core.exceptions import PermissionDenied
 
 from django.template.loader import render_to_string
-from django.urls import reverse
 import django.contrib.messages as messages
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods, require_safe
@@ -24,9 +23,11 @@ import phonenumbers
 from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
-from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
+from shifts.workinghours import find_working_hours
 
 from django.utils import timezone
+from shifter.notifications import notificationService, NewShiftsUpload
+
 
 
 @require_safe
@@ -177,6 +178,7 @@ def user(request, u=None, rid=None):
     context['hide_extra_role_selection'] = True
     context['show_companion'] = True
     context['the_url'] = reverse('ajax.get_user_events')
+    context['unread_notifications'] = member.notifications.unread()
     if rid is not None:
         requested_revision = get_object_or_404(Revision, number=rid)
         revision = Revision.objects.filter(valid=True).order_by("-number").first()
@@ -497,6 +499,8 @@ def shifts_upload_post(request):
     if int(request.POST['role']) > 0:
         defaultShiftRole = ShiftRole.objects.filter(id=request.POST['role']).first()
     shiftRole = defaultShiftRole
+    uploadSuccessful = True
+    affectedMembers = []
     try:
         csv_file = request.FILES["csv_file"]
         if not csv_file.name.endswith('.csv'):
@@ -549,6 +553,7 @@ def shifts_upload_post(request):
                     shift.csv_upload_tag = csv_file.name
                     totalLinesAdded += 1
                     shift.save()
+                    affectedMembers.append(member)
                     shiftRole = defaultShiftRole
                 except ObjectDoesNotExist as e:
                     # print(e)
@@ -556,9 +561,11 @@ def shifts_upload_post(request):
                     messages.error(request, 'Could not find system member for ({}) / slot ({}), in line {} column {}.\
                                     Skipping for now Check your file'
                                    .format(fields[0], one, lineIndex, dayIndex))
+                    uploadSuccessful = False
 
                 except IntegrityError as e:
                     # print(e)
+                    uploadSuccessful = False
                     messages.error(request, 'Could not add member {} for {} {}, \
                                             Already in the system for the same \
                                             role: {}  campaign: {} and revision {}'
@@ -566,8 +573,12 @@ def shifts_upload_post(request):
 
     except Exception as e:
         messages.error(request, "Unable to upload file. Critical error, see {}".format(e))
+        uploadSuccessful = False
 
-    messages.success(request, "Uploaded and saved {} shifts provided with {}".format(totalLinesAdded, csv_file.name))
+    if uploadSuccessful:
+        notificationService.notify(NewShiftsUpload(revision, campaign, set(affectedMembers),
+                                                   request.user, (date, shiftFullDate)))
+        messages.success(request, "Uploaded and saved {} shifts provided with {}".format(totalLinesAdded, csv_file.name))
     return HttpResponseRedirect(reverse("shifter:shift-upload"))
 
 

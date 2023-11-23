@@ -249,8 +249,9 @@ def shiftExchangeRequestCancel(request, ex_id=None):
     if shift_exchange.requestor == request.user and not shift_exchange.implemented:
         shift_exchange.delete()
         messages.success(request, "Shift exchange request {} deleted".format(ex_id))
-    messages.error(request, "You are not authorised to cancel that request conntact {} instead".
-                     format(shift_exchange.requestor))
+    else:
+        messages.error(request, "You are not authorised to cancel that request contact {} instead".
+                                format(shift_exchange.requestor))
     return HttpResponseRedirect(reverse("shifter:user"))
 
 

@@ -292,11 +292,15 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def get_shifts_for_exchange(request: HttpRequest) -> HttpResponse:
-    member = request.user
-    futureMy = Shift.objects.filter(member=member, date__gte=timezone.now()).order_by("date")
-    futureOther = Shift.objects.filter(~Q(member=member), date__gte=timezone.now()).order_by("date")
-    toReturn = [s.get_simplified_as_json() for s in futureMy]
+    member = _get_member(request)
+    revision = _get_revision(request)
+    toReturn = []
+    if request.GET.get('option', 'my') == 'my':
+        futureMy = Shift.objects.filter(revision=revision, member=member, date__gte=timezone.now()).order_by("date")
+        toReturn = [s.get_simplified_as_json() for s in futureMy]
     if request.GET.get('option', 'my') == 'them':
+        futureOther = Shift.objects.filter(~Q(member=member),revision=revision,
+                                           date__gte=timezone.now()).order_by("date")
         toReturn = [s.get_simplified_as_json() for s in futureOther]
     return HttpResponse(json.dumps(toReturn), content_type="application/json")
 

@@ -280,6 +280,10 @@ def shiftExchangeRequestCreateOrUpdate(request, ex_id=None):
         sEx.save()
     else:
         sEx = ShiftExchange.objects.get(id=ex_id)
+        if sEx.approver != otherShift.member:
+            messages.error(request, "Cannot add the Exchange request {} with {}. Current request can be updated only for {}"
+                           .format(sEx, otherShift.member, sEx.approver))
+            return HttpResponseRedirect(reverse("shifter:user"))
         sEx.shifts.add(sPair)
         sEx.save()
 

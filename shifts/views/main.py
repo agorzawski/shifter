@@ -25,6 +25,7 @@ from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, find_working_hours
+from shifts.exchanges import is_valid_for_hours_constraints, perform_exchange_and_save_backup
 
 from django.utils import timezone
 
@@ -162,6 +163,8 @@ def user(request, u=None, rid=None):
         member = request.user
     else:
         member = Member.objects.filter(id=u).first()
+    ss = Shift.objects.filter(revision=Revision.objects.filter(valid=True).order_by('-number').first()).filter(
+        member=member)
 
     today = datetime.datetime.now()
     year = today.year
@@ -187,7 +190,124 @@ def user(request, u=None, rid=None):
                          "On top of the current schedule, you're seeing revision '{}'".format(requested_revision))
         context['requested_future_rev_id'] = rid
 
+    shiftExchanges = ShiftExchange.objects.filter(Q(requestor=member) |
+                                                  Q(shifts__shift_for_exchange__member__exact=member)) \
+        .order_by('-requested')
+    shiftExchangesLast = ShiftExchange.objects.filter(requestor=member, tentative=True).order_by("-requested").first()
+    # FIXME this one is to clear the 'over select' from the query above that
+    shiftExchangesUnique = []
+    for se in shiftExchanges:
+        if se not in shiftExchangesUnique:
+            shiftExchangesUnique.append(se)
+    pendingRequests = 0
+    for se in shiftExchangesUnique:
+        bb = is_valid_for_hours_constraints(shiftExchange=se, member=member,
+                                            baseRevision=Revision.objects.filter(valid=True).order_by(
+                                                "-number").first())
+        se.applicable = bb[0]
+        se.save()
+        if se.applicable and not se.implemented: pendingRequests += 1
+    context['shift_exchanges_requested'] = shiftExchangesUnique
+    context['shiftExchangesLast'] = shiftExchangesLast
+    context['exchanges_total'] = pendingRequests
     return render(request, 'user.html', prepare_default_context(request, context))
+
+
+@login_required
+def shiftExchangePerform(request, ex_id=None):
+    shiftExchanges = ShiftExchange.objects.filter(id=ex_id, implemented=False)
+    if shiftExchanges.count() == 0:
+        messages.error(request,
+                       "This shift exchange either does not exits or was already finalised!"
+                       )
+        return user(request)
+    shift_exchange = shiftExchanges.first()
+    if shift_exchange.approver == request.user and not shift_exchange.tentative:
+        perform_exchange_and_save_backup(shift_exchange,
+                                         approver=request.user,
+                                         revisionBackup=shift_exchange.backupRevision)
+        messages.success(request,
+                         "Requested shift exchange is now successfully implemented. If you need to revert it please "
+                         "contact rota maker.")
+    else:
+        messages.error(request,
+                       "This Exchange can only be approved by {}".format(shift_exchange.approver)
+                       )
+    return HttpResponseRedirect(reverse("shifter:user"))
+
+
+@login_required
+def shiftExchangeRequestCancel(request, ex_id=None):
+    print('got shiftEx to delete')
+    shiftExchanges = ShiftExchange.objects.filter(id=ex_id, implemented=False)
+    if shiftExchanges.count() == 0:
+        messages.error(request,
+                       "This shift exchange either does not exits or was already finalised!"
+                       )
+        return user(request)
+    shift_exchange = shiftExchanges.first()
+    if shift_exchange.requestor == request.user and not shift_exchange.implemented:
+        shift_exchange.delete()
+        messages.success(request, "Shift exchange request {} deleted".format(ex_id))
+    else:
+        messages.error(request, "You are not authorised to cancel that request contact {} instead".
+                                format(shift_exchange.requestor))
+    return HttpResponseRedirect(reverse("shifter:user"))
+
+
+@require_http_methods(["POST"])
+@csrf_protect
+@login_required
+def shiftExchangeRequestCreateOrUpdate(request, ex_id=None):
+    s1ID = int(request.POST.get("futureMy", -1))
+    s2ID = int(request.POST.get("futureOther", -1))
+    if s1ID < 1 or s2ID < 1:
+        messages.error(request, "There was an issue with the selected shifts")
+        return HttpResponseRedirect(reverse("shifter:user"))
+
+    otherShift = Shift.objects.get(id=s2ID)
+    sPair = ShiftExchangePair.objects.create(shift=Shift.objects.get(id=s1ID),
+                                             shift_for_exchange=otherShift)
+    sPair.save()
+
+    if ex_id is None:
+        sEx = ShiftExchange()
+        sEx.requestor = request.user
+        sEx.approver = otherShift.member
+        sEx.backupRevision = Revision.objects.filter(number=1).first()
+        sEx.requested = timezone.now()
+        sEx.save()
+        sEx.shifts.add(sPair)
+        sEx.save()
+    else:
+        sEx = ShiftExchange.objects.get(id=ex_id)
+        if sEx.approver != otherShift.member:
+            messages.error(request, "Cannot add the Exchange request {} with {}. Current request can be updated only for {}"
+                           .format(sEx, otherShift.member, sEx.approver))
+            return HttpResponseRedirect(reverse("shifter:user"))
+        sEx.shifts.add(sPair)
+        sEx.save()
+
+    messages.success(request, "Created/Updated the Exchange request {} with {}".format(sEx, sPair))
+    return HttpResponseRedirect(reverse("shifter:user"))
+
+
+@require_http_methods(["GET"])
+@csrf_protect
+@login_required
+def shiftExchangeRequestClose(request, ex_id=None):
+    sEx = ShiftExchange.objects.get(id=ex_id)
+    if sEx.requestor == request.user and sEx.tentative:
+        sEx.tentative = False
+        sEx.save()
+        messages.success(request, "Closed the Exchange request {}, now awaiting for {}".format(sEx, sEx.approver))
+    elif not sEx.tentative or sEx.implemented:
+        messages.error(request, "This Exchange is already handled")
+    else:
+        messages.error(request,
+                       "This Exchange can only be handled by {}".format(sEx.approver)
+                       )
+    return HttpResponseRedirect(reverse("shifter:user"))
 
 
 @login_required()

@@ -45,8 +45,7 @@ class ActiveShift(TestCase):
     }
 
     def setUp(self):
-        testShifts, campaign, revision = setup_schedule()
-        create_test_shifts(slotsMembersDates=testShifts, campaign=campaign, revision=revision)
+        make_test_schedule()
 
     def test_NWH_with_code_A_with_NWH_OP_TRUE_rest_FALSE(self):
         self.check(self.testCases["caseInNWH"])

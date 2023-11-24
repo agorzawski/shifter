@@ -1,5 +1,7 @@
 """
-A common part for many test, a standard test
+A common part for many test.
+Elaborated schedule that contains rotations, many users and many slots.
+Methods for making full schedule provided at hand, along dedicated methods for roles, slots, shitIds
 """
 from django.db import IntegrityError
 
@@ -11,6 +13,61 @@ import pytz
 FUNNY_SHIFT_LEADER = "FunnyShiftLeader"
 GRUMPY_SHIFT_LEADER = 'GrumpyShiftLeader'
 POOR_SHIFT_LEADER= 'PoorShiftLeaderGuy'
+
+
+def make_test_schedule(printPlan=False):
+    """
+    Elaborated schedule that contains rotations, many users and many slots.
+    Methods for making full schedule provided at hand, along dedicated methods for roles, slots, shitIds
+
+    --->> TEST SCHEDULE <<---
+    FunnyShiftLeader 2022-04-30 Normal Working Hours (08:00:00 - 16:30:00)
+
+    FunnyShiftLeader 2022-05-01 Morning (06:00:00 - 14:00:00)
+    SomePoorOperator 2022-05-01 Morning (06:00:00 - 14:00:00)
+    GrumpyShiftLeader 2022-05-01 Afternoon (14:00:00 - 22:00:00)
+    AnotherPoorOperator 2022-05-01 Afternoon (14:00:00 - 22:00:00)
+    PoorShiftLeaderGuy 2022-05-01 Night (22:00:00 - 06:00:00)
+    UnknownPoorOperator 2022-05-01 Night (22:00:00 - 06:00:00)
+    OfficeHoursEmployee 2022-05-01 Normal Working Hours (08:00:00 - 16:30:00)
+
+    FunnyShiftLeader 2022-05-03 Morning (06:00:00 - 14:00:00)
+    GrumpyShiftLeader 2022-05-03 Afternoon (14:00:00 - 22:00:00)
+
+    OfficeHoursEmployee 2022-05-03 Normal Working Hours (08:00:00 - 16:30:00)
+    OfficeHoursEmployee 2022-05-04 Normal Working Hours (08:00:00 - 16:30:00)
+
+    FunnyShiftLeader 2022-05-10 Morning (06:00:00 - 14:00:00)
+    GrumpyShiftLeader 2022-05-10 Afternoon (14:00:00 - 22:00:00)
+    PoorShiftLeaderGuy 2022-05-10 Night (22:00:00 - 06:00:00)
+    OfficeHoursEmployee 2022-05-10 Normal Working Hours (08:00:00 - 16:30:00)
+
+    FunnyShiftLeader 2022-05-11 Morning (06:00:00 - 14:00:00)
+    GrumpyShiftLeader 2022-05-11 Afternoon (14:00:00 - 22:00:00)
+    PoorShiftLeaderGuy 2022-05-11 Night (22:00:00 - 06:00:00)
+    OfficeHoursEmployee 2022-05-11 Normal Working Hours (08:00:00 - 16:30:00)
+
+    FunnyShiftLeader 2022-05-12 Morning (06:00:00 - 14:00:00)
+    GrumpyShiftLeader 2022-05-12 Afternoon (14:00:00 - 22:00:00)
+    PoorShiftLeaderGuy 2022-05-12 Night (22:00:00 - 06:00:00)
+    OfficeHoursEmployee 2022-05-12 Normal Working Hours (08:00:00 - 16:30:00)
+
+    GrumpyShiftLeader 2022-05-13 Morning (06:00:00 - 14:00:00)
+    PoorShiftLeaderGuy 2022-05-13 Normal Working Hours (08:00:00 - 16:30:00)
+
+    GrumpyShiftLeader 2022-05-14 Morning (06:00:00 - 14:00:00)
+    GrumpyShiftLeader 2022-05-15 Morning (06:00:00 - 14:00:00)
+    GrumpyShiftLeader 2022-05-16 Morning (06:00:00 - 14:00:00)
+    """
+    testShifts, campaign, revision = setup_schedule()
+    create_test_shifts(slotsMembersDates=testShifts, campaign=campaign, revision=revision)
+
+    if printPlan:
+        print("=========================")
+        print('--->> TEST SCHEDULE <<---')
+        for shift in Shift.objects.all():
+            print(shift)
+        print("=========================")
 
 
 def setup_schedule():

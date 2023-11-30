@@ -5,7 +5,7 @@ Prototype of the shifter-centralised notification implementation and classes.
 from abc import ABC, abstractmethod
 
 from django.template.loader import render_to_string
-from shifts.models import Shift, Revision, Member
+from shifts.models import Shift, Revision, Member, ShiftExchange
 from studies.models import StudyRequest
 from django.core.mail import send_mail
 
@@ -25,6 +25,7 @@ class NotificationService(ABC):
     - StudyRequest - sent to Study Leader and Collaborators of the SR,
     - Revision - sent when new version is available with 'ready_for_preview==True',
     """
+
     #  TODO fix the url to be dynamic. There is no request context at this moment (or any other)
     def __init__(self, name, domain="https://shifter.esss.lu.se"):
         self._name = name
@@ -53,7 +54,7 @@ class NotificationService(ABC):
         pass
 
     def notify(self, event) -> int:
-        if isinstance(event, Shift) or isinstance(event, NewShiftsUpload):
+        if isinstance(event, (Shift, NewShiftsUpload, ShiftExchange)):
             return self._triggerShiftNotification(event)
         elif isinstance(event, Revision):
             if event.ready_for_preview:
@@ -101,20 +102,20 @@ class EmailNotifier(NotificationService):
     """ Simple Email creator, notifier and sender, using native Django send_mail and django-notification-hq"""
     DEFAULT_NO_REPLY = 'noreply@ess.eu'
 
-    def _notify_internal_and_external(self, actor,  emailSubject, emailBody, affectedMembers, target=None):
+    def _notify_internal_and_external(self, actor, emailSubject, emailBody, affectedMembers, target=None):
         # sends the Django notifications
         notify.send(actor, recipient=affectedMembers, target=target, verb=emailSubject,
                     description=emailBody, emailed=True)
         # sends the email
         # FIXME maybe replace with the cron/job to sent 'unread' notifications (once a day)
         send_mail(emailSubject, emailBody, self.DEFAULT_NO_REPLY, [one.email for one in affectedMembers],
-                  fail_silently=False,)
+                  fail_silently=False, )
 
     def _triggerShiftNotification(self, event):
         if isinstance(event, Shift):
             pass
 
-        if isinstance(event, NewShiftsUpload) and event.revision.valid: # not valid revisions go with another notify
+        if isinstance(event, NewShiftsUpload) and event.revision.valid:  # not valid revisions go with another notify
             emailSubject = '[shifter] MAIN ROTA updated'
             emailBody = render_to_string('shiftsupload_email.html', {"campaign": event.campaign,
                                                                      "revision": event.revision,
@@ -127,17 +128,41 @@ class EmailNotifier(NotificationService):
                                                emailSubject=emailSubject, emailBody=emailBody,
                                                affectedMembers=event.members)
 
-        # isinstance(event, ShiftExchange):
-        #     pass
+        if isinstance(event, ShiftExchange):
+            sExId = event.id
+            if event.tentative and event.applicable:
+                emailSubject = '[shifter] Shift Exchange (#{}) REQUEST'.format(sExId)
+                emailBody = render_to_string('shiftexchange_email.html', {"approve": event.approver,
+                                                                          "requestor": event.requestor,
+                                                                          "shifts": event.shifts.all(),
+                                                                          "sExId": sExId
+                                                                          })
+
+                self._notify_internal_and_external(actor=event.approver,
+                                                   target=event,
+                                                   emailSubject=emailSubject, emailBody=emailBody,
+                                                   affectedMembers=[event.approver, event.requestor])
+            elif event.applicable:
+                emailSubject = '[shifter] Shift Exchange (#{}) CONFIRMATION'.format(sExId)
+                emailBody = render_to_string('shiftexchangeconfirmation_email.html', {"approve": event.approver,
+                                                                                      "requestor": event.requestor,
+                                                                                      "shifts": event.shifts.all(),
+                                                                                      "sExId": sExId
+                                                                                      })
+                self._notify_internal_and_external(actor=event.approver,
+                                                   target=event,
+                                                   emailSubject=emailSubject, emailBody=emailBody,
+                                                   affectedMembers=[event.approver, event.requestor])
 
     def _triggerRevisionNotification(self, revision):
         emailSubject = "[shifter] NEW REVISION"
-        emailBody = render_to_string('shiftsnewrevision_email.html', {"revision": revision,})
+        emailBody = render_to_string('shiftsnewrevision_email.html', {"revision": revision, })
         #  TODO Fix AnonymousUser. Seems like there is no good option to pass the actual user
         self._notify_internal_and_external(actor=Member.objects.get(username="AnonymousUser"),
                                            target=revision,
                                            emailSubject=emailSubject, emailBody=emailBody,
-                                           affectedMembers=list(set([one.member for one in Shift.objects.filter(revision=revision)])))
+                                           affectedMembers=list(
+                                               set([one.member for one in Shift.objects.filter(revision=revision)])))
 
     def _triggerStudyRequestNotification(self, study):
 

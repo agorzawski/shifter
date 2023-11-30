@@ -280,68 +280,63 @@
                                 <hr>
                                 <h2 class="mb-3">Shift exchange requests</h2>
                                 <div class="accordion" id="accordionShiftExchanges">
-                                {% if exchanges_total == 0 %}
-                                    <p>No exchanges in the current planning</p>
-                                {% else %}
-                                    {% for oneSE in shift_exchanges_requested%}
-                                      <div class="accordion-item">
-                                        <h2 class="accordion-header" id="headingOne">
-                                          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{oneSE.id}}" aria-expanded="true" aria-controls="collapse{{oneSE.id}}">
-                                            {{oneSE.requestor}} <br> <small>&nbsp;requested on {{oneSE.requested_date}}</small>&nbsp;
-                                              <span class="badge text-bg-{%if oneSE.implemented%}success">IMPLEMENTED{%else%}primary">NOT IMPLEMENTED{%endif%}</span>&nbsp;
-                                              <span class="badge text-bg-{%if oneSE.applicable%}success">APPLICABLE{%else%}danger">NOT APPLICABLE{%endif%}</span>
-                                          </button>
-                                        </h2>
-                                        <div id="collapse{{oneSE.id}}" class="accordion-collapse collapse {%if oneSE.applicable and not oneSE.implemented%}show{%endif%}" aria-labelledby="heading{{oneSE.id}}" data-bs-parent="#accordionShiftExchanges">
-                                        <div class="accordion-body">
-                                        <dl class="row">
-                                            <dt class="col-sm-3">{{oneSE.requestor}} <br> <small> requested on {{oneSE.requested_date}}</small> <br>
-                                            </dt>
-                                            <dd class="col-sm-8">
-                                                    {% for onePair in oneSE.shifts.all%}
-                                                    <p><span class="badge text-bg-light">{{onePair}}</span></p>
-                                                    {%endfor%}
-                                            </dd>
-                                            {%if oneSE.tentative%}
-                                                <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange-close' oneSE.id %}>Close request and await for approval
-                                                <span class="fa-stack">
-                                                <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
-                                                    <i class="fa-solid fa-bolt fa-stack-1x fa-inverse"></i>
-                                                </span> </a>
-                                            {%endif%}
-                                            {%if not oneSE.implemented%}
-                                               <a class="btn btn-outline-danger btn-light" href={% url 'shifter:shift-exchange-cancel' oneSE.id %}>Cancel this request (cannot be undone!)
-                                                <span class="fa-stack">
-                                                <i class="fa-solid fa-circle fa-stack-2x" ></i>
-                                                    <i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i>
-                                                </span> </a>
-                                            {%endif%}
-
-                                        </dl>
-                                        <dl class="row">
-                                            <dd class="col-sm-1">
-                                                {%if oneSE.implemented%}<span class="fa-stack">
-                                                <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754">{{oneSE.approver.first_name}}</i>
-                                                <i class="fa-solid fa-thumbs-up fa-stack-1x fa-inverse"></i>
-                                                </span>{%endif%}
-                                                {%if not oneSE.implemented and oneSE.applicable and not oneSE.tentative%}
-                                                {%if oneSE.approver == member%}
-                                                <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange' oneSE.id %}>Approve
-                                                <span class="fa-stack">
-                                                <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
-                                                <i class="fa-solid fa-thumbs-up fa-stack-1x fa-inverse"></i>
-                                                </span> </a> {%else%}
-                                                <span class="fa-stack">
-                                                <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754">{{oneSE.approver.first_name}}</i>
-                                                <i class="fa-solid fa-hourglass-1 fa-stack-1x fa-inverse"></i>
-                                                {%endif%}{%endif%}
-                                            </dd>
-                                          </dl>
-                                         </div>
-                                        </div>
-                                      </div>
-                                    {%endfor%}
-                                {% endif %}
+                                {% for oneSE in shift_exchanges_requested%}
+                                  <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingOne">
+                                      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{oneSE.id}}" aria-expanded="true" aria-controls="collapse{{oneSE.id}}">
+                                        {{oneSE.requestor}} <br> <small>&nbsp;requested on {{oneSE.requested_date}}</small>&nbsp;
+                                          <span class="badge text-bg-{%if oneSE.implemented%}success">IMPLEMENTED{%else%}primary">NOT IMPLEMENTED{%endif%}</span>&nbsp;
+                                          <span class="badge text-bg-{%if oneSE.applicable%}success">APPLICABLE{%else%}danger">NOT APPLICABLE{%endif%}</span>
+                                      </button>
+                                    </h2>
+                                    <div id="collapse{{oneSE.id}}" class="accordion-collapse collapse {%if oneSE.applicable and not oneSE.implemented%}show{%endif%}" aria-labelledby="heading{{oneSE.id}}" data-bs-parent="#accordionShiftExchanges">
+                                    <div class="accordion-body">
+                                    <dl class="row">
+                                        <dt class="col-sm-3">{{oneSE.requestor}} <br> <small> requested on {{oneSE.requested_date}}</small> <br>
+                                        </dt>
+                                        <dd class="col-sm-8">
+                                                {% for onePair in oneSE.shifts.all%}
+                                                <p><span class="badge text-bg-light">{{onePair}}</span></p>
+                                                {%endfor%}
+                                        </dd>
+                                        {%if oneSE.tentative%}
+                                            <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange-close' oneSE.id %}>Close request and await for approval
+                                            <span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
+                                                <i class="fa-solid fa-bolt fa-stack-1x fa-inverse"></i>
+                                            </span> </a>
+                                        {%endif%}
+                                        {%if not oneSE.implemented%}
+                                           <a class="btn btn-outline-danger btn-light" href={% url 'shifter:shift-exchange-cancel' oneSE.id %}>Cancel this request (cannot be undone!)
+                                            <span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" ></i>
+                                                <i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i>
+                                            </span> </a>
+                                        {%endif%}
+                                    </dl>
+                                    <dl class="row">
+                                        <dd class="col-sm-1">
+                                            {%if oneSE.implemented%}<span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754">{{oneSE.approver.first_name}}</i>
+                                            <i class="fa-solid fa-thumbs-up fa-stack-1x fa-inverse"></i>
+                                            </span>{%endif%}
+                                            {%if not oneSE.implemented and oneSE.applicable and not oneSE.tentative%}
+                                            {%if oneSE.approver == member%}
+                                            <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange' oneSE.id %}>Approve
+                                            <span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
+                                            <i class="fa-solid fa-thumbs-up fa-stack-1x fa-inverse"></i>
+                                            </span> </a> {%else%}
+                                            <span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754">{{oneSE.approver.first_name}}</i>
+                                            <i class="fa-solid fa-hourglass-1 fa-stack-1x fa-inverse"></i>
+                                            {%endif%}{%endif%}
+                                        </dd>
+                                      </dl>
+                                     </div>
+                                    </div>
+                                  </div>
+                                {%endfor%}
                                 </div>
                             </div>
                         </div>

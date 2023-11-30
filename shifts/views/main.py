@@ -195,7 +195,7 @@ def user(request, u=None, rid=None):
     shiftExchanges = ShiftExchange.objects.filter(Q(requestor=member) |
                                                   Q(shifts__shift_for_exchange__member__exact=member)) \
         .order_by('-requested')
-    shiftExchangesLast = ShiftExchange.objects.filter(requestor=member, tentative=True).order_by("-requested").first()
+    shiftExchangesLast = ShiftExchange.objects.filter(requestor=member, tentative=True, applicable=True).order_by("-requested").first()
     # FIXME this one is to clear the 'over select' from the query above that
     shiftExchangesUnique = []
     for se in shiftExchanges:
@@ -207,6 +207,8 @@ def user(request, u=None, rid=None):
                                             baseRevision=Revision.objects.filter(valid=True).order_by(
                                                 "-number").first())
         se.applicable = bb[0]
+        if not bb[0]:
+            se.tentative = False
         se.save()
         if se.applicable and not se.implemented: pendingRequests += 1
     context['shift_exchanges_requested'] = shiftExchangesUnique
@@ -231,6 +233,7 @@ def shiftExchangePerform(request, ex_id=None):
         messages.success(request,
                          "Requested shift exchange is now successfully implemented. If you need to revert it please "
                          "contact rota maker.")
+        notificationService.notify(shift_exchange)
     else:
         messages.error(request,
                        "This Exchange can only be approved by {}".format(shift_exchange.approver)
@@ -240,7 +243,6 @@ def shiftExchangePerform(request, ex_id=None):
 
 @login_required
 def shiftExchangeRequestCancel(request, ex_id=None):
-    print('got shiftEx to delete')
     shiftExchanges = ShiftExchange.objects.filter(id=ex_id, implemented=False)
     if shiftExchanges.count() == 0:
         messages.error(request,
@@ -270,7 +272,6 @@ def shiftExchangeRequestCreateOrUpdate(request, ex_id=None):
     otherShift = Shift.objects.get(id=s2ID)
     sPair = ShiftExchangePair.objects.create(shift=Shift.objects.get(id=s1ID),
                                              shift_for_exchange=otherShift)
-    sPair.save()
 
     if ex_id is None:
         sEx = ShiftExchange()
@@ -279,6 +280,7 @@ def shiftExchangeRequestCreateOrUpdate(request, ex_id=None):
         sEx.backupRevision = Revision.objects.filter(number=1).first()
         sEx.requested = timezone.now()
         sEx.save()
+        sPair.save()
         sEx.shifts.add(sPair)
         sEx.save()
     else:
@@ -287,6 +289,7 @@ def shiftExchangeRequestCreateOrUpdate(request, ex_id=None):
             messages.error(request, "Cannot add the Exchange request {} with {}. Current request can be updated only for {}"
                            .format(sEx, otherShift.member, sEx.approver))
             return HttpResponseRedirect(reverse("shifter:user"))
+        sPair.save()
         sEx.shifts.add(sPair)
         sEx.save()
 
@@ -300,6 +303,7 @@ def shiftExchangeRequestCreateOrUpdate(request, ex_id=None):
 def shiftExchangeRequestClose(request, ex_id=None):
     sEx = ShiftExchange.objects.get(id=ex_id)
     if sEx.requestor == request.user and sEx.tentative:
+        notificationService.notify(sEx)
         sEx.tentative = False
         sEx.save()
         messages.success(request, "Closed the Exchange request {}, now awaiting for {}".format(sEx, sEx.approver))

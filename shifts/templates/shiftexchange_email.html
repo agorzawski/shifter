@@ -1,0 +1,20 @@
+Dear {{approve}},
+
+This is an automatic message regarding a Shift Exchange(#{{sExId}}) with you.
+The initial request comes from {{requestor}}
+
+--
+The initial check does not show any problem with the following shifts that are proposed to be exchanged:
+
+{%for one in shifts%}
+{{one}}
+{%endfor%}
+--
+
+NOTE: This is not a change confirmation but a request for now.
+
+Please visit your shifter space, and approve or reject the proposal.
+
+Thanks!
+--
+CR_OperationsGroup@ess.eu

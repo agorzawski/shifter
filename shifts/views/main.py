@@ -56,8 +56,8 @@ def prepare_main_page(request, revisions, team, revision=None, filtered_campaign
         scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=filtered_campaigns)
     months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     month_as_int = datetime.datetime.now().month
-    previous_month_as_int = months[months.index(month_as_int) - 1]
-    next_month_as_int = months[months.index(month_as_int) + 1]
+    previous_month_as_int = months[months.index(month_as_int) - 1] if month_as_int > 1 else 12
+    next_month_as_int = months[months.index(month_as_int) + 1] if month_as_int < 12 else 1
     context = {
         'revisions': revisions,
         'displayed_revision': revision,
@@ -172,7 +172,10 @@ def user(request, u=None, rid=None):
     month = today.month
 
     default_start = datetime.date(year, month, 1)
-    default_end = datetime.date(year, month + 1, 1) + datetime.timedelta(days=-1)
+    if month > 11:
+        default_end = datetime.date(year+1, 1, 1) + datetime.timedelta(days=-1)
+    else:
+        default_end = datetime.date(year, month + 1, 1) + datetime.timedelta(days=-1)
     context = prepare_user_context(member, revisionNext=rid)
     context['revisions'] = Revision.objects.order_by('-number')
     context['default_start'] = default_start

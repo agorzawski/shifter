@@ -225,8 +225,27 @@
                 <!-- Tab displaying the system notifications -->
                 <div class="tab-pane fade" id="notify-tab-pane" role="tabpanel" aria-labelledby="links-tab" tabindex="5">
                     <div class='container'>
+                        <li class="row justify-content-center m-4">Settings</li>
+                        <form action="{% url 'shifter:user-notifications' member.id %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+                        {% csrf_token %}
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="notificationShifts"
+                                 id="notificationShifts" {%if member.notification_shifts%}checked{%endif%} >
+                          <label class="form-check-label" for="notificationShifts">
+                            Send emails for the shift related notifications i.e., new shifts, swaps etc)</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="notificationStudies"
+                                 id="notificationStudies" {%if member.notification_studies%}checked{%endif%}>
+                          <label class="form-check-label" for="notificationStudies">Send emails for the study notifications?</label>
+                        </div>
+                        <div class="form-floating">
+                            <button class="btn btn-primary">Save changes</button>
+                        </div>
+                        </form>
+                        <hr>
                         <li class="row justify-content-center m-4">
-                            <a id="clearNotify" class="btn btn-primary" href="/inbox/notifications/api/unread_list/?mark_as_read=true" target="_blank">Clear notifications</a>
+                            <a id="clearNotify" class="btn btn-light" href="/inbox/notifications/api/unread_list/?mark_as_read=true" target="_blank">Clear notifications</a>
                         </li>
                             <div class="list-group">
                               {% for notification in  member.notifications.unread %}

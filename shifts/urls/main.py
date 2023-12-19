@@ -10,6 +10,7 @@ urlpatterns = [
     path('myteam/', views.my_team, name='my_team_view'),
     path('today', views.todays, name='today'),
     path('user', views.user, name='user'),
+    path('user/<int:uid>/notifications', views.user_notifications, name='user-notifications'),
     path('user/rev/<int:rid>', views.user, name='user'),
     path('users', views.users, name='users'),
     path('calendar.ics', views.icalendar_view, name='calendar'),

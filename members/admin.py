@@ -16,8 +16,10 @@ class MemberAdmin(UserAdmin):
         'is_active',
         'team',
         'role',
-        'email',
         'mobile',
+        'email',
+        'notification_shifts',
+        'notification_studies'
     ]
     list_filter = ('role', 'team')
 
@@ -34,7 +36,9 @@ class MemberAdmin(UserAdmin):
             'email',
             'mobile',
             'photo',
-            'is_active'
+            'is_active',
+            'notification_shifts',
+            'notification_studies'
         )}),
         (_('Permissions'), {'fields': (
             'is_staff',

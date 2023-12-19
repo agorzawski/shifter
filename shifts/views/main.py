@@ -220,6 +220,26 @@ def user(request, u=None, rid=None):
     return render(request, 'user.html', prepare_default_context(request, context))
 
 
+@require_http_methods(["POST"])
+@csrf_protect
+@login_required
+def user_notifications(request, uid=None):
+    m = Member.objects.get(id=uid)
+    try:
+        a = request.POST["notificationShifts"]
+        m.notification_shifts = True
+    except:
+        m.notification_shifts = False
+    try:
+        a = request.POST["notificationStudies"]
+        m.notification_studies = True
+    except:
+        m.notification_studies = False
+    m.save()
+    messages.success(request, "Notification settings are updated!")
+    return HttpResponseRedirect(reverse("shifter:user"))
+
+
 @login_required
 def shiftExchangePerform(request, ex_id=None):
     shiftExchanges = ShiftExchange.objects.filter(id=ex_id, implemented=False)

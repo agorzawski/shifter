@@ -24,7 +24,8 @@ def team_view(request: HttpRequest, team_id: int) -> HttpResponse:
     month = today.month
 
     default_start = datetime.date(year, month, 1)
-    default_end = datetime.date(year, month + 1, 1) + datetime.timedelta(days=-1)
+    endMonth = month + 1 if month < 12 else 1
+    default_end = datetime.date(year, endMonth, 1) + datetime.timedelta(days=-1)
 
     the_team = get_object_or_404(Team, id=team_id)
     logged_user = request.user

@@ -1,5 +1,16 @@
 # ESS OP Shifter Changelog
 
+### v.1.0.x
+- [bugfix] related to OB codes (computing for reduced days and display in the table)
+- [bugfix] related to active/canceled shift display
+- Desiderata display available with the planning
+
+### v.1.0.9
+- [bugfix] with dates Dec/Jan
+- HR dates for 2024
+- Shifts with active/canceled status
+- Simple UI improvements: shift roles colors
+
 ### v.1.0.8
 - Statistics per MyTeam and detailed panel for Rota Maker,
 - Few cosmetics between calendars default views: hiding/showing relevant events depending on the page,

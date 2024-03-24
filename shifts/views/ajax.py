@@ -76,6 +76,8 @@ def get_user_events(request: HttpRequest) -> HttpResponse:
     calendar_events = [d.get_shift_as_json_event() for d in base_scheduled_shifts]
     revisionNext = request.GET.get("revision_next", default='-1')
     revisionNext = int(revisionNext)
+    show = request.GET.get('show', None)
+    show = False if show == "false" else True
     if revisionNext != -1:
         revisionNext = Revision.objects.get(number=revisionNext)
         future_scheduled_shifts = Shift.objects.filter(member=_get_member(request),
@@ -87,6 +89,8 @@ def get_user_events(request: HttpRequest) -> HttpResponse:
     if withCompanion:
         for d in _get_companions_shift(_get_member(request), base_scheduled_shifts):
             calendar_events.append(d.get_shift_as_json_event())
+    if not show:
+        calendar_events = []
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 

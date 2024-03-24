@@ -46,7 +46,7 @@ def _get_scheduled_shifts(request: HttpRequest):
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
     filter_dic = {'revision': Revision.objects.filter(valid=True).order_by('-number').first(),
                   'date__lte': end, 'date__gte':start, 'member': _get_member(request),
-                  'is_cancelled': False, 'is_active': True}
+                  }
     return Shift.objects.filter(**filter_dic)
 
 
@@ -55,8 +55,7 @@ def _get_companions_shift(member: Member, base_scheduled_shifts):
     filter_dic = {'date__in': [s.date for s in base_scheduled_shifts],
                   'revision__in': [s.revision for s in base_scheduled_shifts],
                   'role': None,
-                  'is_cancelled': False,
-                  'is_active': True}
+                  }
     future_companion_shifts = Shift.objects.filter(**filter_dic) \
         .filter(~Q(member=member))
     future_companion_exact_shifts = [d.start for d in base_scheduled_shifts]
@@ -67,6 +66,7 @@ def _get_companions_shift(member: Member, base_scheduled_shifts):
 
 
 @require_safe
+@login_required
 def get_user_events(request: HttpRequest) -> HttpResponse:
     base_scheduled_shifts = _get_scheduled_shifts(request)
     calendar_events = [d.get_shift_as_json_event() for d in base_scheduled_shifts]
@@ -87,6 +87,7 @@ def get_user_events(request: HttpRequest) -> HttpResponse:
 
 
 @require_safe
+@login_required
 def get_users_events(request: HttpRequest) -> HttpResponse:
     users_requested = request.GET.get('users', '')
     users_requested = users_requested.split(",")
@@ -95,6 +96,7 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     start_date = request.GET.get('start', None)
     end_date = request.GET.get('end', None)
     all_roles = request.GET.get('all_roles', None)
+    all_states = request.GET.get('all_states', None)
     campaigns = request.GET.get('campaigns', None)
     revision = _get_revision(request)
 
@@ -104,6 +106,7 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     campaigns = campaigns.split(",")
     campaigns = [int(x) for x in campaigns] if campaigns != [''] else []
     all_roles = True if all_roles == "true" else False
+    all_states = True if all_states == "true" else False
     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
@@ -111,6 +114,9 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns,
                   'member_id__in': users_requested,
                   'is_cancelled': False, 'is_active': True}
+    if all_states:
+        filter_dic.pop('is_cancelled')
+        filter_dic.pop('is_active')
 
     scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
     if not all_roles:

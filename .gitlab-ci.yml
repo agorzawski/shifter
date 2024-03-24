@@ -3,6 +3,7 @@ stages:
   - build
   - analyse
   - release
+  - deploy
 
 default:
   tags:
@@ -35,3 +36,18 @@ release:
     - docker push "$CI_REGISTRY_IMAGE:latest"
   only:
     - tags
+
+deploy-to-test:
+  stage: deploy
+  image: registry.esss.lu.se/ics-docker/awxkit
+  script:
+    - >
+      awx job_templates launch deploy-shifter-test
+      --extra_vars "shifter_container_image_tag: $CI_COMMIT_REF_NAME"
+      --monitor
+  environment:
+    name: test
+    url: https://shifter-lab-01.cslab.esss.lu.se/
+  rules:
+    - if: $CI_PROJECT_PATH == "accop/op-shift-schedule"
+      when: manual

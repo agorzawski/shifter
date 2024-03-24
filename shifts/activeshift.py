@@ -115,7 +115,7 @@ def prepare_active_crew(dayToGo=None,
         if (slot.hour_start > slot.hour_end and (slot.hour_start <= now or now < slot.hour_end)) \
                 or slot.hour_start <= now < slot.hour_end:
             for shifter in scheduled_shifts:
-                if shifter.slot == slot:
+                if shifter.slot == slot and shifter.is_active and not shifter.is_cancelled:
                     activeSlots.append(slot)
                     currentTeam.append(shifter)
                     update_shifter_details(shifter, today, now, slotToBeUsed, ldap,

@@ -65,6 +65,10 @@ def _get_companions_shift(member: Member, base_scheduled_shifts):
     return filteredCompanions
 
 
+def _trim4vis(item, default=""):
+    return item if item > 0 else default
+
+
 @require_safe
 @login_required
 def get_user_events(request: HttpRequest) -> HttpResponse:
@@ -210,7 +214,8 @@ def get_hr_codes(request: HttpRequest) -> HttpResponse:
 
     data = []
     for date, item in shift2codes.items():
-        a_row = [date, item['OB1'], item['OB2'], item['OB3'], item['OB4'], item['NWH']]
+        a_row = [date, _trim4vis(item['OB1']), _trim4vis(item['OB2']), _trim4vis(item['OB3']),
+                 _trim4vis(item['OB4']), _trim4vis(item['NWH'])]
         data.append(a_row)
 
     return HttpResponse(json.dumps({'data': data}), content_type="application/json")
@@ -242,7 +247,8 @@ def get_team_hr_codes(request: HttpRequest) -> HttpResponse:
         shift2codes = get_date_code_counts(scheduled_shifts)
 
         for date, item in shift2codes.items():
-            a_row = [date, str(m), item['OB1'], item['OB2'], item['OB3'], item['OB4'], item['NWH']]
+            a_row = [date, str(m), _trim4vis(item['OB1']), _trim4vis(item['OB2']), _trim4vis(item['OB3']),
+                     _trim4vis(item['OB4']), _trim4vis(item['NWH'])]
             data.append(a_row)
 
     return HttpResponse(json.dumps({'data': data}), content_type="application/json")

@@ -131,6 +131,12 @@ class HRCodes(TestCase):
         h = hrc.get_code_counts(shift)
         self.compare(h, HOURS_NG)
 
+    def test_ONE_EXACT_DATE(self):  # a shift on a reduced day still regular OB3 that was too close to the actual reduced day
+        shift = get_shift(slot=Slot.objects.get(abbreviation='NWH'),
+                          fancy_date=datetime.date(2024, 3, 24))
+        h = hrc.get_code_counts(shift, verbose=True)
+        self.compare(h, HOURS_WE)
+
     def compare(self, codes1, codes2):
         for oneCode in codes1.keys():
             self.assertEqual(codes1.get(oneCode), codes2.get(oneCode))

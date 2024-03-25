@@ -27,9 +27,6 @@ ENV PATH /venv/bin:$PATH
 
 USER ops
 
-RUN python manage.py migrate notifications
-RUN python manage.py migrate django_cron
-
 RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000

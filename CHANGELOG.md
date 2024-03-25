@@ -4,6 +4,7 @@
 - [bugfix] related to OB codes (computing for reduced days and display in the table)
 - [bugfix] related to active/canceled shift display
 - Desiderata display available with the planning
+- Additional calendar decorators - used for marking days/weeks related to additional activities
 
 ### v.1.0.9
 - [bugfix] with dates Dec/Jan

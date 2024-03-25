@@ -1,5 +1,10 @@
 <div class='container'>
-      <div id='calendar' style="padding-top: 10px;" data-source-shifts="{{event_source}}"  data-source-studies="{%  url 'studies:ajax.get_studies' %}" data-source-holidays="{%  url 'ajax.get_holidays' %}" data-default-date="{{defaultDate}}"></div>
+      <div id='calendar' style="padding-top: 10px;"
+           data-source-shifts="{{event_source}}"
+           data-source-studies="{%  url 'studies:ajax.get_studies' %}"
+           data-source-holidays="{%  url 'ajax.get_holidays' %}"
+           data-source-team-events="{%  url 'ajax.get_team_events' %}"
+           data-default-date="{{defaultDate}}"></div>
 </div>
 
 <div id="calendarModal" class="modal fade">

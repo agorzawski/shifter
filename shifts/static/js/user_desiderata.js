@@ -159,6 +159,13 @@ $(document).ready(function () {
                     },
                 },
                 {
+                  id: "teamevents",
+                  url: $('#calendar').data('source-team-events'),
+                  failure: function() {
+                    alert('there was an error while fetching team-events dates!');
+                  },
+                },
+                {
 
                     id: "team_desiderata",
                     url: $('#calendar').data('source-team-desiderata'),

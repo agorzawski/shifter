@@ -127,6 +127,13 @@ $(document).ready(function () {
 
     },
     {
+      id: "teamevents",
+      url: $('#calendar').data('source-team-events'),
+      failure: function() {
+        alert('there was an error while fetching team-events dates!');
+      },
+    },
+    {
       id: "studies",
       url: $('#calendar').data('source-studies'),
       extraParams: function() {

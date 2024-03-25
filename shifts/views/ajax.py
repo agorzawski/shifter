@@ -12,7 +12,8 @@ from shifts.hrcodes import red_days, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
 from shifter.settings import DEFAULT_SPECIAL_SHIFT_ROLES
-from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, get_hours_break
+from shifts.workinghours import (find_daily_rest_time_violation, find_weekly_rest_time_violation, get_hours_break,
+                                 get_days_of_week)
 import json
 from watson import search as watson
 from guardian.shortcuts import get_objects_for_user
@@ -173,6 +174,27 @@ def get_events(request: HttpRequest) -> HttpResponse:
 
     calendar_events = [d.get_shift_as_json_event() for d in scheduled_shifts]
 
+    return HttpResponse(json.dumps(calendar_events), content_type="application/json")
+
+
+@require_safe
+@login_required
+def get_team_events(request: HttpRequest) -> HttpResponse:
+    # TODO Remove the hardcoded dates here BUT remember!
+    # TODO make this Model based AFTER other branches are merged - to avoid DB model conflicts.
+    days = (get_days_of_week(17, year=2024) +
+            get_days_of_week(20, year=2024) +
+            get_days_of_week(21, year=2024) +
+            get_days_of_week(22, year=2024) +
+            get_days_of_week(42, year=2024) +
+            get_days_of_week(43, year=2024) +
+            get_days_of_week(44, year=2024) +
+            get_days_of_week(45, year=2024))
+    calendar_events = [{'start': d.strftime(format=SIMPLE_DATE),
+                        'end': d.strftime(format=SIMPLE_DATE),
+                        'overlap': True,
+                        'color': "#FFE7CB",
+                        'display': 'background'} for d in days]
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 

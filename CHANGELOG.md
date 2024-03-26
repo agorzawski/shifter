@@ -1,6 +1,6 @@
 # ESS OP Shifter Changelog
 
-### v.1.0.x
+### v.1.0.10/11
 - [bugfix] related to OB codes (computing for reduced days and display in the table)
 - [bugfix] related to active/canceled shift display
 - Desiderata display available with the planning

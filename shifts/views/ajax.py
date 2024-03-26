@@ -178,7 +178,6 @@ def get_events(request: HttpRequest) -> HttpResponse:
 
 
 @require_safe
-@login_required
 def get_team_events(request: HttpRequest) -> HttpResponse:
     # TODO Remove the hardcoded dates here BUT remember!
     # TODO make this Model based AFTER other branches are merged - to avoid DB model conflicts.

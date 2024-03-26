@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ngettext
+from django.contrib import messages
 
 from members.models import Member, Team, Role
 from guardian.admin import GuardedModelAdmin
@@ -52,8 +54,30 @@ class MemberAdmin(UserAdmin):
         ), 'classes': ('collapse',)}),
     )
 
+    def unsubscribe_all_notifications(self, request, queryset):
+        updated = queryset.update(notification_shifts=False)
+        updated = queryset.update(notification_studies=False)
+        self.message_user(request, ngettext(
+            '%d unsubscribed from shift and studies notifications.',
+            '%d unsubscribed from shift and studies notifications',
+            updated,
+        ) % updated, messages.SUCCESS)
+        self.description = 'Unsubscribed from shift and studies notifications'
+
+    def subscribe_all_notifications(self, request, queryset):
+        updated = queryset.update(notification_shifts=True)
+        updated = queryset.update(notification_studies=True)
+        self.message_user(request, ngettext(
+            '%d subscribed to shift and studies notifications.',
+            '%d subscribed to shift and studies notifications',
+            updated,
+        ) % updated, messages.SUCCESS)
+        self.description = 'Subscribed to shift and studies notifications'
+
     def _nameAll(self, obj):
         return '{} ({})'.format(obj.name, obj.username)
+
+    actions = (unsubscribe_all_notifications, subscribe_all_notifications)
 
 
 @admin.register(Team)

@@ -214,6 +214,8 @@ class Shift(models.Model):
 
     def get_shift_title(self) -> str:
         title = f"{self.member.first_name} as "
+        if not self.is_active or self.is_cancelled:
+            return f"INACTIVE {self.member.first_name}"
         if self.role:
             title += f"{self.role} ({self.member.role})"
         else:
@@ -222,6 +224,8 @@ class Shift(models.Model):
         return title
 
     def get_color_for_calendar(self):
+        if not self.is_active or self.is_cancelled:
+            return '#EDEDED'
         if self.role is not None and self.role.color_in_calendar is not None:
             return self.role.color_in_calendar
         return self.slot.color_in_calendar
@@ -239,6 +243,8 @@ class Shift(models.Model):
                  }
         if 'ShiftLeader' in self.member.role.name:
             event['textColor'] = '#E9E72D'
+        if not self.is_active or self.is_cancelled:
+            event['textColor'] = '#BDBDBD'
         return event
 
     def get_planned_shift_as_json_event(self) -> dict:
@@ -252,7 +258,7 @@ class Shift(models.Model):
                  'post_comment': self.post_comment,
                  'color': self.get_color_for_calendar(),
                  'borderColor': 'black',
-                 'textColor':'black',
+                 'textColor': 'black',
                  }
         return event
 

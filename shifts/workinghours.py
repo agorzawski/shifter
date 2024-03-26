@@ -2,7 +2,7 @@ from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.models import DATE_FORMAT_FULL, Shift
 from datetime import timedelta
 import datetime
-
+import time
 
 def get_hours_break(laterShift: Shift, earlierShift: Shift):
     breakTotal = laterShift.start - earlierShift.end
@@ -84,3 +84,19 @@ def find_working_hours(scheduled_shifts, startDate=None, endDate=None) -> dict:
             'totalWorkingH': totalWorkingTimeInH.days * 24 + totalWorkingTimeInH.seconds // 3600,
             'workingSlots': slots,
             }
+
+
+def get_days_of_week(weekNb, year=2024) -> list:
+    """
+    Returns all days of given week in given year.
+    Starting from Monday to Sunday
+    """
+    WEEK = weekNb - 1
+    startdate = time.asctime(time.strptime("{} {} 0".format(year, WEEK), '%Y %W %w'))
+    startdate = datetime.datetime.strptime(startdate, '%a %b %d %H:%M:%S %Y')
+    dates = []
+    for i in range(1, 8):
+        day = startdate + datetime.timedelta(days=i)
+        dates.append(day)
+    return dates
+

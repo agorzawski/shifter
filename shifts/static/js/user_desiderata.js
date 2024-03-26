@@ -6,9 +6,26 @@ function get_team_desiderata_status(){
     return $('#showsTeamDesiderata').prop('checked');
 }
 
+function get_my_shifts_status(){
+    return $('#showMyShifts').prop('checked');
+}
+
+function get_member_id(){
+    let member_tag = $("member_id")
+    if( member_tag.length){
+        return member_tag.data("id");
+    }else{
+        return -1;
+    }
+}
+
 $(document).ready(function () {
     $('#showsTeamDesiderata').on('change', function() {
         calendar.getEventSourceById('team_desiderata').refetch()
+    })
+
+    $('#showMyShifts').on('change', function() {
+        calendar.getEventSourceById('shifts').refetch()
     })
 
 
@@ -142,6 +159,13 @@ $(document).ready(function () {
                     },
                 },
                 {
+                  id: "teamevents",
+                  url: $('#calendar').data('source-team-events'),
+                  failure: function() {
+                    alert('there was an error while fetching team-events dates!');
+                  },
+                },
+                {
 
                     id: "team_desiderata",
                     url: $('#calendar').data('source-team-desiderata'),
@@ -155,7 +179,24 @@ $(document).ready(function () {
                     {
                         alert('there was an error while fetching team desiderata!');
                     },
-                }
+                },
+                {
+                  id: "shifts",
+                  url: $('#calendar').data('source-shifts'),
+                  extraParams: function() {
+                      return {
+                        all_roles: true,
+                        all_states: true,
+                        companion: false,
+                        revision: -1,
+                        member: get_member_id(),
+                        show: get_my_shifts_status(),
+                      };
+                    },
+                  failure: function() {
+                    alert('there was an error while fetching events!');
+                  },
+                },
             ],
     });
     calendar.render();

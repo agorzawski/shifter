@@ -33,10 +33,22 @@
                               <input class="form-check-input" type="checkbox" role="switch" id="showsTeamDesiderata">
                               <label class="form-check-label" for="showsTeamDesiderata">Shows team desiderata</label>
                             </div>
+                            <div class="form-check form-switch">
+                              <input class="form-check-input" type="checkbox" role="switch" id="showMyShifts">
+                              <label class="form-check-label" for="showMyShifts">Shows MY shifts</label>
+                            </div>
                         </div>
                     </div>
                 </div>
-                  <div id='calendar' style="padding-top: 10px;" data-delete-event="{% url 'desiderata.delete' %}" data-edit-event="{% url 'desiderata.edit' %}"  data-post-event="{% url 'desiderata.add' %}" data-source-desiderata="{% url 'desiderata.get_user_desiderata' %}" data-source-holidays="{%  url 'ajax.get_holidays' %}"  data-source-team-desiderata="{% url 'desiderata.get_team_desiderata_non_rota_maker' %}"></div>
+                  <div id='calendar' style="padding-top: 10px;"
+                       data-delete-event="{% url 'desiderata.delete' %}"
+                       data-edit-event="{% url 'desiderata.edit' %}"
+                       data-post-event="{% url 'desiderata.add' %}"
+                       data-source-desiderata="{% url 'desiderata.get_user_desiderata' %}"
+                       data-source-holidays="{%  url 'ajax.get_holidays' %}"
+                       data-source-team-events="{%  url 'ajax.get_team_events' %}"
+                       data-source-shifts="{%  url 'ajax.get_user_events' %}"
+                       data-source-team-desiderata="{% url 'desiderata.get_team_desiderata_non_rota_maker' %}"></div>
             </div>
         </div>
     </div>

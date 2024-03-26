@@ -146,7 +146,7 @@ def _check_if_date_or_adjacent_WE(shiftDate: date, public_holiday: date):
     sDayNb = shiftDate.weekday()
     if shiftDate == public_holiday:
         return True
-    if sDayNb >= 5 and abs(shiftDate - public_holiday) < timedelta(days=5):
+    if sDayNb >= 5 and abs(shiftDate - public_holiday) < timedelta(days=3):
         return True
     return False
 
@@ -154,17 +154,21 @@ def _check_if_date_or_adjacent_WE(shiftDate: date, public_holiday: date):
 def get_code_counts(shift: Shift, verbose=False) -> dict:
     counts = {'OB1': 0, 'OB2': 0, 'OB3': 0, 'OB4': 0, 'NWH': 0}
     duration = shift.end - shift.start
+    if verbose:
+        print("duration: ", duration)
     notAWEOrHoliday = True
     for ph in public_holidays_special:  # OB4 special holidays: Easter, Xmas, New Years and Midsommar
         if _check_if_date_or_adjacent_WE(shift.date, ph):
             counts['OB4'] = duration.seconds // 3600
             notAWEOrHoliday = False
+    if verbose:
+        print("public holiday spec: ", counts)
     for ph in public_holidays_special_exception:  # OB4 for few hours in special case (refer to the link above)
         breakDown = datetime.combine(ph[0], ph[1])
         if abs(shift.end - breakDown) > timedelta(hours=13) or shift.end < breakDown:
             continue
         if verbose:
-            print("public special ", shift, breakDown, (shift.end - breakDown))
+            print("public special OB4 ", shift, breakDown, (shift.end - breakDown))
         if shift.start > breakDown:
             counts['OB4'] = duration.seconds // 3600
         else:
@@ -175,28 +179,38 @@ def get_code_counts(shift: Shift, verbose=False) -> dict:
             if verbose:
                 print(beforeBD.seconds // 3600, overBD.seconds//3600)
         notAWEOrHoliday = False
+    if verbose:
+        print("public_holidays_special_exception OB4: ", counts)
     for rd in red_days:  # OB3 - regular red days
         if _check_if_date_or_adjacent_WE(shift.date, rd):
             counts['OB3'] = duration.seconds // 3600
             notAWEOrHoliday = False
+    if verbose:
+        print("red_days OB3: ", counts)
     for rd in reduced_days:  # OB3 as of 14:00, but not for exception days (that also happen to be reduced hours)
         if rd in [d[0] for d in public_holidays_special_exception]:
             continue
         if _check_if_date_or_adjacent_WE(shift.date, rd) and \
                 shift.slot.abbreviation == 'NWH':
+            print(rd)
+            print(shift.date)
             counts['NWH'] = 5
             notAWEOrHoliday = False
             continue
-        if _check_if_date_or_adjacent_WE(shift.date, rd) and \
-                shift.start >= datetime.combine(rd, time(14, 0)) and \
-                notAWEOrHoliday:
-            counts['OB3'] = duration.seconds // 3600
-            notAWEOrHoliday = False
+        # Temporary removed the OB3 for the reduced day adjacent to the WE. Issue#50
+        # if _check_if_date_or_adjacent_WE(shift.date, rd) and \
+        #         shift.start >= datetime.combine(rd, time(14, 0)) and \
+        #         notAWEOrHoliday:
+        #     counts['OB3'] = duration.seconds // 3600
+        #     notAWEOrHoliday = False
+    if verbose:
+        print("reduced days NWH: ", counts)
     weekno = shift.start.weekday()
     if weekno >= 5 and notAWEOrHoliday:
         counts['OB3'] = duration.seconds // 3600
         notAWEOrHoliday = False
-
+    if verbose:
+        print("Weekends OB3: ", counts)
     if notAWEOrHoliday:
         _check(shift, 'NWH', counts)
         _check(shift, 'OB1', counts)

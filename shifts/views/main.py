@@ -361,6 +361,7 @@ def users(request):
         'users': users_list,
         'users_requested': users_requested,
         'hide_studies': True,
+        'allow_see_canceled': True,
     }
     return render(request, 'users.html', prepare_default_context(request, context))
 

@@ -12,7 +12,8 @@ from shifts.hrcodes import red_days, public_holidays_special
 from shifts.models import SIMPLE_DATE
 from shifts.hrcodes import get_public_holidays, get_date_code_counts, count_total
 from shifter.settings import DEFAULT_SPECIAL_SHIFT_ROLES
-from shifts.workinghours import find_daily_rest_time_violation, find_weekly_rest_time_violation, get_hours_break
+from shifts.workinghours import (find_daily_rest_time_violation, find_weekly_rest_time_violation, get_hours_break,
+                                 get_days_of_week)
 import json
 from watson import search as watson
 from guardian.shortcuts import get_objects_for_user
@@ -46,7 +47,7 @@ def _get_scheduled_shifts(request: HttpRequest):
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
     filter_dic = {'revision': Revision.objects.filter(valid=True).order_by('-number').first(),
                   'date__lte': end, 'date__gte':start, 'member': _get_member(request),
-                  'is_cancelled': False, 'is_active': True}
+                  }
     return Shift.objects.filter(**filter_dic)
 
 
@@ -55,8 +56,7 @@ def _get_companions_shift(member: Member, base_scheduled_shifts):
     filter_dic = {'date__in': [s.date for s in base_scheduled_shifts],
                   'revision__in': [s.revision for s in base_scheduled_shifts],
                   'role': None,
-                  'is_cancelled': False,
-                  'is_active': True}
+                  }
     future_companion_shifts = Shift.objects.filter(**filter_dic) \
         .filter(~Q(member=member))
     future_companion_exact_shifts = [d.start for d in base_scheduled_shifts]
@@ -66,12 +66,19 @@ def _get_companions_shift(member: Member, base_scheduled_shifts):
     return filteredCompanions
 
 
+def _trim4vis(item, default=""):
+    return item if item > 0 else default
+
+
 @require_safe
+@login_required
 def get_user_events(request: HttpRequest) -> HttpResponse:
     base_scheduled_shifts = _get_scheduled_shifts(request)
     calendar_events = [d.get_shift_as_json_event() for d in base_scheduled_shifts]
     revisionNext = request.GET.get("revision_next", default='-1')
     revisionNext = int(revisionNext)
+    show = request.GET.get('show', None)
+    show = False if show == "false" else True
     if revisionNext != -1:
         revisionNext = Revision.objects.get(number=revisionNext)
         future_scheduled_shifts = Shift.objects.filter(member=_get_member(request),
@@ -83,10 +90,13 @@ def get_user_events(request: HttpRequest) -> HttpResponse:
     if withCompanion:
         for d in _get_companions_shift(_get_member(request), base_scheduled_shifts):
             calendar_events.append(d.get_shift_as_json_event())
+    if not show:
+        calendar_events = []
     return HttpResponse(json.dumps(calendar_events), content_type="application/json")
 
 
 @require_safe
+@login_required
 def get_users_events(request: HttpRequest) -> HttpResponse:
     users_requested = request.GET.get('users', '')
     users_requested = users_requested.split(",")
@@ -95,6 +105,7 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     start_date = request.GET.get('start', None)
     end_date = request.GET.get('end', None)
     all_roles = request.GET.get('all_roles', None)
+    all_states = request.GET.get('all_states', None)
     campaigns = request.GET.get('campaigns', None)
     revision = _get_revision(request)
 
@@ -104,6 +115,7 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     campaigns = campaigns.split(",")
     campaigns = [int(x) for x in campaigns] if campaigns != [''] else []
     all_roles = True if all_roles == "true" else False
+    all_states = True if all_states == "true" else False
     start = datetime.datetime.fromisoformat(start_date).date() - datetime.timedelta(days=1)
     end = datetime.datetime.fromisoformat(end_date).date() + datetime.timedelta(days=1)
     scheduled_campaigns = Campaign.objects.filter(revision=revision).filter(id__in=campaigns)
@@ -111,6 +123,9 @@ def get_users_events(request: HttpRequest) -> HttpResponse:
     filter_dic = {'date__gt': start, 'date__lt': end, 'revision': revision, 'campaign__in': scheduled_campaigns,
                   'member_id__in': users_requested,
                   'is_cancelled': False, 'is_active': True}
+    if all_states:
+        filter_dic.pop('is_cancelled')
+        filter_dic.pop('is_active')
 
     scheduled_shifts = Shift.objects.filter(**filter_dic).order_by('date', 'slot__hour_start', 'member__role__priority')
     if not all_roles:
@@ -163,6 +178,27 @@ def get_events(request: HttpRequest) -> HttpResponse:
 
 
 @require_safe
+@login_required
+def get_team_events(request: HttpRequest) -> HttpResponse:
+    # TODO Remove the hardcoded dates here BUT remember!
+    # TODO make this Model based AFTER other branches are merged - to avoid DB model conflicts.
+    days = (get_days_of_week(17, year=2024) +
+            get_days_of_week(20, year=2024) +
+            get_days_of_week(21, year=2024) +
+            get_days_of_week(22, year=2024) +
+            get_days_of_week(42, year=2024) +
+            get_days_of_week(43, year=2024) +
+            get_days_of_week(44, year=2024) +
+            get_days_of_week(45, year=2024))
+    calendar_events = [{'start': d.strftime(format=SIMPLE_DATE),
+                        'end': d.strftime(format=SIMPLE_DATE),
+                        'overlap': True,
+                        'color': "#FFE7CB",
+                        'display': 'background'} for d in days]
+    return HttpResponse(json.dumps(calendar_events), content_type="application/json")
+
+
+@require_safe
 def get_holidays(request: HttpRequest) -> HttpResponse:
     start = datetime.datetime.fromisoformat(request.GET.get('start')).date()
     end = datetime.datetime.fromisoformat(request.GET.get('end')).date()
@@ -204,7 +240,8 @@ def get_hr_codes(request: HttpRequest) -> HttpResponse:
 
     data = []
     for date, item in shift2codes.items():
-        a_row = [date, item['OB1'], item['OB2'], item['OB3'], item['OB4'], item['NWH']]
+        a_row = [date, _trim4vis(item['OB1']), _trim4vis(item['OB2']), _trim4vis(item['OB3']),
+                 _trim4vis(item['OB4']), _trim4vis(item['NWH'])]
         data.append(a_row)
 
     return HttpResponse(json.dumps({'data': data}), content_type="application/json")
@@ -236,7 +273,8 @@ def get_team_hr_codes(request: HttpRequest) -> HttpResponse:
         shift2codes = get_date_code_counts(scheduled_shifts)
 
         for date, item in shift2codes.items():
-            a_row = [date, str(m), item['OB1'], item['OB2'], item['OB3'], item['OB4'], item['NWH']]
+            a_row = [date, str(m), _trim4vis(item['OB1']), _trim4vis(item['OB2']), _trim4vis(item['OB3']),
+                     _trim4vis(item['OB4']), _trim4vis(item['NWH'])]
             data.append(a_row)
 
     return HttpResponse(json.dumps({'data': data}), content_type="application/json")

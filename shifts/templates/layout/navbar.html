@@ -76,6 +76,7 @@
                         <li><a class="dropdown-item" href="{% url 'user' %}">My Shifts</a></li>
                         <li><a class="dropdown-item" href="{% url 'my_team_view' %}">My Team</a></li>
                         <li><a class="dropdown-item" href="{%  url 'desiderata.user' %}">My Desiderata</a></li>
+                        <li><a class="dropdown-item" href="{%  url 'user' %}?notifications">Manage notifications {% live_notify_badge badge_class="badge" %}</a></li>
                         {% if user.is_superuser %}
                             <li><hr class="dropdown-divider"></li>
                             <a class="dropdown-item" href="{%  url 'admin:index' %}">Administration</a>

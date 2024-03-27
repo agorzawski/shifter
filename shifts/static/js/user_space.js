@@ -158,6 +158,40 @@ $(document).ready(function() {
         bootstrap.Tab.getInstance(triggerEl).show() // Select tab by name
     }
 
+    var open_links = getUrlParameter('swaps');
+    if (open_links) {
+        const triggerTabList = document.querySelectorAll('#user_tabs button')
+        triggerTabList.forEach(triggerEl => {
+            const tabTrigger = new bootstrap.Tab(triggerEl)
+
+            triggerEl.addEventListener('click', event => {
+                event.preventDefault()
+                tabTrigger.show()
+            })
+        })
+
+
+        const triggerEl = document.querySelector('#user_tabs button[data-bs-target="#shift-swap-tab-pane"]')
+        bootstrap.Tab.getInstance(triggerEl).show() // Select tab by name
+    }
+
+    var open_links = getUrlParameter('notifications');
+    if (open_links) {
+        const triggerTabList = document.querySelectorAll('#user_tabs button')
+        triggerTabList.forEach(triggerEl => {
+            const tabTrigger = new bootstrap.Tab(triggerEl)
+
+            triggerEl.addEventListener('click', event => {
+                event.preventDefault()
+                tabTrigger.show()
+            })
+        })
+
+
+        const triggerEl = document.querySelector('#user_tabs button[data-bs-target="#notify-tab-pane"]')
+        bootstrap.Tab.getInstance(triggerEl).show() // Select tab by name
+    }
+
 
     $("#personal_link_clipboard").click(function() {
         navigator.clipboard.writeText($('#personal_link_clipboard_data').val()).then(function() {

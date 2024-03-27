@@ -124,7 +124,8 @@ class EmailNotifier(NotificationService):
                                                                      "revision": event.revision,
                                                                      "rotaMaker": event.rotaMaker,
                                                                      "import_start": event.start,
-                                                                     "import_end": event.end})
+                                                                     "import_end": event.end,
+                                                                     "domain": self.default_domain})
 
             self._notify_internal_and_external(actor=event.rotaMaker,
                                                target=None,
@@ -141,7 +142,8 @@ class EmailNotifier(NotificationService):
                 emailBody = render_to_string('shiftexchange_email.html', {"approve": event.approver,
                                                                           "requestor": event.requestor,
                                                                           "shifts": event.shifts.all(),
-                                                                          "sExId": sExId
+                                                                          "sExId": sExId,
+                                                                          "domain": self.default_domain
                                                                           })
 
                 self._notify_internal_and_external(actor=event.approver,
@@ -156,7 +158,8 @@ class EmailNotifier(NotificationService):
                 emailBody = render_to_string('shiftexchangeconfirmation_email.html', {"approve": event.approver,
                                                                                       "requestor": event.requestor,
                                                                                       "shifts": event.shifts.all(),
-                                                                                      "sExId": sExId
+                                                                                      "sExId": sExId,
+                                                                                      "domain": self.default_domain
                                                                                       })
                 self._notify_internal_and_external(actor=event.approver,
                                                    target=event,

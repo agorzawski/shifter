@@ -23,7 +23,10 @@
                     </a>
                     <ul class="dropdown-menu {% if request.resolver_match.url_name == 'team-simple' %}active{%  endif %}">
                         {% for a_team in teams %}
-                            <li><a class="dropdown-item"  href="{%  url 'team_view' team_id=a_team.id %}"> {{a_team.name}} </a></li>
+                            <li><a class="dropdown-item"  href="{%  url 'team_view' team_id=a_team.id %}">
+                                {%if user.team == a_team%}<strong> {%endif%}
+                                {{a_team.name}}
+                                {%if user.team == a_team%}</strong>{%endif%}</a></li>
                         {% endfor%}
                     </ul>
                 </li>
@@ -47,7 +50,9 @@
                     </a>
                     <ul class="dropdown-menu {% if request.resolver_match.url_name == 'desiderata.team_view' %}active{%  endif %}">
                         {% for a_managed_team in rota_maker_for %}
-                            <a class="dropdown-item"  href="{%  url 'desiderata.team_view' team_id=a_managed_team.id %}"> {{a_managed_team.name}} </a>
+                            <a class="dropdown-item"  href="{%  url 'desiderata.team_view' team_id=a_managed_team.id %}">
+                                {%if user.team == a_managed_team%}<strong> {%endif%}{{a_managed_team.name}}
+                                {%if user.team == a_managed_team%}</strong>{%endif%} </a>
                         {% endfor%}
                         <hr class="dropdown-divider">
                         <a class="dropdown-item" href="{% url 'shift-upload' %}">Upload planning</a>

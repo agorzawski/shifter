@@ -465,6 +465,28 @@ def get_shift_stats(request: HttpRequest) -> HttpResponse:
                                     'revision': revision.__str__()}), content_type="application/json")
 
 
+def get_team_shiftswaps(request: HttpRequest) -> HttpResponse:
+
+    start = datetime.datetime.fromisoformat(request.GET.get('start')).date()
+    end = datetime.datetime.fromisoformat(request.GET.get('end')).date()
+    team = request.user.team
+    # TODO apply date filter on CONCERNED shifts (not requesting/approval times)
+    sExs = ShiftExchange.objects.filter(requestor__team=team, implemented=True)
+    data = []
+    for onesEx in sExs:
+        swaps = ""
+        for oneSwap in onesEx.shifts.all():
+            swaps += str(oneSwap) + "<br>"
+        data.append([onesEx.id, onesEx.requested_date + " / " + onesEx.approved_date, onesEx.requestor.name, swaps])
+
+    header = f'Some header'
+    return HttpResponse(json.dumps({'data': data,
+                                    'header': header,
+                                    'date-start': start.strftime(DATE_FORMAT_FULL),
+                                    'date-end': end.strftime(DATE_FORMAT_FULL),
+                                    }), content_type="application/json")
+
+
 def search(request: HttpRequest) -> HttpResponse:
     answer = []
     search = request.GET.get('search')

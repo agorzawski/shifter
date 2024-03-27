@@ -298,7 +298,7 @@ class ShiftExchangePair(models.Model):
     shift_for_exchange = models.ForeignKey(Shift, on_delete=DO_NOTHING, related_name='for_exchange')
 
     def __str__(self):
-        return '[OLD] {} on {} {} for [NEW] {} on {} {}'.format(self.shift.member,
+        return '[BEFORE] {} on {} {} for {} on {} {}'.format(self.shift.member,
                                                           self.shift.date,
                                                           self.shift.slot.abbreviation,
                                                           self.shift_for_exchange.member,

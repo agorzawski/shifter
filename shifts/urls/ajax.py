@@ -18,5 +18,6 @@ urlpatterns = [
     path('get_shifts_for_exchange', ajax_views.get_shifts_for_exchange, name='ajax.get_shifts_for_exchange'),
     path('get_team_shift_inconsistencies', ajax_views.get_team_shift_inconsistencies, name='ajax.get_team_shift_inconsistencies'),
     path('get_stats', ajax_views.get_shift_stats, name='ajax.get_stats'),
+    path('get_team_shiftswaps', ajax_views.get_team_shiftswaps, name='ajax.get_team_shiftswaps'),
     path('search', ajax_views.search, name='ajax.search')
 ]

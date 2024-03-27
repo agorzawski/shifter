@@ -70,7 +70,7 @@ def get_exchange_exchange_preview(shiftExchange: ShiftExchange, baseRevision, pr
     return allShiftsForNewPlanning
 
 
-def _create_shift(shift, member, revision=None, permanent=False):
+def _create_shift(shift, member, revision=None, permanent=False, pre_comment=None):
     """
     Creates a shift from a shift but with changed member and revision
     """
@@ -84,6 +84,8 @@ def _create_shift(shift, member, revision=None, permanent=False):
     s.is_cancelled = False
     s.revision = shift.revision if revision is None else revision
     s.csv_upload_tag = shift.csv_upload_tag
+    if pre_comment is not None:
+        s.pre_comment = pre_comment
     if permanent:
         s.save()
     return s
@@ -120,7 +122,7 @@ def is_valid_for_hours_constraints(shiftExchange: ShiftExchange, member: Member,
 
 
 def perform_exchange_and_save_backup(shiftExchange: ShiftExchange,
-                                     approver:Member,
+                                     approver: Member,
                                      revisionBackup: Revision,
                                      verbose=False) -> list:
     """
@@ -152,3 +154,26 @@ def perform_exchange_and_save_backup(shiftExchange: ShiftExchange,
     return shiftsAfterSwap
 
 
+def perform_simplified_exchange_and_save_backup(shift: Shift,
+                                                newMember: Member,
+                                                approver: Member,
+                                                revisionBackup: Revision) -> ShiftExchange:
+    """Performs a simplified shift exchange when in the existing shift new member is created"""
+    fakeShift = _create_shift(shift, newMember,
+                              revision= revisionBackup,
+                              pre_comment="FakeAndTemporary shift created when updating the change of Member",
+                              permanent=True)
+    sPair = ShiftExchangePair.objects.create(shift=shift, shift_for_exchange=fakeShift)
+    sEx = ShiftExchange()
+    sEx.requestor = approver
+    sEx.approver = approver
+    sEx.backupRevision = revisionBackup
+    sEx.requested = timezone.now()
+    # FIXME consider actually performing the check. TO be seen how to 'avoid' constraints for the fake swap partner
+    sEx.applicable = True
+    sEx.tentative = False
+    sEx.save()
+    sEx.shifts.add(sPair)
+    sEx.save()
+    perform_exchange_and_save_backup(sEx, approver, revisionBackup=sEx.backupRevision, verbose=True)
+    return sEx

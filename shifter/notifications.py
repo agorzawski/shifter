@@ -137,6 +137,11 @@ class EmailNotifier(NotificationService):
         if isinstance(event, ShiftExchange):
             sExId = event.id
             affectedMembers = [event.approver, event.requestor]
+            for one in event.shifts.all():
+                affectedMembers.append(one.shift.member)
+                affectedMembers.append(one.shift_for_exchange.member)
+            affectedMembers = list(set(affectedMembers))
+
             if event.tentative and event.applicable:
                 emailSubject = '[shifter] Shift Exchange (#{}) REQUEST'.format(sExId)
                 emailBody = render_to_string('shiftexchange_email.html', {"approve": event.approver,

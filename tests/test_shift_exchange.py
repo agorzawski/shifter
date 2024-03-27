@@ -1,7 +1,7 @@
 from django.test import TestCase
 from shifts.models import *
 from shifts.exchanges import perform_exchange_and_save_backup, \
-    is_valid_for_hours_constraints, get_exchange_exchange_preview
+    is_valid_for_hours_constraints, get_exchange_exchange_preview, perform_simplified_exchange_and_save_backup
 from .common import make_test_schedule, FUNNY_SHIFT_LEADER, GRUMPY_SHIFT_LEADER
 import pytz
 
@@ -80,6 +80,16 @@ class ExchangeShifts(TestCase):
         self.assertEqual(nbOfShiftsInCurrent, Shift.objects.filter(revision=self.revisionBase).count())
         self.assertEqual(2, Shift.objects.filter(revision=self.revisionBackup).count())
         self.assertEqual(2, len(newShifts))
+
+    def test_simple_exchange_just_member(self):
+        self.assertEqual(self.m1, self.shift_m1_am.member)
+        perform_simplified_exchange_and_save_backup(self.shift_m1_am, self.m2, self.m2, revisionBackup=self.revisionBackup)
+        aa = Shift.objects.filter(member=self.m2, date=self.shift_m1_am.date, slot=self.shift_m1_am.slot, revision=self.shift_m1_am.revision)
+        self.assertEqual(1, len(aa))
+
+
+def _print_shift_details(shift):
+    print(shift.__dict__)
 
 
 def _create_exchange(member, revision, shifts):

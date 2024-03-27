@@ -24,7 +24,8 @@ from shifts.activeshift import prepare_active_crew, prepare_for_JSON
 from shifts.contexts import prepare_default_context, prepare_user_context
 from shifter.settings import DEFAULT_SHIFT_SLOT
 from shifts.workinghours import find_working_hours
-from shifts.exchanges import is_valid_for_hours_constraints, perform_exchange_and_save_backup
+from shifts.exchanges import is_valid_for_hours_constraints, perform_exchange_and_save_backup, \
+    perform_simplified_exchange_and_save_backup
 
 from django.utils import timezone
 from shifter.notifications import notificationService, NewShiftsUpload
@@ -296,6 +297,7 @@ def shiftExchangeRequestCreateOrUpdate(request, ex_id=None):
     sPair = ShiftExchangePair.objects.create(shift=Shift.objects.get(id=s1ID),
                                              shift_for_exchange=otherShift)
 
+    # FIXME Fix the bug with the non refreshing redirect and no ex_id given in request
     if ex_id is None:
         sEx = ShiftExchange()
         sEx.requestor = request.user
@@ -579,7 +581,8 @@ def shifts_update_post(request):
 @login_required
 def shift_edit(request, sid=None):
     data = {'shift': Shift.objects.get(id=sid),
-            'shiftRoles': ShiftRole.objects.all()}
+            'shiftRoles': ShiftRole.objects.all(),
+            'replacement': Member.objects.filter(team=request.user.team, is_active=True).order_by('role')}
     return render(request, "shift_edit.html", prepare_default_context(request, data))
 
 
@@ -612,6 +615,25 @@ def shift_edit_post(request, sid=None):
     s.save()
     url = reverse("shifter:shift-edit", kwargs={'sid': sid})
     messages.success(request, "<a class='href' href='{}'> Shift {} updated successfully! Edit again?</a>".format(url, s))
+    return HttpResponseRedirect(reverse("shifter:index"))
+
+
+@require_http_methods(["POST"])
+@csrf_protect
+@login_required
+def shift_single_exchange_post(request, sid=None):
+    s = Shift.objects.get(id=sid)
+    m = Member.objects.get(id=int(request.POST['shiftMember']))
+
+    if s.member == m:
+        messages.info(request, "No change applied!")
+        return HttpResponseRedirect(reverse("shifter:index"))
+
+    sExDone = perform_simplified_exchange_and_save_backup(s, m, approver=request.user,
+                                                          revisionBackup=Revision.objects.filter(name__startswith='BACKUP').first())
+    messages.success(request,"Requested shift exchange (update) is now successfully implemented.")
+    notificationService.notify(sExDone)
+
     return HttpResponseRedirect(reverse("shifter:index"))
 
 

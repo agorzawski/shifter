@@ -25,6 +25,8 @@ urlpatterns = [
 
     path('shift/<int:sid>', views.shift_edit, name='shift-edit'),
     path('shift/<int:sid>/edit', views.shift_edit_post, name='shift-edit-post'),
+    path('shift/<int:sid>/exchange', views.shift_single_exchange_post, name='shift-single-exchange-post'),
+
     path('shift-exchange', views.shiftExchangeRequestCreateOrUpdate, name='shift-exchange-request'),
     path('shift-exchange/<int:ex_id>', views.shiftExchangeRequestCreateOrUpdate, name='shift-exchange-request'),
     path('shift-exchange/<int:ex_id>/close', views.shiftExchangeRequestClose, name='shift-exchange-close'),

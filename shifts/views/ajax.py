@@ -477,7 +477,8 @@ def get_team_shiftswaps(request: HttpRequest) -> HttpResponse:
         swaps = ""
         for oneSwap in onesEx.shifts.all():
             swaps += str(oneSwap) + "<br>"
-        data.append([onesEx.id, onesEx.requested_date + " / " + onesEx.approved_date, onesEx.requestor.name, swaps])
+        data.append([onesEx.id, "Requested: "+ onesEx.requested_date + " <br>Approved:  " + onesEx.approved_date,
+                     onesEx.requestor.name + " <br> " + onesEx.approver.name, swaps])
 
     header = f'Some header'
     return HttpResponse(json.dumps({'data': data,

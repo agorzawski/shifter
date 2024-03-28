@@ -1,5 +1,13 @@
 # ESS OP Shifter Changelog
 
+### v.1.1.0
+- Automated Shift Exchange mechanism + logs
+- Notification system
+  - for new plannings with shifts,
+  - for shift exchanges, 
+  - for studies (selected states: Planned/Booked)
+- [bugfixes] Related to links, shift displays and selected forms in the service.
+
 ### v.1.0.10/11
 - [bugfix] related to OB codes (computing for reduced days and display in the table)
 - [bugfix] related to active/canceled shift display

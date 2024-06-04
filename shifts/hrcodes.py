@@ -192,8 +192,8 @@ def get_code_counts(shift: Shift, verbose=False) -> dict:
             continue
         if _check_if_date_or_adjacent_WE(shift.date, rd) and \
                 shift.slot.abbreviation == 'NWH':
-            print(rd)
-            print(shift.date)
+            # print(rd)
+            # print(shift.date)
             counts['NWH'] = 5
             notAWEOrHoliday = False
             continue

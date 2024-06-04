@@ -8,4 +8,5 @@ class ShiftsConfig(AppConfig):
     def ready(self):
         contacts = self.get_model("Contact")
         watson.register(contacts)
+        import shifts.signals
 

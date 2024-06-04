@@ -48,6 +48,8 @@ class Member(AbstractUser):
     comments = models.TextField(max_length=10000, blank=True, default='')
 
     photo = models.TextField(max_length=10000, blank=True, null=True)
+    notification_shifts = models.BooleanField(default=True, null=False)
+    notification_studies = models.BooleanField(default=True, null=False)
 
     @cached_property
     def name(self):

@@ -10,6 +10,7 @@ urlpatterns = [
     path('myteam/', views.my_team, name='my_team_view'),
     path('today', views.todays, name='today'),
     path('user', views.user, name='user'),
+    path('user/<int:uid>/notifications', views.user_notifications, name='user-notifications'),
     path('user/rev/<int:rid>', views.user, name='user'),
     path('users', views.users, name='users'),
     path('calendar.ics', views.icalendar_view, name='calendar'),
@@ -21,8 +22,16 @@ urlpatterns = [
     path('ioc-update', views.ioc_update, name='ioc-update'),
     path('scheduled-work-time', views.scheduled_work_time, name='scheduled_work_time'),
     path('shifts', views.shifts, name='shifts'),
+
     path('shift/<int:sid>', views.shift_edit, name='shift-edit'),
     path('shift/<int:sid>/edit', views.shift_edit_post, name='shift-edit-post'),
+    path('shift/<int:sid>/exchange', views.shift_single_exchange_post, name='shift-single-exchange-post'),
+
+    path('shift-exchange', views.shiftExchangeRequestCreateOrUpdate, name='shift-exchange-request'),
+    path('shift-exchange/<int:ex_id>', views.shiftExchangeRequestCreateOrUpdate, name='shift-exchange-request'),
+    path('shift-exchange/<int:ex_id>/close', views.shiftExchangeRequestClose, name='shift-exchange-close'),
+    path('shift-exchange/<int:ex_id>/cancel', views.shiftExchangeRequestCancel, name='shift-exchange-cancel'),
+    path('shift-exchange/<int:ex_id>/finalize', views.shiftExchangePerform, name='shift-exchange'),
     path('shift-upload-csv', views.shifts_upload, name="shift-upload"),
     path('shift-upload-csv-post', views.shifts_upload_post, name="shift-upload-post"),
     # FIXME the following two shift-update might need to be updated/removed in v.1.1.x

@@ -143,7 +143,7 @@ $(document).ready(function () {
                             text: dataJSON.header
                         },
                       xAxis: {
-                        categories: ['OP Morning', 'Normal Working Hours', 'Afternoon', 'OP Nights'],
+                        categories: dataJSON.slots,
                         labels: {
                           x: -10
                         }
@@ -154,7 +154,7 @@ $(document).ready(function () {
                           text: 'Amount'
                         }
                       },
-                      series: [{},{},{},{},{},{},{},{},{},{},{},{},{},],
+                      series: dataJSON.userdata,
                     };
 
                     var arrayLength = dataJSON.data.length;

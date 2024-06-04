@@ -5,9 +5,27 @@
 <div class="container mb-5 pb-5">
     <div class="col">
         <h2>{{shift}}</h2>
-        <form action="{% url 'shifter:shift-edit-post' shift.id %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+         <form action="{% url 'shifter:shift-single-exchange-post' shift.id %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
             {% csrf_token %}
 
+            <div class="form-select bg-warning">
+                <label for="shiftMember" class="form-label">Assigned shift member:</label>
+                <p>Note: Updating member will create an approved ShiftExchange with respective notifications!</p>
+                <select class="form-select" name='shiftMember' id='shiftMember'>
+                    {% for sr in replacement %}
+                        <option value="{{sr.id}}" {%if shift.member == sr%} selected {%endif%}>Shifter - {{sr.name}}</option>
+                    {% endfor %}
+                </select>
+                <br>
+                <div class="form-floating">
+                <button class="btn btn-dark">Update shift member</button>
+                </div>
+            </div>
+         </form>
+        <form action="{% url 'shifter:shift-edit-post' shift.id %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+            {% csrf_token %}
+            <hr class="hr" />
+            <h4>Update current shift</h4>
             <div class="form-select">
                 <label for="shiftRole" class="form-label">Assigned shift role:</label>
                 <select class="form-select" name='shiftRole' id='shiftRole'>
@@ -17,15 +35,12 @@
                     {% endfor %}
                 </select>
             </div>
-
-            <hr class="hr" />
             <div class="form-floating">
               <textarea class="form-control" placeholder="Anything to add?" name="preShiftComment" id="preShiftComment"
                         style="height: 100px">{{shift.pre_comment}}</textarea>
               <label for="preShiftComment">Pre-shift memo</label>
             </div>
 
-            <hr class="hr" />
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="activeShift"
                      id="activeShift" {%if shift.is_active%}checked{%endif%} >
@@ -49,7 +64,7 @@
             </div>
 
             <div class="form-floating">
-                <button class="btn btn-primary">Save changes</button>
+                <button class="btn btn-primary">Update shift details</button>
             </div>
         </form>
     </div>

@@ -11,3 +11,6 @@ venv/
 db.*
 /node_modules/
 /package-lock.json
+/sent_emails/
+/_IMPORTS/
+/scripts/

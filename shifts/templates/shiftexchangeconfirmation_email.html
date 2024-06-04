@@ -1,0 +1,16 @@
+Dear {{approve}}, {{requestor}}
+
+This is an automatic message containing the shift Exchange (#{{sExId}}) confirmation.
+
+--
+The following shifts were changed:
+
+{%for one in shifts%}
+{{one}}
+{%endfor%}
+--
+
+Note: Manage your notifications in {{ domain }}/user?notifications
+Thanks!
+--
+CR_OperationsGroup@ess.eu

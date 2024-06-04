@@ -11,6 +11,7 @@
 
 
 {% block body %}
+{% load notifications_tags %}
 <div class="container-fluid mb-5 pb-5">
     <div class="row justify-content-center">
         <h2 class="text-center mb-3"><member_id data-id="{{ member.id }}">{{member}}'s personal space</member_id></h2>
@@ -35,6 +36,24 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link position-relative" id="inconsistencies-tab" data-bs-toggle="tab" data-bs-target="#inconsistencies-tab-pane" type="button" role="tab" aria-controls="inconsistencies-tab-pane" aria-selected="false">Inconsistencies</button>
+                </li>
+                <li class="nav-item" role="presentation">
+
+                    <button class="nav-link position-relative" id="notify-tab" data-bs-toggle="tab" data-bs-target="#notify-tab-pane" type="button" role="tab" aria-controls="notify-tab-pane" aria-selected="false">
+                           <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {% notifications_unread %}
+                            <span class="visually-hidden">some invisible block</span>
+                        </span>
+                        Notifications</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link position-relative" id="shift-swap-tab" data-bs-toggle="tab" data-bs-target="#shift-swap-tab-pane" type="button" role="tab" aria-controls="shift-swap-tab-pane" aria-selected="false">
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ exchanges_total }}
+                            <span class="visually-hidden">Shift Swaps</span>
+                        </span>
+                        Shift Swaps</button>
+
                 </li>
             </ul>
             <div class="tab-content" id="user_tabs_content">
@@ -203,10 +222,146 @@
                         </div>
                     </div>
                 </div>
+                <!-- Tab displaying the system notifications -->
+                <div class="tab-pane fade" id="notify-tab-pane" role="tabpanel" aria-labelledby="links-tab" tabindex="5">
+                    <div class='container'>
+                        <li class="row justify-content-center m-4">Settings</li>
+                        <form action="{% url 'shifter:user-notifications' member.id %}" method="POST" enctype="multipart/form-data" class="form-horizontal">
+                        {% csrf_token %}
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="notificationShifts"
+                                 id="notificationShifts" {%if member.notification_shifts%}checked{%endif%} >
+                          <label class="form-check-label" for="notificationShifts">
+                            Send emails for the shift related notifications i.e., new shifts, swaps etc)</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="notificationStudies"
+                                 id="notificationStudies" {%if member.notification_studies%}checked{%endif%}>
+                          <label class="form-check-label" for="notificationStudies">Send emails for the study notifications?</label>
+                        </div>
+                        <div class="form-floating">
+                            <button class="btn btn-primary">Save changes</button>
+                        </div>
+                        </form>
+                        <hr>
+                        <li class="row justify-content-center m-4">
+                            <a id="clearNotify" class="btn btn-light" href="/inbox/notifications/api/unread_list/?mark_as_read=true" target="_blank">Clear notifications</a>
+                        </li>
+                            <div class="list-group">
+                              {% for notification in  member.notifications.unread %}
+                                <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                  <h5 class="mb-1">
+                                      {% if notification.emailed %} <i class="fa-solid fa-envelope-circle-check"></i>{%else%}
+                                        <i class="fa-solid fa-envelope-open-text"></i>{%endif%}
+                                      Notification from <strong>{{ notification.actor }}</strong> on <strong>{{ notification.verb }}</strong></h5>
+                                  <small>time.since.notification</small>
+                                </div>
+                                    <p class="mb-1"> <pre><code>{{ notification.description }}</code></pre></p>
+                                </a>
+                                {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab displaying possible shift swaps -->
+                <div class="tab-pane fade" id="shift-swap-tab-pane" role="tabpanel" aria-labelledby="shift-swap-tab" tabindex="5">
+                    <div class='container'>
+                        <div class="row justify-content-center m-4">
+                            <div class="col">
+                            <h2 class="mb-3">New Request:</h2>
+                                {%if shiftExchangesLast != None%}
+                                <form action="{% url 'shifter:shift-exchange-request' shiftExchangesLast.id %}" method="POST" enctype="multipart/form-data" class="form-horizontal">{%else%}
+                                <form action="{% url 'shifter:shift-exchange-request'%}" method="POST" enctype="multipart/form-data" class="form-horizontal">{%endif%}
+                                    {% csrf_token %}
+                                    <div class="col">
+                                        <div class="mb-3">
+                                            <label for="futureMy" class="form-label">Future shifts of mine: </label>
+                                            <select class="form-select" name='futureMy' id='futureMy' required>
+                                                <option value="">select me</option>
+<!--                                                fill with ajax-->
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="futureOther" class="form-label">Other shifts to change: </label>
+                                            <select class="form-select" name='futureOther' id='futureOther' required>
+                                                <option value="">select me</option>
+<!--                                                fill with ajax-->
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-secondary"> <span class="glyphicon glyphicon-upload" style="margin-right:5px;"></span>Create or Add to the last Request</button>
+                                     </div>
+                                    <div class="col">
+                                        <div class="mb-3">
+                                        </div>
+                                    </div>
+                                </form>
+                                <hr>
+                                <h2 class="mb-3">Shift exchange requests</h2>
+                                <div class="accordion" id="accordionShiftExchanges">
+                                {% for oneSE in shift_exchanges_requested%}
+                                  <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingOne">
+                                      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{oneSE.id}}" aria-expanded="true" aria-controls="collapse{{oneSE.id}}">
+                                        {{oneSE.requestor}} <br> <small>&nbsp;requested on {{oneSE.requested_date}}</small>&nbsp;
+                                          <span class="badge text-bg-{%if oneSE.implemented%}success">IMPLEMENTED{%else%}primary">NOT IMPLEMENTED{%endif%}</span>&nbsp;
+                                          <span class="badge text-bg-{%if oneSE.applicable%}success">APPLICABLE{%else%}danger">NOT APPLICABLE{%endif%}</span>
+                                      </button>
+                                    </h2>
+                                    <div id="collapse{{oneSE.id}}" class="accordion-collapse collapse {%if oneSE.applicable and not oneSE.implemented%}show{%endif%}" aria-labelledby="heading{{oneSE.id}}" data-bs-parent="#accordionShiftExchanges">
+                                    <div class="accordion-body">
+                                    <dl class="row">
+                                        <dt class="col-sm-3">{{oneSE.requestor}} <br> <small> requested on {{oneSE.requested_date}}</small> <br>
+                                        </dt>
+                                        <dd class="col-sm-8">
+                                                {% for onePair in oneSE.shifts.all%}
+                                                <p><span class="badge text-bg-light">{{onePair}}</span></p>
+                                                {%endfor%}
+                                        </dd>
+                                        {%if oneSE.tentative%}
+                                            <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange-close' oneSE.id %}>Close request and await for approval
+                                            <span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
+                                                <i class="fa-solid fa-bolt fa-stack-1x fa-inverse"></i>
+                                            </span> </a>
+                                        {%endif%}
+                                        {%if not oneSE.implemented%}
+                                           <a class="btn btn-outline-danger btn-light" href={% url 'shifter:shift-exchange-cancel' oneSE.id %}>Cancel this request (cannot be undone!)
+                                            <span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" ></i>
+                                                <i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i>
+                                            </span> </a>
+                                        {%endif%}
+                                    </dl>
+                                    <dl class="row">
+                                        <dd class="col-sm-1">
+                                            {%if oneSE.implemented%}<span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754">{{oneSE.approver.first_name}}</i>
+                                            <i class="fa-solid fa-thumbs-up fa-stack-1x fa-inverse"></i>
+                                            </span>{%endif%}
+                                            {%if not oneSE.implemented and oneSE.applicable and not oneSE.tentative%}
+                                            {%if oneSE.approver == member%}
+                                            <a class="btn btn-outline-success btn-light" href={% url 'shifter:shift-exchange' oneSE.id %}>Approve
+                                            <span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754"></i>
+                                            <i class="fa-solid fa-thumbs-up fa-stack-1x fa-inverse"></i>
+                                            </span> </a> {%else%}
+                                            <span class="fa-stack">
+                                            <i class="fa-solid fa-circle fa-stack-2x" style="color:#198754">{{oneSE.approver.first_name}}</i>
+                                            <i class="fa-solid fa-hourglass-1 fa-stack-1x fa-inverse"></i>
+                                            {%endif%}{%endif%}
+                                        </dd>
+                                      </dl>
+                                     </div>
+                                    </div>
+                                  </div>
+                                {%endfor%}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
 
 <div class="toast-container position-fixed top-0 end-0 p-3">
     <div class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true" id="live_toast">
@@ -235,7 +390,37 @@
 <script type="text/javascript" src="{% static 'moment/min/moment-with-locales.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'daterangepicker/daterangepicker.js' %}"></script>
 <script type="text/javascript" src="{% static 'select2/dist/js/select2.full.min.js' %}"></script>
-    <script>
+<script>
+$(document).ready(function() {
+$('#displayed_campaigns').select2();
+$('#displayed_revision').select2();
+});
+$("#futureMy").click(function () {
+    $.ajax({
+        type: "GET",
+        url: '{% url "ajax.get_shifts_for_exchange"%}?option=my',
+        success: function (data) {
+            let html_data = '<option value="">---------</option>';
+            data.forEach(function (data) {
+                html_data += `<option value="${data.id}">${data.title}</option>`
+            });
+            $("#futureMy").html(html_data);
+        }
+    });
+});
+$("#futureOther").click(function () {
+    $.ajax({
+        type: "GET",
+        url: '{% url "ajax.get_shifts_for_exchange"%}?option=them',
+        success: function (data) {
+            let html_data = '<option value="">---------</option>';
+            data.forEach(function (data) {
+                html_data += `<option value="${data.id}">${data.title}</option>`
+            });
+            $("#futureOther").html(html_data);
+        }
+    });
+});
     function fillInconsistenciesDiv(rev){
       $("#shift-inconsistencies").load("{%  url 'ajax.get_shift_inconsistencies' %}?revision="+rev);
       return false;
@@ -245,5 +430,15 @@
     $('#displayed_revision').select2();
     fillInconsistenciesDiv(-1);
 });</script>
+<script>
+    $('a#clearNotify').on('click', function(e) {
+    e.preventDefault();
+    var url = $(this).attr('href');
+    $.get(url, function() {
+        location.reload();
+    });
+});
+</script>
+
 
 {% endblock %}

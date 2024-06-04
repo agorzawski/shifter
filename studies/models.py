@@ -188,6 +188,14 @@ class StudyRequest(models.Model):
         else:
             return '<span class="badge text-bg-info">Unknown</span>'
 
+    def state_full(self):
+        for one in StudyRequest.BOOKING_STATE_CHOICES:
+            if one[0] == self.state:
+                return one[1]
+
+    def all_involved(self) -> list:
+        return [self.member] + [one for one in self.collaborators.all()]
+
     def __str__(self):
         return '{}'.format(self.member)
 

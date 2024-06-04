@@ -313,7 +313,8 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
         memberSummary = [m.name, l]
         for oneSlot in validSlots:
             memberSummary.append(result.get(oneSlot.abbreviation, '--'))
-        teamMembersSummary.append(memberSummary)
+        if memberSummary[1] > 0:
+            teamMembersSummary.append(memberSummary)
 
     header = f'Showing shift breakdown from {start.strftime("%A, %B %d, %Y ")} to {(end - datetime.timedelta(days=1)).strftime("%A, %B %d, %Y ")}'
 
@@ -321,7 +322,24 @@ def get_shift_breakdown(request: HttpRequest) -> HttpResponse:
                                     'header': header,
                                     'date-start': start.strftime(DATE_FORMAT_FULL),
                                     'date-end': end.strftime(DATE_FORMAT_FULL),
+                                    'slots': [one.__str__() for one in validSlots],
+                                    'userdata': [{} for one in teamMembersSummary],
                                     'revision': revision.__str__()}), content_type="application/json")
+
+
+@login_required
+def get_shifts_for_exchange(request: HttpRequest) -> HttpResponse:
+    member = _get_member(request)
+    revision = _get_revision(request)
+    toReturn = []
+    if request.GET.get('option', 'my') == 'my':
+        futureMy = Shift.objects.filter(revision=revision, member=member, date__gte=timezone.now()).order_by("date")
+        toReturn = [s.get_simplified_as_json() for s in futureMy]
+    if request.GET.get('option', 'my') == 'them':
+        futureOther = Shift.objects.filter(~Q(member=member),revision=revision,
+                                           date__gte=timezone.now()).order_by("date")
+        toReturn = [s.get_simplified_as_json() for s in futureOther]
+    return HttpResponse(json.dumps(toReturn), content_type="application/json")
 
 
 def _get_inconsistencies_per_member(member, revision):
@@ -445,6 +463,29 @@ def get_shift_stats(request: HttpRequest) -> HttpResponse:
                                     'date-start': start.strftime(DATE_FORMAT_FULL),
                                     'date-end': end.strftime(DATE_FORMAT_FULL),
                                     'revision': revision.__str__()}), content_type="application/json")
+
+
+def get_team_shiftswaps(request: HttpRequest) -> HttpResponse:
+
+    start = datetime.datetime.fromisoformat(request.GET.get('start')).date()
+    end = datetime.datetime.fromisoformat(request.GET.get('end')).date()
+    team = request.user.team
+    # TODO apply date filter on CONCERNED shifts (not requesting/approval times)
+    sExs = ShiftExchange.objects.filter(requestor__team=team, implemented=True)
+    data = []
+    for onesEx in sExs:
+        swaps = ""
+        for oneSwap in onesEx.shifts.all():
+            swaps += str(oneSwap) + "<br>"
+        data.append([onesEx.id, "Requested: "+ onesEx.requested_date + " <br>Approved:  " + onesEx.approved_date,
+                     onesEx.requestor.name + " <br> " + onesEx.approver.name, swaps])
+
+    header = f'Some header'
+    return HttpResponse(json.dumps({'data': data,
+                                    'header': header,
+                                    'date-start': start.strftime(DATE_FORMAT_FULL),
+                                    'date-end': end.strftime(DATE_FORMAT_FULL),
+                                    }), content_type="application/json")
 
 
 def search(request: HttpRequest) -> HttpResponse:
